@@ -1,0 +1,20 @@
+
+.heroes {
+  border-collapse: collapse;
+  background: #eef;
+}
+
+.heroes th {
+  padding: 5px 15px;
+  border-bottom: 1px solid black;
+  text-align: left;
+}
+.heroes td {
+  padding: 5px 15px;
+  border-bottom: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.heroes tr.selected td {
+  background-color: #cfd8dc;
+}
