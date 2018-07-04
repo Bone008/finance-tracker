@@ -6,6 +6,8 @@ import {
   MatDividerModule,
   MatIconModule,
   MatMenuModule,
+  MatPaginatorModule,
+  MatTableModule,
   MatToolbarModule,
 } from '@angular/material';
 
@@ -16,6 +18,8 @@ import {
     MatDividerModule,
     MatIconModule,
     MatMenuModule,
+    MatPaginatorModule,
+    MatTableModule,
     MatToolbarModule,
   ],
   exports: [
@@ -24,6 +28,8 @@ import {
     MatDividerModule,
     MatIconModule,
     MatMenuModule,
+    MatPaginatorModule,
+    MatTableModule,
     MatToolbarModule,
   ]
 })

@@ -1,0 +1,25 @@
+
+.mat-table {
+  width: 100%;
+}
+
+.mat-header-cell, .mat-cell {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.mat-column-amount {
+  text-align: right;
+}
+.mat-column-amount.negative {
+  color: #e74c3c;
+}
+
+.mat-table .transaction-label {
+  border: 1px solid #999;
+  border-radius: 5px;
+  background: #eeeeff;
+  padding: 4px 5px;
+  margin-right: 3px;
+  line-height: 125%;
+}
