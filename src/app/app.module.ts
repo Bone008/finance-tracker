@@ -1,4 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
@@ -13,6 +14,7 @@ import { MoneyModule } from './money/money.module';
   ],
   imports: [
     BrowserModule,
+    NoopAnimationsModule,
     FormsModule,
     MaterialModule,
     CoreModule,
