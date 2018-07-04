@@ -13,6 +13,9 @@
     <td>{{hero.name}}</td>
     <td>{{hero.dateCreated | date}}</td>
   </tr>
+  <tr *ngIf="heroesLoading">
+    <td colspan="3">Loading ...</td>
+  </tr>
 </table>
 
 <div *ngIf="selectedHero">

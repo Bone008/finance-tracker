@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Hero } from './hero';
+import { HeroService } from './hero.service';
 
 @Component({
   selector: 'app-heroes',
@@ -7,15 +8,20 @@ import { Hero } from './hero';
   styleUrls: ['./heroes.component.css']
 })
 export class HeroesComponent implements OnInit {
-  heroes: Hero[] = MOCK_HEROES;
-  selectedHero: Hero|null = null;
+  heroesLoading = false;
+  heroes: Hero[] = [];
+  selectedHero: Hero | null = null;
 
   private now: number;
 
-  constructor() { }
+  constructor(private readonly heroService: HeroService) { }
 
-  ngOnInit() {
+  async ngOnInit() {
     this.now = Date.now();
+
+    this.heroesLoading = true;
+    this.heroes = await this.heroService.loadHeroes();
+    this.heroesLoading = false;
   }
 
   getSelectedHeroAge(): number {
@@ -28,10 +34,3 @@ export class HeroesComponent implements OnInit {
 
 }
 
-const MOCK_HEROES = [
-  { id: 3, name: 'Skeleton man', dateCreated: new Date('2018-04-14') },
-  { id: 4, name: 'Bone man', dateCreated: new Date('2018-05-10') },
-  { id: 7, name: 'John', dateCreated: new Date('2018-06-10') },
-  { id: 8, name: 'Peter', dateCreated: new Date('2018-06-20') },
-  { id: 9, name: 'Björn', dateCreated: new Date('2018-06-24') },
-];
