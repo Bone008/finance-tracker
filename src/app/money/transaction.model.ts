@@ -16,7 +16,7 @@ export function createTransaction(date: Date, amount: number, who: string, isCas
     amount,
     who,
     isCash,
-    labels: labels || [],
+    labels: labels ? labels.sort() : [],
     comment,
   }
 }

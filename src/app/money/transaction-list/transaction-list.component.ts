@@ -20,6 +20,16 @@ export class TransactionListComponent implements OnInit {
     this.transactions = createDummyTransactions(25);
     this.transactionsDataSource.data = this.transactions;
     this.transactionsDataSource.paginator = this.paginator;
+    this.transactionsDataSource.filterPredicate = (transaction, filter) => this.matchesFilter(transaction, filter);
+  }
+
+  private matchesFilter(transaction: Transaction, filter: string): boolean {
+    if (!filter) return true;
+
+    const filterRegex = new RegExp(filter, 'i');
+    return filterRegex.test(transaction.who)
+      || filterRegex.test(transaction.comment || '')
+      || transaction.labels.find(label => filterRegex.test(label)) !== undefined;
   }
 
 }

@@ -2,6 +2,10 @@
   <mat-card-title>Transactions</mat-card-title>
 
   <mat-card-content>
+    <mat-form-field class="filter-input">
+      <input matInput type="search" [(ngModel)]="transactionsDataSource.filter" placeholder="Filter">
+    </mat-form-field>
+
     <table mat-table [dataSource]="transactionsDataSource">
         <ng-container matColumnDef="date">
           <th mat-header-cell *matHeaderCellDef>Date</th>
