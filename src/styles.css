@@ -4,3 +4,11 @@ body {
   margin: 0;
   font-family: Roboto, sans-serif;
 }
+
+.main-card {
+  margin-top: 20px;
+}
+
+.flex-spacer {
+  flex: 1 1 auto;
+}

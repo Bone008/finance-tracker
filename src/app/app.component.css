@@ -3,6 +3,6 @@
   max-width: 1200px;
 }
 
-.flex-spacer {
-  flex: 1 1 auto;
+.primary-toolbar > img {
+  margin-right: 7px;
 }
