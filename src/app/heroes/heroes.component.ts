@@ -25,7 +25,8 @@ export class HeroesComponent implements OnInit {
   }
 
   getSelectedHeroAge(): number {
-    return (this.now - this.selectedHero.dateCreated.getTime()) / 1000 / 60 / 60;
+    return (this.now - this.selectedHero.dateCreated.getTime())
+              / 1000 / 60 / 60;
   }
 
   onSelect(hero: Hero) {
