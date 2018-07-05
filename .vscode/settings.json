@@ -1,0 +1,14 @@
+{
+  "editor.tabSize": 2,
+  "editor.detectIndentation": false,
+    
+  // Configure glob patterns for excluding files and folders. For example, the files explorer decides which files and folders to show or hide based on this setting.
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/*.spec.ts": true, // Temporary until we got some tests.
+  },
+}
