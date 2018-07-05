@@ -12,6 +12,7 @@
   padding-right: 10px;
 }
 
+.mat-column-date{ width: 90px; }
 .mat-column-amount {
   text-align: right;
 }
@@ -21,11 +22,13 @@
 
 .mat-table .transaction-label {
   display: inline-block;
-  border: 1px solid #999;
-  border-radius: 5px;
-  background: #eef;
   padding: 4px 5px;
   margin-right: 3px;
   margin-top: 2px;
   margin-bottom: 2px;
+  background: #eef;
+  border: 1px solid #999;
+  border-radius: 5px;
+  cursor: pointer;
+  font: inherit;
 }

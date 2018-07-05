@@ -14,7 +14,7 @@ export class StorageService {
   };
 
   loadData(): Promise<DataContainer> {
-    return delay(500, this.mockData);
+    return delay(0, this.mockData);
   }
 
   saveData(data: DataContainer): Promise<void> {
@@ -50,7 +50,7 @@ export function createDummyTransactions(num: number): Transaction[] {
       labels.push('travel');
     if (getRandomBoolean())
       labels.push('car/fuel');
-    if (getRandomBoolean())
+    if (getRandomInt(0, 3) === 0)
       labels.push('accommodation');
     if (amount > 0 && getRandomBoolean())
       labels.push(getRandomBoolean() ? 'scholarship' : 'salary');

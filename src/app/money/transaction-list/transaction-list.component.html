@@ -4,6 +4,13 @@
   <mat-card-content>
     <mat-form-field class="filter-input">
       <input matInput type="search" [(ngModel)]="transactionsDataSource.filter" placeholder="Filter">
+      <button
+          mat-icon-button
+          matSuffix
+          title="Clear filter"
+          (click)="transactionsDataSource.filter=''">
+        <mat-icon>close</mat-icon>
+      </button>
     </mat-form-field>
 
     <table mat-table [dataSource]="transactionsDataSource">
@@ -18,7 +25,12 @@
         <ng-container matColumnDef="labels">
           <th mat-header-cell *matHeaderCellDef>Labels</th>
           <td mat-cell *matCellDef="let transaction">
-            <span class="transaction-label" *ngFor="let label of transaction.labels">{{label}}</span>
+            <button
+                *ngFor="let label of transaction.labels"
+                (click)="filterByLabel(label, $event.shiftKey)"
+                class="transaction-label">
+              {{label}}
+            </button>
           </td>
         </ng-container>
         <ng-container matColumnDef="note">
