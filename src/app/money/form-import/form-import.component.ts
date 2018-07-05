@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { readFileAsTextAsync } from '../../core/util';
 import { LoggerService } from '../../core/logger.service';
+import { PapaParseService, PapaParseResult } from 'ngx-papaparse';
 
 @Component({
   selector: 'app-form-import',
@@ -8,22 +8,25 @@ import { LoggerService } from '../../core/logger.service';
   styleUrls: ['./form-import.component.css']
 })
 export class FormImportComponent implements OnInit {
+  fileFormat: 'ksk_camt' = 'ksk_camt';
 
-  constructor(private readonly loggerService: LoggerService) { }
+  constructor(
+    private readonly loggerService: LoggerService,
+    private readonly papaService: PapaParseService) { }
 
   ngOnInit() {
   }
 
   setFile(file: File) {
     console.log(file);
-    readFileAsTextAsync(file).then(
-      this.processFileContents.bind(this),
-      err => this.loggerService.error(err)
-    );
+    this.papaService.parse(file, {
+      header: true,
+      complete: result => this.processFileContents(result),
+    });
   }
 
-  private processFileContents(fileContents: string) {
-    console.log(fileContents);
+  private processFileContents(csvData: PapaParseResult) {
+    console.log(csvData);
   }
 
 }

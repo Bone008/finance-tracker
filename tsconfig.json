@@ -15,6 +15,10 @@
     "lib": [
       "es2017",
       "dom"
-    ]
+    ],
+    "paths": {
+      // Fix for papaparse, see https://github.com/mholt/PapaParse/issues/517.
+      "stream": [ "node_modules/readable-stream" ],
+    },
   }
 }

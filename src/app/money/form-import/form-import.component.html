@@ -8,7 +8,7 @@
     </label>
   </div>
   <mat-form-field>
-    <mat-select value="ksk_camt" placeholder="File format">
+    <mat-select [(ngModel)]="fileFormat" placeholder="File format">
       <mat-option value="ksk_camt">Kreissparkasse CAMT</mat-option>
     </mat-select>
   </mat-form-field>
