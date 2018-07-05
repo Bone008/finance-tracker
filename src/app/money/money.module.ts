@@ -1,10 +1,11 @@
-import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TransactionListComponent } from './transaction-list/transaction-list.component';
-import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
-import { MoneyComponent } from './money.component';
 import { MaterialModule } from '../material.module';
+import { FormImportComponent } from './form-import/form-import.component';
+import { MoneyComponent } from './money.component';
+import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
+import { TransactionListComponent } from './transaction-list/transaction-list.component';
 
 @NgModule({
   imports: [
@@ -14,7 +15,12 @@ import { MaterialModule } from '../material.module';
   ],
   declarations: [
     MoneyComponent,
+    FormImportComponent,
     TransactionListComponent,
+    TransactionDetailComponent,
+  ],
+  entryComponents: [
+    FormImportComponent,
     TransactionDetailComponent,
   ],
   exports: [

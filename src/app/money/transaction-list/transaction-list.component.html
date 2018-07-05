@@ -1,5 +1,19 @@
 <mat-card class="main-card">
-  <mat-card-title>Transactions</mat-card-title>
+  <mat-card-title class="flex">
+    <span class="flex-spacer">Transactions</span>
+    <button
+        (click)="openImportCsvDialog()"
+        mat-fab
+        matTooltip="Import CSV">
+        <mat-icon>attachment</mat-icon>
+    </button>
+    <button
+        (click)="openAddTransactionDialog()"
+        mat-fab
+        matTooltip="Add transaction">
+        <mat-icon>add</mat-icon>
+    </button>
+  </mat-card-title>
 
   <mat-card-content>
     <mat-form-field class="filter-input">

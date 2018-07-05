@@ -1,0 +1,8 @@
+/* Need to manually mimic mat-form-field label,
+   since it is unsupported for file inputs. */
+.file-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 75%;
+  color: rgba(0,0,0,.54);
+}

@@ -1,0 +1,21 @@
+<h2 mat-dialog-title>Import CSV</h2>
+
+<mat-dialog-content>
+  <div class="mat-form-field-wrapper">
+    <label>
+      <span class="file-label">Select file to import</span>
+      <input type="file" (change)="setFile($event.target.files[0])">
+    </label>
+  </div>
+  <mat-form-field>
+    <mat-select value="ksk_camt" placeholder="File format">
+      <mat-option value="ksk_camt">Kreissparkasse CAMT</mat-option>
+    </mat-select>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <span class="flex-spacer"></span>
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-button [mat-dialog-close]="true">Import</button>
+</mat-dialog-actions>

@@ -10,6 +10,9 @@ body {
   margin-top: 20px;
 }
 
+.flex {
+  display: flex !important;
+}
 .flex-spacer {
   flex: 1 1 auto;
 }
