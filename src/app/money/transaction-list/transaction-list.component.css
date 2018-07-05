@@ -20,10 +20,12 @@
 }
 
 .mat-table .transaction-label {
+  display: inline-block;
   border: 1px solid #999;
   border-radius: 5px;
-  background: #eeeeff;
+  background: #eef;
   padding: 4px 5px;
   margin-right: 3px;
-  line-height: 125%;
+  margin-top: 2px;
+  margin-bottom: 2px;
 }

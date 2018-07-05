@@ -1,6 +1,6 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { Transaction, createTransaction, createDummyTransactions } from '../transaction.model';
-import { MatTableDataSource, MatPaginator } from '@angular/material';
+import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { MatPaginator, MatTableDataSource } from '@angular/material';
+import { Transaction } from '../transaction.model';
 
 @Component({
   selector: 'app-transaction-list',
@@ -8,7 +8,7 @@ import { MatTableDataSource, MatPaginator } from '@angular/material';
   styleUrls: ['./transaction-list.component.css']
 })
 export class TransactionListComponent implements OnInit {
-  transactions: Transaction[] = [];
+  @Input() transactions: Transaction[];
   transactionsDataSource = new MatTableDataSource<Transaction>();
 
   @ViewChild(MatPaginator)
@@ -17,7 +17,6 @@ export class TransactionListComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
-    this.transactions = createDummyTransactions(25);
     this.transactionsDataSource.data = this.transactions;
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsDataSource.filterPredicate = (transaction, filter) => this.matchesFilter(transaction, filter);

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { delay } from '../core/util';
 import { Hero } from './hero';
 
 @Injectable({
@@ -9,13 +10,7 @@ export class HeroService {
   constructor() { }
 
   loadHeroes(): Promise<Hero[]> {
-    return this.timeout(1000).then(() => MOCK_HEROES);
-  }
-  
-  private timeout(delay: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      setTimeout(resolve, delay);
-    });
+    return delay(1000, MOCK_HEROES);
   }
 }
 

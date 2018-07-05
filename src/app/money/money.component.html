@@ -1,4 +1,7 @@
-<app-transaction-list></app-transaction-list>
+<app-transaction-list
+    *ngIf="data"
+    [transactions]="data.transactions">
+</app-transaction-list>
 
 <mat-card class="main-card">
   <span>TODO: other stuff</span>
