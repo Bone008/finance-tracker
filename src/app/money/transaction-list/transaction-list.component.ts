@@ -4,6 +4,7 @@ import { Transaction } from '../transaction.model';
 import { TransactionDetailComponent } from '../transaction-detail/transaction-detail.component';
 import { FormImportComponent } from '../form-import/form-import.component';
 import { LoggerService } from '../../core/logger.service';
+import { SelectionModel } from '@angular/cdk/collections';
 
 @Component({
   selector: 'app-transaction-list',
@@ -13,6 +14,7 @@ import { LoggerService } from '../../core/logger.service';
 export class TransactionListComponent implements OnInit {
   @Input() transactions: Transaction[];
   transactionsDataSource = new MatTableDataSource<Transaction>();
+  selection = new SelectionModel<Transaction>(true);
 
   @ViewChild(MatPaginator)
   private paginator: MatPaginator;
@@ -61,6 +63,18 @@ export class TransactionListComponent implements OnInit {
   formatTransactionNotes(transaction: Transaction): string {
     const data = [transaction.who, transaction.reasonForTransfer, transaction.comment];
     return data.filter(value => !!value).join(", ");
+  }
+
+  /** Returns if the number of selected elements matches the total number of visible rows. */
+  isAllSelected() {
+    return this.selection.selected.length === this.transactionsDataSource.filteredData.length;
+  }
+
+  /** Selects all rows if they are not all selected; clears selection otherwise. */
+  masterToggle() {
+    this.isAllSelected() ?
+        this.selection.clear() :
+        this.transactionsDataSource.filteredData.forEach(row => this.selection.select(row));
   }
 
   private matchesFilter(transaction: Transaction, filter: string): boolean {

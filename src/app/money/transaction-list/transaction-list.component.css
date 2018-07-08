@@ -7,6 +7,13 @@
   width: 100%;
 }
 
+.mat-row {
+  cursor: pointer;
+}
+.mat-row.selected {
+  background: #eee;
+}
+
 .mat-header-cell, .mat-cell {
   padding-left: 10px;
   padding-right: 10px;
