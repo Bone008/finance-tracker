@@ -24,7 +24,9 @@ export class HeroesComponent implements OnInit {
     this.heroesLoading = false;
   }
 
-  getSelectedHeroAge(): number {
+  getSelectedHeroAge(): number|null {
+    if(!this.selectedHero) return null;
+    
     return (this.now - this.selectedHero.dateCreated.getTime())
               / 1000 / 60 / 60;
   }
