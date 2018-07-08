@@ -10,7 +10,7 @@ import { StorageService } from './storage.service';
 export class MoneyComponent implements OnInit {
   data: DataContainer | null = null;
 
-  @Output() status: string = null;
+  @Output() status: string|null = null;
 
   constructor(private readonly storageService: StorageService) { }
 
@@ -21,6 +21,8 @@ export class MoneyComponent implements OnInit {
   }
 
   async syncData() {
+    if(!this.data) return;
+    
     this.status = "Saving ...";
     await this.storageService.saveData(this.data);
     this.status = "Last modified " + this.formatDate(this.data.lastModified);

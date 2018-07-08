@@ -12,10 +12,20 @@
       <mat-option value="ksk_camt">Kreissparkasse CAMT</mat-option>
     </mat-select>
   </mat-form-field>
+
+  <p *ngIf="transactionsToImport.length > 0">
+    Found {{transactionsToImport.length}} transactions between {{getPreviewMinDate() | date}} and {{getPreviewMaxDate() | date}}.
+  </p>
+  <div *ngIf="errors.length > 0">
+    <p>There were errors:</p>
+    <ul>
+      <li class="error" *ngFor="let error of errors">{{error}}</li>
+    </ul>
+  </div>
 </mat-dialog-content>
 
 <mat-dialog-actions>
   <span class="flex-spacer"></span>
   <button mat-button mat-dialog-close>Cancel</button>
-  <button mat-button [mat-dialog-close]="true">Import</button>
+  <button mat-button [mat-dialog-close]="true" [disabled]="transactionsToImport.length === 0">Import</button>
 </mat-dialog-actions>

@@ -49,11 +49,11 @@
         </ng-container>
         <ng-container matColumnDef="note">
           <th mat-header-cell *matHeaderCellDef>Notes</th>
-          <td mat-cell *matCellDef="let transaction">{{[transaction.who, transaction.comment].join(", ")}}</td>
+          <td mat-cell *matCellDef="let transaction">{{formatTransactionNotes(transaction)}}</td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="['date', 'amount', 'labels', 'note']"></tr>
-        <tr mat-row *matRowDef="let myRowData; columns: ['date', 'amount', 'labels', 'note']"></tr>
+        <tr mat-header-row *matHeaderRowDef="['date', 'amount', 'note', 'labels']"></tr>
+        <tr mat-row *matRowDef="let myRowData; columns: ['date', 'amount', 'note', 'labels']"></tr>
     </table>
     
     <mat-paginator [pageSizeOptions]="[20, 50, 100]" showFirstLastButtons></mat-paginator>
