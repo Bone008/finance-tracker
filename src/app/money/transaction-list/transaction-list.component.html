@@ -27,6 +27,19 @@
         <mat-icon>close</mat-icon>
       </button>
     </mat-form-field>
+    
+    <div style="text-align: right;">
+      <span class="mat-caption">{{selection.selected.length}} selected</span>
+      &nbsp;&nbsp;
+      <button
+          mat-icon-button
+          color="primary"
+          matTooltip="Delete selected"
+          [disabled]="selection.selected.length === 0"
+          (click)="deleteSelectedRecords()">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
 
     <table mat-table [dataSource]="transactionsDataSource">
       <ng-container matColumnDef="select">

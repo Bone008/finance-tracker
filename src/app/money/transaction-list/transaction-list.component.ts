@@ -60,6 +60,16 @@ export class TransactionListComponent implements OnInit {
     });
   }
 
+  deleteSelectedRecords() {
+    // TODO: Move this to model access service.
+    for(let transaction of this.selection.selected) {
+      const index = this.transactions.indexOf(transaction);
+      this.transactions.splice(index, 1);
+    }
+    this.selection.clear();
+    this.transactionsDataSource.data = this.transactions;
+  }
+
   formatTransactionNotes(transaction: Transaction): string {
     const data = [transaction.who, transaction.reasonForTransfer, transaction.comment];
     return data.filter(value => !!value).join(", ");
