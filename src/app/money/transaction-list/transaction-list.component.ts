@@ -71,8 +71,7 @@ export class TransactionListComponent implements OnInit {
   }
 
   addLabelToTransaction(transaction: Transaction, newLabel: string) {
-    newLabel = newLabel.trim().toLowerCase();
-    if(newLabel.length > 0 && transaction.labels.indexOf(newLabel)) {
+    if(newLabel.length > 0 && transaction.labels.indexOf(newLabel) === -1) {
       transaction.labels.push(newLabel);
     }
   }

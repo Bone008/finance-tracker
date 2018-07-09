@@ -1,3 +1,28 @@
-<p>
-  add-inline-label works!
-</p>
+<mat-form-field
+    (focusin)="setIsOpen(true)"
+    (focusout)="setIsOpen(false)"
+    (click)="$event.stopPropagation()"
+    floatLabel="never"
+    fxFill>
+  <input
+      #labelInput
+      (keyup.enter)="confirmAdd()"
+      [(ngModel)]="newLabel"
+      matInput
+      placeholder="Add label">
+  <button
+      (click)="confirmAdd()"
+      [hidden]="!isOpen"
+      mat-icon-button
+      matSuffix>
+    <mat-icon>check</mat-icon>
+  </button>
+  <button
+      (focus)="labelInput.focus()"
+      [hidden]="isOpen"
+      tabindex="-1"
+      mat-icon-button
+      matSuffix>
+    <mat-icon>add</mat-icon>
+  </button>
+</mat-form-field>

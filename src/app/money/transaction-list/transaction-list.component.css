@@ -19,14 +19,19 @@
   padding-right: 10px;
 }
 
-.mat-column-date{ width: 90px; }
+.mat-column-date {
+  width: 90px;
+}
 .mat-column-amount {
+  width: 95px;
   text-align: right;
 }
 .mat-column-amount.negative {
   color: #e74c3c;
 }
-
+.mat-column-labels {
+  width: 50%;
+}
 .mat-table .transaction-label {
   display: inline-block;
   padding: 4px 5px;
@@ -38,4 +43,15 @@
   border-radius: 5px;
   cursor: pointer;
   font: inherit;
+}
+
+.add-inline-label {
+  width: 20px;
+  flex: 0 0 auto;
+  transition: flex-grow 0.2s;
+}
+
+.add-inline-label.open {
+  width: 75px;
+  flex-grow: 1;
 }
