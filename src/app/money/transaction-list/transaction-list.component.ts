@@ -5,6 +5,11 @@ import { TransactionDetailComponent } from '../transaction-detail/transaction-de
 import { FormImportComponent } from '../form-import/form-import.component';
 import { LoggerService } from '../../core/logger.service';
 import { SelectionModel } from '@angular/cdk/collections';
+import { Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
+
+/** Time in ms to wait after input before applying the filter. */
+const FILTER_DEBOUNCE_TIME = 500;
 
 @Component({
   selector: 'app-transaction-list',
@@ -18,6 +23,12 @@ export class TransactionListComponent implements OnInit {
 
   @ViewChild(MatPaginator)
   private paginator: MatPaginator;
+  /** Current value of the filter textbox (not debounced). */
+  private _filterInput = "";
+  private readonly filterSubject = new Subject<string>();
+
+  get filterInput() { return this._filterInput; }
+  set filterInput(value: string) { this._filterInput = value; this.filterSubject.next(value); }
 
   constructor(
     private readonly loggerService: LoggerService,
@@ -27,16 +38,33 @@ export class TransactionListComponent implements OnInit {
     this.transactionsDataSource.data = this.transactions;
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsDataSource.filterPredicate = (transaction, filter) => this.matchesFilter(transaction, filter);
+
+    this.filterSubject
+      .pipe(debounceTime(FILTER_DEBOUNCE_TIME))
+      .subscribe(() => this.updateFilterNow());
+  }
+
+  updateFilterNow() {
+    if (this.transactionsDataSource.filter !== this.filterInput) {
+      this.transactionsDataSource.filter = this.filterInput;
+    }
+  }
+
+  clearFilter() {
+    this.filterInput = "";
+    this.updateFilterNow();
   }
 
   filterByLabel(label: string, additive: boolean) {
-    let filter = this.transactionsDataSource.filter;
-    if (additive && filter.length > 0) {
-      filter += " " + label;
+    let newFilter = this.filterInput;
+    if (additive && newFilter.length > 0) {
+      newFilter += " " + label;
     } else {
-      filter = label;
+      newFilter = label;
     }
-    this.transactionsDataSource.filter = filter;
+
+    this.filterInput = newFilter;
+    this.updateFilterNow();
   }
 
   openImportCsvDialog() {
