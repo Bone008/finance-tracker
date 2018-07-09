@@ -52,6 +52,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     MatTableModule,
     MatToolbarModule,
     MatTooltipModule,
+    FlexLayoutModule,
   ]
 })
 export class MaterialModule { }

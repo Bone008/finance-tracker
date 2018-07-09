@@ -24,8 +24,7 @@
   </div>
 </mat-dialog-content>
 
-<mat-dialog-actions>
-  <span class="flex-spacer"></span>
+<mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
   <button mat-button mat-dialog-close>Cancel</button>
   <button mat-button [mat-dialog-close]="true" [disabled]="transactionsToImport.length === 0">Import</button>
 </mat-dialog-actions>
