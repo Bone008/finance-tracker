@@ -1,7 +1,7 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { LoggerService } from '../../core/logger.service';
 import { PapaParseService, PapaParseResult } from 'ngx-papaparse';
-import { Transaction, createEmptyTransaction } from '../transaction.model';
+import { Transaction } from '../transaction.model';
 import { MAT_DIALOG_DATA } from '@angular/material';
 
 @Component({
@@ -20,8 +20,8 @@ export class FormImportComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) data: Transaction[],
     private readonly loggerService: LoggerService,
     private readonly papaService: PapaParseService) {
-      this.existingTransactions = data['existingTransactions'];
-    }
+    this.existingTransactions = data['existingTransactions'];
+  }
 
   ngOnInit() {
   }
@@ -74,7 +74,7 @@ export class FormImportComponent implements OnInit {
     for (let i = 0; i < csvData.data.length; i++) {
       const row = csvData.data[i] as KskCamtRow;
 
-      const transaction = createEmptyTransaction();
+      const transaction = new Transaction();
       transaction.isCash = false;
 
       let hasErrors = false;

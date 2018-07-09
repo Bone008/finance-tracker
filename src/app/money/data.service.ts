@@ -7,7 +7,7 @@ import { Observable, BehaviorSubject } from "rxjs";
   providedIn: 'root'
 })
 export class DataService {
-  private data: DataContainer = { lastModified: new Date(0), transactions: [] };
+  private data = new DataContainer();
   private readonly transactionsSubject = new BehaviorSubject<Transaction[]>([]);
 
   readonly transactions$ = this.transactionsSubject.asObservable();
