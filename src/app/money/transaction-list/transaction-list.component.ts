@@ -62,7 +62,7 @@ export class TransactionListComponent implements OnInit {
 
   deleteSelectedTransactions() {
     // TODO: Move this to model access service.
-    for(let transaction of this.selection.selected) {
+    for (let transaction of this.selection.selected) {
       const index = this.transactions.indexOf(transaction);
       this.transactions.splice(index, 1);
     }
@@ -71,8 +71,17 @@ export class TransactionListComponent implements OnInit {
   }
 
   addLabelToTransaction(transaction: Transaction, newLabel: string) {
-    if(newLabel.length > 0 && transaction.labels.indexOf(newLabel) === -1) {
-      transaction.labels.push(newLabel);
+    if (newLabel.length === 0) return;
+    // If the user modified a transaction within a selection,
+    // assume they wanted to multi-edit all selected ones.
+    const affectedTransactions = this.selection.isSelected(transaction)
+      ? this.selection.selected
+      : [transaction];
+
+    for (let transaction of affectedTransactions) {
+      if (transaction.labels.indexOf(newLabel) === -1) {
+        transaction.labels.push(newLabel);
+      }
     }
   }
 
@@ -89,8 +98,8 @@ export class TransactionListComponent implements OnInit {
   /** Selects all rows if they are not all selected; clears selection otherwise. */
   masterToggle() {
     this.isAllSelected() ?
-        this.selection.clear() :
-        this.transactionsDataSource.filteredData.forEach(row => this.selection.select(row));
+      this.selection.clear() :
+      this.transactionsDataSource.filteredData.forEach(row => this.selection.select(row));
   }
 
   private matchesFilter(transaction: Transaction, filter: string): boolean {
@@ -102,10 +111,10 @@ export class TransactionListComponent implements OnInit {
       catch (e) { return true; } // Assume user is still typing, always pass.
 
       return filterRegex.test(transaction.who)
-      || filterRegex.test(transaction.whoSecondary || '')
-      || filterRegex.test(transaction.reasonForTransfer || '')
-      || filterRegex.test(transaction.bookingText || '')
-      || filterRegex.test(transaction.comment || '')
+        || filterRegex.test(transaction.whoSecondary || '')
+        || filterRegex.test(transaction.reasonForTransfer || '')
+        || filterRegex.test(transaction.bookingText || '')
+        || filterRegex.test(transaction.comment || '')
         || transaction.labels.some(label => filterRegex.test(label));
     });
   }

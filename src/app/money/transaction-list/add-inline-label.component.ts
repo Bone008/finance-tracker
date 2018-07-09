@@ -35,7 +35,7 @@ export class AddInlineLabelComponent implements OnInit {
   confirmAdd() {
     const cleanLabel = this.newLabel.trim().toLowerCase();
     if (cleanLabel.length > 0) {
-      this.addRequested.emit(this.newLabel);
+      this.addRequested.emit(cleanLabel);
     }
     this.newLabel = "";
   }
