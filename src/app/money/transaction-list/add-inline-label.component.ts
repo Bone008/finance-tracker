@@ -16,6 +16,7 @@ export class AddInlineLabelComponent implements OnInit {
    */
   @Output() isOpen = false;
   @Output() addRequested = new EventEmitter<string>();
+  @Output() deleteLastRequested = new EventEmitter<void>();
 
   private isOpenSubject = new Subject<boolean>();
 
@@ -38,6 +39,10 @@ export class AddInlineLabelComponent implements OnInit {
       this.addRequested.emit(cleanLabel);
     }
     this.newLabel = "";
+  }
+
+  requestDelete() {
+    this.deleteLastRequested.next();
   }
 
 }

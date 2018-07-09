@@ -43,7 +43,7 @@ export class TransactionListComponent implements OnInit {
     const dialogRef = this.dialogService.open(FormImportComponent, {
       data: { "existingTransactions": this.transactions }
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result: boolean) => {
       if (result === true) {
         // TODO: Should actually modify transactions in DataContainer instead,
         // change when model access service is implemented.
@@ -70,19 +70,43 @@ export class TransactionListComponent implements OnInit {
     this.transactionsDataSource.data = this.transactions;
   }
 
-  addLabelToTransaction(transaction: Transaction, newLabel: string) {
+  addLabelToTransaction(principal: Transaction, newLabel: string) {
     if (newLabel.length === 0) return;
-    // If the user modified a transaction within a selection,
-    // assume they wanted to multi-edit all selected ones.
-    const affectedTransactions = this.selection.isSelected(transaction)
+    // If the principal is within the selection,
+    // assume the user wants to multi-edit all selected ones.
+    const affectedTransactions = this.selection.isSelected(principal)
       ? this.selection.selected
-      : [transaction];
+      : [principal];
 
     for (let transaction of affectedTransactions) {
       if (transaction.labels.indexOf(newLabel) === -1) {
         transaction.labels.push(newLabel);
       }
     }
+  }
+
+  /** Returns the label that was deleted, or null if prerequisites were not met. */
+  deleteLastLabelFromTransaction(principal: Transaction): string | null {
+    if (principal.labels.length === 0) return null;
+    const label = principal.labels[principal.labels.length - 1];
+
+    const affectedTransactions = this.selection.isSelected(principal)
+      ? this.selection.selected
+      : [principal];
+
+    // Don't to anything if operating on the entire selection,
+    // but not all other selected transactions share the same last label.
+    if (!affectedTransactions.every(otherTransaction =>
+      otherTransaction.labels.length > 0
+      && otherTransaction.labels[otherTransaction.labels.length - 1] === label
+    )) {
+      return null;
+    }
+
+    for (let transaction of affectedTransactions) {
+      transaction.labels.splice(-1, 1);
+    }
+    return label;
   }
 
   formatTransactionNotes(transaction: Transaction): string {

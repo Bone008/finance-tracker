@@ -81,6 +81,7 @@
               <app-add-inline-label
                   #addInlineLabel
                   (addRequested)="addLabelToTransaction(transaction, $event)"
+                  (deleteLastRequested)="deleteLastLabelFromTransaction(transaction)"
                   class="add-inline-label"
                   [class.open]="addInlineLabel.isOpen">
               </app-add-inline-label>
