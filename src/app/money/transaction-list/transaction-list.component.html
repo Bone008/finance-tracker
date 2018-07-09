@@ -28,9 +28,16 @@
       </button>
     </mat-form-field>
     
-    <div style="text-align: right;">
+    <div fxLayout="row" fxLayoutAlign="end center" fxLayoutGap="5px">
       <span class="mat-caption">{{selection.selected.length}} selected</span>
-      &nbsp;&nbsp;
+      <button
+          mat-icon-button
+          color="primary"
+          matTooltip="Edit selected"
+          [disabled]="selection.selected.length !== 1"
+          (click)="editTransaction(selection.selected[0])">
+        <mat-icon>edit</mat-icon>
+      </button>
       <button
           mat-icon-button
           color="primary"

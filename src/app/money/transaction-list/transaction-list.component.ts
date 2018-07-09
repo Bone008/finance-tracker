@@ -1,13 +1,13 @@
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource, MatDialog } from '@angular/material';
 import { Transaction } from '../transaction.model';
-import { TransactionDetailComponent } from '../transaction-detail/transaction-detail.component';
 import { FormImportComponent } from '../form-import/form-import.component';
 import { LoggerService } from '../../core/logger.service';
 import { SelectionModel } from '@angular/cdk/collections';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { DataService } from '../data.service';
+import { TransactionEditComponent, MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 
 /** Time in ms to wait after input before applying the filter. */
 const FILTER_DEBOUNCE_TIME = 500;
@@ -39,7 +39,7 @@ export class TransactionListComponent implements OnInit {
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsDataSource.filterPredicate = (transaction, filter) => this.matchesFilter(transaction, filter);
 
-    this.dataService.transactions$.subscribe(
+    this.dataService.transactionsSorted$.subscribe(
       value => this.transactionsDataSource.data = value
     );
 
@@ -84,7 +84,30 @@ export class TransactionListComponent implements OnInit {
   }
 
   openAddTransactionDialog() {
-    this.dialogService.open(TransactionDetailComponent).afterClosed().subscribe(value => {
+    const transaction = new Transaction();
+    transaction.date = new Date();
+    transaction.isCash = true;
+
+    this.dialogService.open(TransactionEditComponent, {
+      data: {
+        transaction,
+        editMode: MODE_ADD,
+      }
+    }).afterClosed().subscribe((value: boolean) => {
+      if(value) {
+        this.dataService.addTransactions(transaction);
+      }
+    });
+  }
+
+  editTransaction(transaction: Transaction) {
+    // TODO: Modify a clone of the transaction to allow cancel.
+    this.dialogService.open(TransactionEditComponent, {
+      data: {
+        transaction,
+        editMode: MODE_EDIT,
+      }
+    }).afterClosed().subscribe(value => {
       console.log(value);
     });
   }

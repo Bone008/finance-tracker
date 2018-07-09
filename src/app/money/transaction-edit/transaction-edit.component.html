@@ -1,0 +1,55 @@
+<h2 mat-dialog-title>{{editMode==='edit' ? 'Edit' : 'Add'}} transaction</h2>
+
+<form #editForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
+  <mat-dialog-content fxLayout="column wrap">
+    <mat-form-field>
+      <input
+          matInput
+          type="date"
+          name="date"
+          [ngModel]="transaction.date | date:'yyyy-MM-dd'"
+          (ngModelChange)="setDate($event)"
+          placeholder="Date">
+    </mat-form-field>
+    <mat-form-field>
+      <input
+          matInput
+          type="number"
+          name="amount"
+          [(ngModel)]="transaction.amount"
+          placeholder="Amount">
+    </mat-form-field>
+    <mat-form-field>
+      <input
+          matInput
+          name="who"
+          [(ngModel)]="transaction.who"
+          placeholder="Who">
+    </mat-form-field>
+    <mat-form-field>
+      <input
+          matInput
+          name="reasonForTransfer"
+          [(ngModel)]="transaction.reasonForTransfer"
+          placeholder="Reason for transfer">
+    </mat-form-field>
+    <mat-form-field>
+      <textarea
+          matInput
+          name="comment"
+          [(ngModel)]="transaction.comment"
+          placeholder="Comment">
+      </textarea>
+    </mat-form-field>
+    <mat-checkbox
+        name="isCash"
+        [(ngModel)]="transaction.isCash">
+      Cash
+    </mat-checkbox>
+  </mat-dialog-content>
+  
+  <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button type="submit">Save</button>
+  </mat-dialog-actions>
+</form>

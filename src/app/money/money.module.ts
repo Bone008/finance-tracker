@@ -5,9 +5,9 @@ import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
 import { FormImportComponent } from './form-import/form-import.component';
 import { MoneyComponent } from './money.component';
-import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
 import { AddInlineLabelComponent } from './transaction-list/add-inline-label.component';
+import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
 
 @NgModule({
   imports: [
@@ -19,13 +19,13 @@ import { AddInlineLabelComponent } from './transaction-list/add-inline-label.com
   declarations: [
     MoneyComponent,
     FormImportComponent,
+    TransactionEditComponent,
     TransactionListComponent,
-    TransactionDetailComponent,
     AddInlineLabelComponent,
   ],
   entryComponents: [
     FormImportComponent,
-    TransactionDetailComponent,
+    TransactionEditComponent,
   ],
   exports: [
     MoneyComponent,

@@ -2,6 +2,7 @@ import { Injectable, EventEmitter } from "@angular/core";
 import { DataContainer } from "./data-container.model";
 import { Transaction } from "./transaction.model";
 import { Observable, BehaviorSubject } from "rxjs";
+import { map } from "rxjs/operators";
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +12,8 @@ export class DataService {
   private readonly transactionsSubject = new BehaviorSubject<Transaction[]>([]);
 
   readonly transactions$ = this.transactionsSubject.asObservable();
+  readonly transactionsSorted$ = this.transactions$
+    .pipe(map(arr => arr.slice().sort((a, b) => b.date.getTime() - a.date.getTime())));
 
   setDataContainer(data: DataContainer) {
     this.data = data;
