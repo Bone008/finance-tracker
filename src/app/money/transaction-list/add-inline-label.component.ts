@@ -15,8 +15,8 @@ export class AddInlineLabelComponent implements OnInit {
    * when switching focus from the input element to the confirm button.
    */
   @Output() isOpen = false;
-  @Output() addRequested = new EventEmitter<string>();
-  @Output() deleteLastRequested = new EventEmitter<void>();
+  @Output() readonly addRequested = new EventEmitter<string>();
+  @Output() readonly deleteLastRequested = new EventEmitter<void>();
 
   private isOpenSubject = new Subject<boolean>();
 

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource, MatDialog } from '@angular/material';
 import { Transaction } from '../transaction.model';
 import { TransactionDetailComponent } from '../transaction-detail/transaction-detail.component';
@@ -7,6 +7,7 @@ import { LoggerService } from '../../core/logger.service';
 import { SelectionModel } from '@angular/cdk/collections';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { DataService } from '../data.service';
 
 /** Time in ms to wait after input before applying the filter. */
 const FILTER_DEBOUNCE_TIME = 500;
@@ -17,7 +18,6 @@ const FILTER_DEBOUNCE_TIME = 500;
   styleUrls: ['./transaction-list.component.css'],
 })
 export class TransactionListComponent implements OnInit {
-  @Input() transactions: Transaction[];
   transactionsDataSource = new MatTableDataSource<Transaction>();
   selection = new SelectionModel<Transaction>(true);
 
@@ -31,13 +31,17 @@ export class TransactionListComponent implements OnInit {
   set filterInput(value: string) { this._filterInput = value; this.filterSubject.next(value); }
 
   constructor(
+    private readonly dataService: DataService,
     private readonly loggerService: LoggerService,
     private readonly dialogService: MatDialog) { }
 
   ngOnInit() {
-    this.transactionsDataSource.data = this.transactions;
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsDataSource.filterPredicate = (transaction, filter) => this.matchesFilter(transaction, filter);
+
+    this.dataService.transactions$.subscribe(
+      value => this.transactionsDataSource.data = value
+    );
 
     this.filterSubject
       .pipe(debounceTime(FILTER_DEBOUNCE_TIME))
@@ -69,14 +73,11 @@ export class TransactionListComponent implements OnInit {
 
   openImportCsvDialog() {
     const dialogRef = this.dialogService.open(FormImportComponent, {
-      data: { "existingTransactions": this.transactions }
+      data: { "existingTransactions": this.dataService.getCurrentTransactionList() }
     });
     dialogRef.afterClosed().subscribe((result: boolean) => {
       if (result === true) {
-        // TODO: Should actually modify transactions in DataContainer instead,
-        // change when model access service is implemented.
-        this.transactions = this.transactions.concat(dialogRef.componentInstance.transactionsToImport);
-        this.transactionsDataSource.data = this.transactions;
+        this.dataService.addTransactions(dialogRef.componentInstance.transactionsToImport);
         this.loggerService.log(`Imported ${dialogRef.componentInstance.transactionsToImport.length} transactions.`);
       }
     });
@@ -89,13 +90,8 @@ export class TransactionListComponent implements OnInit {
   }
 
   deleteSelectedTransactions() {
-    // TODO: Move this to model access service.
-    for (let transaction of this.selection.selected) {
-      const index = this.transactions.indexOf(transaction);
-      this.transactions.splice(index, 1);
-    }
+    this.dataService.removeTransactions(this.selection.selected);
     this.selection.clear();
-    this.transactionsDataSource.data = this.transactions;
   }
 
   addLabelToTransaction(principal: Transaction, newLabel: string) {

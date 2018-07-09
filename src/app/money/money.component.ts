@@ -1,6 +1,7 @@
 import { Component, OnInit, Output } from '@angular/core';
 import { DataContainer } from './data-container.model';
 import { StorageService } from './storage.service';
+import { DataService } from './data.service';
 
 @Component({
   selector: 'app-money',
@@ -12,11 +13,14 @@ export class MoneyComponent implements OnInit {
 
   @Output() status: string|null = null;
 
-  constructor(private readonly storageService: StorageService) { }
+  constructor(
+    private readonly dataService: DataService,
+    private readonly storageService: StorageService) { }
 
   async ngOnInit() {
     this.status = "Loading ...";
     this.data = await this.storageService.loadData();
+    this.dataService.setDataContainer(this.data);
     this.status = "Last modified " + this.formatDate(this.data.lastModified);
   }
 
