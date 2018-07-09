@@ -17,6 +17,8 @@ import {
   MatTooltipModule,
 } from '@angular/material';
 
+import {FlexLayoutModule} from '@angular/flex-layout';
+
 @NgModule({
   imports: [
     MatButtonModule,
@@ -33,6 +35,7 @@ import {
     MatTableModule,
     MatToolbarModule,
     MatTooltipModule,
+    FlexLayoutModule,
   ],
   exports: [
     MatButtonModule,
