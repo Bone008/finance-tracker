@@ -60,7 +60,7 @@ export class TransactionListComponent implements OnInit {
     });
   }
 
-  deleteSelectedRecords() {
+  deleteSelectedTransactions() {
     // TODO: Move this to model access service.
     for(let transaction of this.selection.selected) {
       const index = this.transactions.indexOf(transaction);
@@ -68,6 +68,13 @@ export class TransactionListComponent implements OnInit {
     }
     this.selection.clear();
     this.transactionsDataSource.data = this.transactions;
+  }
+
+  addLabelToTransaction(transaction: Transaction, newLabel: string) {
+    newLabel = newLabel.trim().toLowerCase();
+    if(newLabel.length > 0 && transaction.labels.indexOf(newLabel)) {
+      transaction.labels.push(newLabel);
+    }
   }
 
   formatTransactionNotes(transaction: Transaction): string {

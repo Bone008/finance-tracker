@@ -7,6 +7,7 @@ import { FormImportComponent } from './form-import/form-import.component';
 import { MoneyComponent } from './money.component';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
+import { AddInlineLabelComponent } from './transaction-list/add-inline-label.component';
 
 @NgModule({
   imports: [
@@ -20,6 +21,7 @@ import { TransactionListComponent } from './transaction-list/transaction-list.co
     FormImportComponent,
     TransactionListComponent,
     TransactionDetailComponent,
+    AddInlineLabelComponent,
   ],
   entryComponents: [
     FormImportComponent,
