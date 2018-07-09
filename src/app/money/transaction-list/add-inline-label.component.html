@@ -7,7 +7,8 @@
   <input
       #labelInput
       (keyup.enter)="confirmAdd()"
-      (keyup.backspace)="newLabel==='' ? requestDelete() : 0"
+      (keydown.backspace)="newLabel==='' ? requestDelete() : 0"
+      (keyup.escape)="labelInput.blur()"
       [(ngModel)]="newLabel"
       matInput
       placeholder="Add label">
