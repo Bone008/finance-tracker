@@ -113,6 +113,19 @@ export class TransactionListComponent implements OnInit {
     }
   }
 
+  deleteLabelFromTransaction(principal: Transaction, label: string) {
+    const affectedTransactions = this.selection.isSelected(principal)
+      ? this.selection.selected
+      : [principal];
+
+    for (let transaction of affectedTransactions) {
+      const index = transaction.labels.indexOf(label);
+      if (index !== -1) {
+        transaction.labels.splice(index, 1);
+      }
+    }
+  }
+
   /** Returns the label that was deleted, or null if prerequisites were not met. */
   deleteLastLabelFromTransaction(principal: Transaction): string | null {
     if (principal.labels.length === 0) return null;

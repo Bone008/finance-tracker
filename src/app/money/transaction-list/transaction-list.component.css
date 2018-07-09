@@ -32,17 +32,32 @@
 .mat-column-labels {
   width: 50%;
 }
-.mat-table .transaction-label {
-  display: inline-block;
-  padding: 4px 5px;
-  margin-right: 3px;
+.mat-column-labels .label-container {
+  margin-right: 4px;
   margin-top: 2px;
   margin-bottom: 2px;
   background: #eef;
   border: 1px solid #999;
   border-radius: 5px;
+}
+.mat-column-labels .label-filter-button,
+.mat-column-labels .label-delete-button {
+  padding: 4px;
+  background: none;
+  border: none;
   cursor: pointer;
   font: inherit;
+}
+
+.mat-column-labels .label-delete-button {
+  border-left: 1px solid #999;
+}
+
+.mat-column-labels .label-delete-button .mat-icon {
+  width: 1em;
+  height: 1em;
+  font-size: inherit;
+  transform: translateY(0.15em);
 }
 
 .add-inline-label {

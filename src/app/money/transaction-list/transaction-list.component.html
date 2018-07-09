@@ -71,13 +71,22 @@
           <th mat-header-cell *matHeaderCellDef>Labels</th>
           <td mat-cell *matCellDef="let transaction">
             <div fxLayout="row wrap" fxLayoutAlign="start center">
-              <button
+              <div
                   *ngFor="let label of transaction.labels"
-                  (click)="$event.stopPropagation(); filterByLabel(label, $event.shiftKey)"
-                  title="Click to filter by this label"
-                  class="transaction-label">
-                {{label}}
-              </button>
+                  class="label-container">
+                <button
+                    (click)="$event.stopPropagation(); filterByLabel(label, $event.shiftKey)"
+                    title="Click to filter by this label"
+                    class="label-filter-button">
+                  {{label}}
+                </button>
+                <button
+                    (click)="$event.stopPropagation(); deleteLabelFromTransaction(transaction, label)"
+                    title="Delete this label"
+                    class="label-delete-button">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
               <app-add-inline-label
                   #addInlineLabel
                   (addRequested)="addLabelToTransaction(transaction, $event)"
