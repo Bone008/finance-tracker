@@ -13,6 +13,7 @@ import {
   MatPaginatorModule,
   MatSelectModule,
   MatTableModule,
+  MatTabsModule,
   MatToolbarModule,
   MatTooltipModule,
 } from '@angular/material';
@@ -33,6 +34,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     MatPaginatorModule,
     MatSelectModule,
     MatTableModule,
+    MatTabsModule,
     MatToolbarModule,
     MatTooltipModule,
     FlexLayoutModule,
@@ -50,6 +52,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     MatPaginatorModule,
     MatSelectModule,
     MatTableModule,
+    MatTabsModule,
     MatToolbarModule,
     MatTooltipModule,
     FlexLayoutModule,

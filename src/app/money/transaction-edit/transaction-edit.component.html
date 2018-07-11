@@ -1,7 +1,12 @@
 <h2 mat-dialog-title>{{editMode==='edit' ? 'Edit' : 'Add'}} transaction</h2>
 
 <form #editForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
-  <mat-dialog-content fxLayout="column wrap">
+  <mat-dialog-content fxLayout="column">
+    <mat-tab-group (selectedTabChange)="isNegative = ($event.index === 0)">
+      <mat-tab label="Expense"></mat-tab>
+      <mat-tab label="Income"></mat-tab>
+    </mat-tab-group>
+
     <mat-form-field>
       <input
           matInput
@@ -11,13 +16,18 @@
           (ngModelChange)="setDate($event)"
           placeholder="Date">
     </mat-form-field>
-    <mat-form-field>
+    <mat-form-field class="amount-field" [class.negative]="isNegative">
       <input
           matInput
           type="number"
           name="amount"
-          [(ngModel)]="transaction.amount"
+          min="0"
+          step="0.01"
+          [ngModel]="getAbsoluteAmount()"
+          (ngModelChange)="setAmount($event)"
+          [ngModelOptions]="{updateOn: 'blur'}"
           placeholder="Amount">
+      <span matSuffix>&nbsp;€</span>
     </mat-form-field>
     <mat-form-field>
       <input
@@ -45,6 +55,16 @@
         name="isCash"
         [(ngModel)]="transaction.isCash">
       Cash
+    </mat-checkbox>
+    <mat-checkbox
+        name="isInternal"
+        [(ngModel)]="transaction.isCash">
+      Internal (TODO)
+    </mat-checkbox>
+    <mat-checkbox
+        name="isAmountEstimate"
+        [(ngModel)]="transaction.isCash">
+      Estimate (TODO)
     </mat-checkbox>
   </mat-dialog-content>
   
