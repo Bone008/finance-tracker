@@ -14,7 +14,13 @@ export class TransactionEditComponent implements OnInit {
   transaction: Transaction;
   editMode: typeof MODE_ADD | typeof MODE_EDIT;
 
-  isNegative = true;
+  private _isNegative: boolean;
+  get isNegative(): boolean { return this._isNegative; }
+  set isNegative(value: boolean) {
+    this._isNegative = value;
+    // Update sign on change.
+    this.setAmount(this.transaction.amount);
+  }
 
   constructor(
     @Inject(MAT_DIALOG_DATA) data: { transaction: Transaction, editMode: typeof MODE_ADD | typeof MODE_EDIT },
@@ -22,6 +28,8 @@ export class TransactionEditComponent implements OnInit {
   ) {
     this.transaction = data.transaction;
     this.editMode = data.editMode;
+
+    this._isNegative = this.transaction.amount <= 0;
   }
 
   ngOnInit() {
@@ -33,9 +41,8 @@ export class TransactionEditComponent implements OnInit {
     }
   }
 
-  setAmount(amount: number|null) {
-    console.log(amount, typeof amount, "; old: ", this.transaction.amount);
-    if(amount) {
+  setAmount(amount: number | null) {
+    if (amount) {
       // Sign always matching form selection, round to 2 digits.
       const amountSign = (this.isNegative ? -1 : 1);
       this.transaction.amount = amountSign * Math.round(Math.abs(amount) * 100) / 100;
