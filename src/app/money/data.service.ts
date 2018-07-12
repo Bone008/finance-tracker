@@ -21,6 +21,10 @@ export class DataService {
     this.notifyTransactions();
   }
 
+  getDataContainer(): DataContainer {
+    return this.data;
+  }
+
   getCurrentTransactionList(): Transaction[] {
     return this.data.transactions || [];
   }

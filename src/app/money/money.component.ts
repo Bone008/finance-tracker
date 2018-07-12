@@ -1,8 +1,9 @@
 import { Component, OnInit, Output } from '@angular/core';
-import { StorageService } from './storage.service';
+import { StorageService, createDummyTransactions } from './storage.service';
 import { DataService } from './data.service';
 import { DataContainer } from '../../proto/model';
 import { timestampToDate } from '../core/proto-util';
+import { LoggerService } from '../core/logger.service';
 
 @Component({
   selector: 'app-money',
@@ -10,27 +11,47 @@ import { timestampToDate } from '../core/proto-util';
   styleUrls: ['./money.component.css']
 })
 export class MoneyComponent implements OnInit {
-  data: DataContainer | null = null;
+  hasData = false;
 
-  @Output() status: string|null = null;
+  @Output() status: string | null = null;
 
   constructor(
     private readonly dataService: DataService,
-    private readonly storageService: StorageService) { }
+    private readonly storageService: StorageService,
+    private readonly loggerService: LoggerService, ) { }
 
-  async ngOnInit() {
+  ngOnInit() {
     this.status = "Loading ...";
-    this.data = await this.storageService.loadData();
-    this.dataService.setDataContainer(this.data);
-    this.status = "Last modified " + this.formatDate(timestampToDate(this.data.lastModified));
+    this.storageService.loadData()
+      .then(
+        data => {
+          if (data) {
+            this.dataService.setDataContainer(data);
+            this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
+          } else {
+            this.dataService.setDataContainer(new DataContainer({
+              transactions: createDummyTransactions(50),
+            }));
+            this.status = "Using dummy data";
+          }
+        },
+        error => {
+          this.loggerService.error("Failed to load data: ", error);
+          this.dataService.setDataContainer(new DataContainer());
+          this.status = "Error loading data";
+        })
+      .then(() => this.hasData = true);
   }
 
   async syncData() {
-    if(!this.data) return;
-    
+    if (!this.hasData) return;
+
     this.status = "Saving ...";
-    await this.storageService.saveData(this.data);
-    this.status = "Last modified " + this.formatDate(timestampToDate(this.data.lastModified));
+
+    const data = this.dataService.getDataContainer();
+    await this.storageService.saveData(data)
+      .catch(e => this.loggerService.error("failed to sync data", e));
+    this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
   }
 
   private formatDate(date: Date) {

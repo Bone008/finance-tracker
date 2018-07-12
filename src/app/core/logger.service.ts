@@ -6,7 +6,7 @@ export class LoggerService {
     console.log(message);
   }
 
-  error(message: string) {
-    console.error(message);
+  error(message: string, cause?: any) {
+    console.error(message, cause);
   }
 }

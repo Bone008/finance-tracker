@@ -1,29 +1,84 @@
 import { Injectable } from "@angular/core";
 import { DataContainer, Transaction, TransactionData } from "../../proto/model";
-import { dateToTimestamp, numberToMoney } from "../core/proto-util";
+import { dateToTimestamp, numberToMoney, timestampNow } from "../core/proto-util";
 import { delay } from "../core/util";
+
+const STORAGE_KEY = "money_data_container";
 
 @Injectable({
   providedIn: 'root'
 })
 export class StorageService {
-  // Until a real backend is implemented, use a fake in-memory storage.
-  private mockData: DataContainer;
-
   constructor() {
-    this.mockData = new DataContainer();
-    this.mockData.lastModified = dateToTimestamp(new Date('2018-05-20 19:34:52'));
-    this.mockData.transactions = createDummyTransactions(50);
+    //this.mockData = new DataContainer();
+    //this.mockData.lastModified = dateToTimestamp(new Date('2018-05-20 19:34:52'));
+    //this.mockData.transactions = createDummyTransactions(50);
   }
 
-  loadData(): Promise<DataContainer> {
-    return delay(0, this.mockData);
+  /**
+   * Attempts to load data from the storage backend.
+   * Returns null if no data was saved yet.
+   */
+  loadData(): Promise<DataContainer | null> {
+    const stringified = localStorage.getItem(STORAGE_KEY);
+    if (!stringified) {
+      return Promise.resolve(null);
+    }
+
+    try {
+      const dataArray = this.stringToBinary(stringified);
+      const data = DataContainer.decodeDelimited(dataArray);
+      return delay(0, data);
+    } catch (e) {
+      return Promise.reject(e);
+    }
   }
 
   saveData(data: DataContainer): Promise<void> {
-    data.lastModified = dateToTimestamp(new Date());
-    this.mockData = data;
-    return delay(500);
+    data.lastModified = timestampNow();
+
+    const error = DataContainer.verify(data);
+    if (error) return Promise.reject(error);
+
+    try {
+      const dataArray = DataContainer.encodeDelimited(data).finish();
+      const stringified = this.binaryToString(dataArray);
+      localStorage.setItem(STORAGE_KEY, stringified);
+
+      const dataArray2 = this.stringToBinary(stringified);
+      console.log(dataArray);
+      console.log(dataArray2);
+      const data2 = DataContainer.decodeDelimited(dataArray2);
+
+      return Promise.resolve();
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
+  deleteData(): Promise<void> {
+    localStorage.removeItem(STORAGE_KEY);
+    return Promise.resolve();
+  }
+
+  private binaryToString(bufferView: Uint8Array): string {
+    // Note: While encoding each byte to an UTF-16 character
+    // takes more memory than necessary, it is simple and works.
+    // XmlHttpRequest supports sending Uint8Array directly,
+    // we'll use that soon anyway.
+    let str = '';
+    for (let i = 0; i < bufferView.byteLength; i++) {
+      str += String.fromCharCode(bufferView[i]);
+    }
+    return str;
+  }
+
+  private stringToBinary(str: string): Uint8Array {
+    const bufferView = new Uint8Array(str.length);
+    for (let i = 0; i < str.length; i++) {
+      bufferView[i] = str.charCodeAt(i);
+    }
+    return bufferView;
   }
 }
 
