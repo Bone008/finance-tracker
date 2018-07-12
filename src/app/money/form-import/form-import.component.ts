@@ -30,7 +30,7 @@ export class FormImportComponent implements OnInit {
 
   getPreviewMinDate(): Date | null {
     if (this.transactionsToImport.length > 0) {
-      return new Date(
+      return new Date(1000 *
         Math.min(...this.transactionsToImport.map(t => timestampToWholeSeconds(t.single!.date)))
       );
     } else {
@@ -40,7 +40,7 @@ export class FormImportComponent implements OnInit {
 
   getPreviewMaxDate(): Date | null {
     if (this.transactionsToImport.length > 0) {
-      return new Date(
+      return new Date(1000 *
         Math.max(...this.transactionsToImport.map(t => timestampToWholeSeconds(t.single!.date)))
       );
     } else {
