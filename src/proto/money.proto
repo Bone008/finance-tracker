@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+// Represents an amount of money without currency.
+message Money {
+  // Number of whole units of the amount.
+  int32 units = 1;
+
+  // Number of subunits of the amount (for example cents).
+  // If `units` is positive, `subunits` must be positive or zero.
+  // If `units` is zero, `subunits` can be positive, zero or negative.
+  // If `units` is negative, `subunits` must be negative or zero.
+  // For example -3.75 € is represented as `units` = -3 and `subunits` = -75.
+  int32 subunits = 2;
+
+  // Whether the represented amount is an estimate or a known value.
+  bool is_estimate = 3;
+}

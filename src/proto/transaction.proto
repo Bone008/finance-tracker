@@ -1,21 +1,55 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "money.proto";
 
 message Transaction {
-  Timestamp date = 1;
-  sfixed32 amount = 2;
-  string who = 3;
-  string who_secondary = 4;
-  string reason_for_transfer = 6;
-  string booking_text = 7;
-  
-  repeated string labels = 8;
-  
-  bool is_cash = 9;
-  bool is_internal = 10;
-  bool amount_is_estimate = 11;
-  bool amount_is_dog = 12;
+  // The list of labels that are applied to this transaction.
+  // May not contain duplicates.
+  repeated string labels = 1;
 
-  string comment = 25;
+  // Whether the transaction was an internal transfer between accounts and should be ignored
+  // in spending analytics.
+  bool is_internal = 2;
+
+  oneof data_type {
+    TransactionData single = 100;
+    GroupData group = 101;
+  }
+}
+
+message GroupData {
+  repeated TransactionData children = 1;
+  
+  // A user-supplied comment about this transaction.
+  // Must not be filled automatically on import.
+  string comment = 10;
+}
+
+message TransactionData {
+  // Date and time of the transaction.
+  Timestamp date = 1;
+
+  // Amount of money. Positive for income, negative for expenses.
+  Money amount = 2;
+
+  // Description of the reason why the transaction happened.
+  string reason = 3;
+
+  // The name of the payer/payee of the transaction.
+  string who = 4;
+  
+  // An identifier associated with the payer/payee of the transaction,
+  // such as their IBAN.
+  string who_identifier = 5;
+
+  // The "Buchungstext" of an associated bank statement, if applicable.
+  string booking_text = 6;
+  
+  // Whether the transaction happened through cash or a bank statement (or equivalent).
+  bool is_cash = 9;
+  
+  // A user-supplied comment about this transaction.
+  // Must not be filled automatically on import.
+  string comment = 30;
 }

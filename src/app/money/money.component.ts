@@ -1,7 +1,8 @@
 import { Component, OnInit, Output } from '@angular/core';
-import { DataContainer } from './data-container.model';
 import { StorageService } from './storage.service';
 import { DataService } from './data.service';
+import { DataContainer } from '../../proto/model';
+import { timestampToDate } from '../core/proto-util';
 
 @Component({
   selector: 'app-money',
@@ -21,7 +22,7 @@ export class MoneyComponent implements OnInit {
     this.status = "Loading ...";
     this.data = await this.storageService.loadData();
     this.dataService.setDataContainer(this.data);
-    this.status = "Last modified " + this.formatDate(this.data.lastModified);
+    this.status = "Last modified " + this.formatDate(timestampToDate(this.data.lastModified));
   }
 
   async syncData() {
@@ -29,7 +30,7 @@ export class MoneyComponent implements OnInit {
     
     this.status = "Saving ...";
     await this.storageService.saveData(this.data);
-    this.status = "Last modified " + this.formatDate(this.data.lastModified);
+    this.status = "Last modified " + this.formatDate(timestampToDate(this.data.lastModified));
   }
 
   private formatDate(date: Date) {

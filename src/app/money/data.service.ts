@@ -1,8 +1,8 @@
 import { Injectable, EventEmitter } from "@angular/core";
-import { DataContainer } from "./data-container.model";
-import { Transaction } from "./transaction.model";
-import { Observable, BehaviorSubject } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 import { map } from "rxjs/operators";
+import { ITransaction, DataContainer, Transaction } from "../../proto/model";
+import { compareTimestamps } from "../core/proto-util";
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +13,8 @@ export class DataService {
 
   readonly transactions$ = this.transactionsSubject.asObservable();
   readonly transactionsSorted$ = this.transactions$
-    .pipe(map(arr => arr.slice().sort((a, b) => b.date.getTime() - a.date.getTime())));
+    // TODO: Also support group transactions.
+    .pipe(map(arr => arr.slice().sort((a, b) => -compareTimestamps(a.single!.date, b.single!.date))));
 
   setDataContainer(data: DataContainer) {
     this.data = data;
@@ -21,7 +22,7 @@ export class DataService {
   }
 
   getCurrentTransactionList(): Transaction[] {
-    return this.data.transactions;
+    return this.data.transactions || [];
   }
 
   removeTransactions(toRemove: Transaction | Transaction[]) {

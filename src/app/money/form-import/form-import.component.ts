@@ -1,8 +1,9 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { LoggerService } from '../../core/logger.service';
 import { PapaParseService, PapaParseResult } from 'ngx-papaparse';
-import { Transaction } from '../transaction.model';
 import { MAT_DIALOG_DATA } from '@angular/material';
+import { Transaction, TransactionData, ITransactionData } from '../../../proto/model';
+import { dateToTimestamp, numberToMoney, timestampToDate, timestampToWholeSeconds } from '../../core/proto-util';
 
 @Component({
   selector: 'app-form-import',
@@ -14,6 +15,7 @@ export class FormImportComponent implements OnInit {
   transactionsToImport: Transaction[] = [];
   errors: string[] = [];
 
+  /** @deprecated implement with DataService instead */
   private existingTransactions: Transaction[];
 
   constructor(
@@ -29,16 +31,17 @@ export class FormImportComponent implements OnInit {
   getPreviewMinDate(): Date | null {
     if (this.transactionsToImport.length > 0) {
       return new Date(
-        Math.min.apply(null, this.transactionsToImport.map(t => t.date.getTime()))
+        Math.min(...this.transactionsToImport.map(t => timestampToWholeSeconds(t.single!.date)))
       );
     } else {
       return null;
     }
   }
+
   getPreviewMaxDate(): Date | null {
     if (this.transactionsToImport.length > 0) {
       return new Date(
-        Math.max.apply(null, this.transactionsToImport.map(t => t.date.getTime()))
+        Math.max(...this.transactionsToImport.map(t => timestampToWholeSeconds(t.single!.date)))
       );
     } else {
       return null;
@@ -74,8 +77,8 @@ export class FormImportComponent implements OnInit {
     for (let i = 0; i < csvData.data.length; i++) {
       const row = csvData.data[i] as KskCamtRow;
 
-      const transaction = new Transaction();
-      transaction.isCash = false;
+      const properties: ITransactionData = {};
+      properties.isCash = false;
 
       let hasErrors = false;
       for (let mapping of KSK_CAMT_MAPPINGS) {
@@ -91,13 +94,15 @@ export class FormImportComponent implements OnInit {
           value = rawValue;
         }
 
-        transaction[mapping.transactionKey] = value;
+        properties[mapping.transactionKey] = value;
       }
       if (hasErrors) {
         continue;
       }
 
-      this.transactionsToImport.push(transaction);
+      this.transactionsToImport.push(new Transaction({
+        single: new TransactionData(properties),
+      }));
     }
 
     console.log(this.transactionsToImport);
@@ -118,30 +123,30 @@ const KSK_CAMT_MAPPINGS: KskCamtMapping[] = [
     const day = Number(match[1]);
     const month = Number(match[2]);
     const year = 2000 + Number(match[3]);
-    return new Date(year, month - 1, day);
+    return dateToTimestamp(new Date(year, month - 1, day));
   }),
   createMapping("amount", "Betrag", rawValue => {
     // Assume German nubmer formatting.
     const num = Number(rawValue.replace(/\./g, "").replace(/,/g, "."));
     if (isNaN(num)) throw new Error("could not parse amount: " + rawValue);
-    return num;
+    return numberToMoney(num);
   }),
-  createMapping("reasonForTransfer", "Verwendungszweck", undefined),
+  createMapping("reason", "Verwendungszweck", undefined),
   createMapping("who", "Beguenstigter/Zahlungspflichtiger", undefined),
-  createMapping("whoSecondary", "Kontonummer/IBAN", undefined),
+  createMapping("whoIdentifier", "Kontonummer/IBAN", undefined),
   createMapping("bookingText", "Buchungstext", undefined),
 ];
 
 interface KskCamtMapping {
-  transactionKey: keyof Transaction;
+  transactionKey: keyof ITransactionData;
   column: keyof KskCamtRow;
   converterCallback?: (rawValue: string) => any;
 }
 
-function createMapping<K extends keyof Transaction>(
+function createMapping<K extends keyof ITransactionData>(
     /**/ transactionKey: K,
     /**/ column: keyof KskCamtRow,
-    /**/ converterCallback?: (rawValue: string) => Transaction[K]): KskCamtMapping {
+    /**/ converterCallback?: (rawValue: string) => ITransactionData[K]): KskCamtMapping {
   return { transactionKey, column, converterCallback };
 }
 

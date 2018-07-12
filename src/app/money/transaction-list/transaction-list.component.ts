@@ -1,6 +1,5 @@
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource, MatDialog } from '@angular/material';
-import { Transaction } from '../transaction.model';
 import { FormImportComponent } from '../form-import/form-import.component';
 import { LoggerService } from '../../core/logger.service';
 import { SelectionModel } from '@angular/cdk/collections';
@@ -8,6 +7,8 @@ import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { DataService } from '../data.service';
 import { TransactionEditComponent, MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
+import { Transaction, TransactionData } from '../../../proto/model';
+import { timestampNow, timestampToDate, moneyToNumber } from '../../core/proto-util';
 
 /** Time in ms to wait after input before applying the filter. */
 const FILTER_DEBOUNCE_TIME = 500;
@@ -28,7 +29,10 @@ export class TransactionListComponent implements OnInit {
   private readonly filterSubject = new Subject<string>();
 
   get filterInput() { return this._filterInput; }
-  set filterInput(value: string) { this._filterInput = value; this.filterSubject.next(value); }
+  set filterInput(value: string) {
+    this._filterInput = value;
+    this.filterSubject.next(value);
+  }
 
   constructor(
     private readonly dataService: DataService,
@@ -46,6 +50,9 @@ export class TransactionListComponent implements OnInit {
     this.filterSubject
       .pipe(debounceTime(FILTER_DEBOUNCE_TIME))
       .subscribe(() => this.updateFilterNow());
+  }
+
+  ngOnDestroy() {
   }
 
   updateFilterNow() {
@@ -84,9 +91,12 @@ export class TransactionListComponent implements OnInit {
   }
 
   openAddTransactionDialog() {
-    const transaction = new Transaction();
-    transaction.date = new Date();
-    transaction.isCash = true;
+    const transaction = new Transaction({
+      single: new TransactionData({
+        date: timestampNow(),
+        isCash: true,
+      }),
+    });
 
     this.dialogService.open(TransactionEditComponent, {
       data: {
@@ -94,7 +104,7 @@ export class TransactionListComponent implements OnInit {
         editMode: MODE_ADD,
       }
     }).afterClosed().subscribe((value: boolean) => {
-      if(value) {
+      if (value) {
         this.dataService.addTransactions(transaction);
       }
     });
@@ -169,21 +179,38 @@ export class TransactionListComponent implements OnInit {
     return label;
   }
 
-  formatTransactionNotes(transaction: Transaction): string {
-    const data = [transaction.who, transaction.reasonForTransfer, transaction.comment];
-    return data.filter(value => !!value).join(", ");
-  }
-
   /** Returns if the number of selected elements matches the total number of visible rows. */
   isAllSelected() {
-    return this.selection.selected.length === this.transactionsDataSource.filteredData.length;
+    return this.selection.selected.length
+      === this.transactionsDataSource.filteredData.length;
   }
 
   /** Selects all rows if they are not all selected; clears selection otherwise. */
   masterToggle() {
-    this.isAllSelected() ?
-      this.selection.clear() :
-      this.transactionsDataSource.filteredData.forEach(row => this.selection.select(row));
+    if (this.isAllSelected()) {
+      this.selection.clear();
+    } else {
+      for (let row of this.transactionsDataSource.filteredData) {
+        this.selection.select(row);
+      }
+    }
+  }
+
+  getTransactionDate(transaction: Transaction): Date {
+    return timestampToDate(transaction.single!.date);
+  }
+
+  getTransactionAmount(transaction: Transaction): number {
+    return moneyToNumber(transaction.single!.amount);
+  }
+
+  formatTransactionNotes(transaction: Transaction): string {
+    const data = [
+      transaction.single!.who,
+      transaction.single!.reason,
+      transaction.single!.comment
+    ];
+    return data.filter(value => !!value).join(", ");
   }
 
   private matchesFilter(transaction: Transaction, filter: string): boolean {
@@ -194,11 +221,12 @@ export class TransactionListComponent implements OnInit {
       try { filterRegex = new RegExp(filterPart, 'i'); }
       catch (e) { return true; } // Assume user is still typing, always pass.
 
-      return filterRegex.test(transaction.who)
-        || filterRegex.test(transaction.whoSecondary || '')
-        || filterRegex.test(transaction.reasonForTransfer || '')
-        || filterRegex.test(transaction.bookingText || '')
-        || filterRegex.test(transaction.comment || '')
+      const data = transaction.single!;
+      return filterRegex.test(data.who)
+        || filterRegex.test(data.whoIdentifier)
+        || filterRegex.test(data.reason)
+        || filterRegex.test(data.bookingText)
+        || filterRegex.test(data.comment)
         || transaction.labels.some(label => filterRegex.test(label));
     });
   }

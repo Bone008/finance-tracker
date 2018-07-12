@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "transaction.proto";
+
+message DataContainer {
+  Timestamp last_modified = 1;
+
+  repeated Transaction transactions = 2;
+}

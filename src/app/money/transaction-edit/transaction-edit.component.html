@@ -2,7 +2,9 @@
 
 <form #editForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
   <mat-dialog-content fxLayout="column">
-    <mat-tab-group [selectedIndex]="isNegative ? 0 : 1" (selectedTabChange)="isNegative = ($event.index === 0)">
+    <mat-tab-group
+        [selectedIndex]="isNegative ? 0 : 1"
+        (selectedTabChange)="isNegative = ($event.index === 0)">
       <mat-tab label="Expense"></mat-tab>
       <mat-tab label="Income"></mat-tab>
     </mat-tab-group>
@@ -12,7 +14,7 @@
           matInput
           type="date"
           name="date"
-          [ngModel]="transaction.date | date:'yyyy-MM-dd'"
+          [ngModel]="getDate() | date:'yyyy-MM-dd'"
           (ngModelChange)="setDate($event)"
           placeholder="Date">
     </mat-form-field>
@@ -33,38 +35,38 @@
       <input
           matInput
           name="who"
-          [(ngModel)]="transaction.who"
+          [(ngModel)]="singleData.who"
           placeholder="Who">
     </mat-form-field>
     <mat-form-field>
       <input
           matInput
           name="reasonForTransfer"
-          [(ngModel)]="transaction.reasonForTransfer"
+          [(ngModel)]="singleData.reason"
           placeholder="Reason for transfer">
     </mat-form-field>
     <mat-form-field>
       <textarea
           matInput
           name="comment"
-          [(ngModel)]="transaction.comment"
+          [(ngModel)]="singleData.comment"
           placeholder="Comment">
       </textarea>
     </mat-form-field>
     <mat-checkbox
         name="isCash"
-        [(ngModel)]="transaction.isCash">
+        [(ngModel)]="singleData.isCash">
       Cash
     </mat-checkbox>
     <mat-checkbox
         name="isInternal"
-        [(ngModel)]="transaction.isCash">
-      Internal (TODO)
+        [(ngModel)]="transaction.isInternal">
+      Internal
     </mat-checkbox>
     <mat-checkbox
         name="isAmountEstimate"
-        [(ngModel)]="transaction.isCash">
-      Estimate (TODO)
+        [(ngModel)]="singleData.amount.isEstimate">
+      Estimate
     </mat-checkbox>
   </mat-dialog-content>
   

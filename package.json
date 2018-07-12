@@ -9,7 +9,7 @@
     "lint": "ng lint",
     "e2e": "ng e2e",
 	"prepare": "npx patch-package",
-	"protoc": "node node_modules/protobufjs/cli/bin/pbjs -t static-module -o src/proto/model.js src/proto/*.proto && node node_modules/protobufjs/cli/bin/pbts -o src/proto/model.d.ts src/proto/model.js"
+	"protoc": "node node_modules/protobufjs/cli/bin/pbjs -t static-module --force-message -o src/proto/model.js src/proto/*.proto && node node_modules/protobufjs/cli/bin/pbts -o src/proto/model.d.ts src/proto/model.js"
   },
   "private": true,
   "dependencies": {
