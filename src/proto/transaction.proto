@@ -48,6 +48,11 @@ message TransactionData {
   
   // Whether the transaction happened through cash or a bank statement (or equivalent).
   bool is_cash = 9;
+
+  // The id of the ImportedRow entry, if this transaction was imported.
+  // A value of 0 means that the transaction is not linked to an ImportedRow.
+  // Multiple transactions may be linked to the same row.
+  uint32 imported_row_id = 29;
   
   // A user-supplied comment about this transaction.
   // Must not be filled automatically on import.

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+// Represents the raw data of a single row of a CSV file
+// that was imported into the application.
+message ImportedRow {
+  // Unique identifier of this row.
+  uint32 id = 1;
+  
+  // The name of the file where this row comes from, for future reference.
+  string source_file_name = 2;
+  
+  // The format of the source file.
+  string file_format = 3;
+
+  // All available CSV values of the source file, including ones
+  // that were ignored while importing.
+  map<string, string> values = 4;
+}

@@ -13,8 +13,8 @@
     </mat-select>
   </mat-form-field>
 
-  <p *ngIf="transactionsToImport.length > 0">
-    Found {{transactionsToImport.length}} transactions between {{getPreviewMinDate() | date}} and {{getPreviewMaxDate() | date}}.
+  <p *ngIf="entriesToImport.length > 0">
+    Found {{entriesToImport.length}} transactions between {{getPreviewMinDate() | date}} and {{getPreviewMaxDate() | date}}.
   </p>
   <div *ngIf="errors.length > 0">
     <p>There were errors:</p>
@@ -26,5 +26,5 @@
 
 <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
   <button mat-button mat-dialog-close>Cancel</button>
-  <button mat-button [mat-dialog-close]="true" [disabled]="transactionsToImport.length === 0">Import</button>
+  <button mat-button [mat-dialog-close]="true" [disabled]="entriesToImport.length === 0">Import</button>
 </mat-dialog-actions>

@@ -2,8 +2,9 @@ import { Component, OnInit, Inject } from '@angular/core';
 import { LoggerService } from '../../core/logger.service';
 import { PapaParseService, PapaParseResult } from 'ngx-papaparse';
 import { MAT_DIALOG_DATA } from '@angular/material';
-import { Transaction, TransactionData, ITransactionData } from '../../../proto/model';
+import { Transaction, TransactionData, ITransactionData, ImportedRow } from '../../../proto/model';
 import { dateToTimestamp, numberToMoney, timestampToDate, timestampToWholeSeconds } from '../../core/proto-util';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'app-form-import',
@@ -12,37 +13,41 @@ import { dateToTimestamp, numberToMoney, timestampToDate, timestampToWholeSecond
 })
 export class FormImportComponent implements OnInit {
   fileFormat: 'ksk_camt' = 'ksk_camt';
-  transactionsToImport: Transaction[] = [];
+  
+  /**
+   * Contains parsed transactions and raw row data to preview.
+   * They are not yet linked to each other, because the rows will only get
+   * their id once they are actually imported.
+   */
+  entriesToImport: { transaction: Transaction, row: ImportedRow }[] = [];
+
+  /** List of errors that happened during parsing. */
   errors: string[] = [];
 
-  /** @deprecated implement with DataService instead */
-  private existingTransactions: Transaction[];
-
   constructor(
-    @Inject(MAT_DIALOG_DATA) data: Transaction[],
+    private readonly dataService: DataService,
     private readonly loggerService: LoggerService,
     private readonly papaService: PapaParseService) {
-    this.existingTransactions = data['existingTransactions'];
   }
 
   ngOnInit() {
   }
 
   getPreviewMinDate(): Date | null {
-    if (this.transactionsToImport.length > 0) {
-      return new Date(1000 *
-        Math.min(...this.transactionsToImport.map(t => timestampToWholeSeconds(t.single!.date)))
-      );
+    if (this.entriesToImport.length > 0) {
+      return new Date(1000 * Math.min(...this.entriesToImport.map(
+        e => timestampToWholeSeconds(e.transaction.single!.date)
+      )));
     } else {
       return null;
     }
   }
 
   getPreviewMaxDate(): Date | null {
-    if (this.transactionsToImport.length > 0) {
-      return new Date(1000 *
-        Math.max(...this.transactionsToImport.map(t => timestampToWholeSeconds(t.single!.date)))
-      );
+    if (this.entriesToImport.length > 0) {
+      return new Date(1000 * Math.max(...this.entriesToImport.map(
+        e => timestampToWholeSeconds(e.transaction.single!.date)
+      )));
     } else {
       return null;
     }
@@ -53,32 +58,37 @@ export class FormImportComponent implements OnInit {
     this.papaService.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: result => this.processFileContents(result),
+      complete: result => this.processFileContents(file.name, result),
     });
   }
 
-  private processFileContents(csvData: PapaParseResult) {
+  private processFileContents(fileName: string, csvData: PapaParseResult) {
     console.log(csvData);
-    this.transactionsToImport = [];
+    this.entriesToImport = [];
+    this.entriesToImport = [];
     this.errors = [];
 
-    // Validate file format.
-    const missingColumns = KSK_CAMT_MAPPINGS
-      .map(mapping => mapping.column)
-      .filter(column => csvData.meta.fields.indexOf(column) === -1);
-    if (missingColumns.length > 0) {
-      this.reportError("Import failed: Required columns are missing from data: " + missingColumns.join(", "));
+    if (!this.validateRequiredColumns(csvData.meta.fields)) {
       return;
     }
 
     // Process rows.
-    // TODO: Store as ImportedRow too and link Transactions to them.
-    // TODO: Deduplicate with existingTransactions.
+    // TODO: Deduplicate with existing rows.
     for (let i = 0; i < csvData.data.length; i++) {
       const row = csvData.data[i] as KskCamtRow;
 
-      const properties: ITransactionData = {};
-      properties.isCash = false;
+      // Create imported row without an id, which will be assigned
+      // once (if) it is entered into the database.
+      const importedRow = new ImportedRow({
+        sourceFileName: fileName,
+        fileFormat: this.fileFormat,
+      });
+      for (let field of csvData.meta.fields) {
+        importedRow.values[field] = row[field];
+      }
+
+      const transactionProperties: ITransactionData = {};
+      transactionProperties.isCash = false;
 
       let hasErrors = false;
       for (let mapping of KSK_CAMT_MAPPINGS) {
@@ -94,18 +104,32 @@ export class FormImportComponent implements OnInit {
           value = rawValue;
         }
 
-        properties[mapping.transactionKey] = value;
+        transactionProperties[mapping.transactionKey] = value;
       }
       if (hasErrors) {
         continue;
       }
 
-      this.transactionsToImport.push(new Transaction({
-        single: new TransactionData(properties),
-      }));
+      this.entriesToImport.push({
+        row: importedRow,
+        transaction: new Transaction({
+          single: new TransactionData(transactionProperties),
+        }),
+      });
     }
 
-    console.log(this.transactionsToImport);
+    console.log(this.entriesToImport);
+  }
+
+  private validateRequiredColumns(existingColumns: string[]): boolean {
+    const missingColumns = KSK_CAMT_MAPPINGS
+      .map(mapping => mapping.column)
+      .filter(column => existingColumns.indexOf(column) === -1);
+    if (missingColumns.length > 0) {
+      this.reportError("Import failed: Required columns are missing from data: " + missingColumns.join(", "));
+      return false;
+    }
+    return true;
   }
 
   private reportError(error: string) {

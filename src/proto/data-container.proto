@@ -1,10 +1,13 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "imported-row.proto";
 import "transaction.proto";
 
 message DataContainer {
   Timestamp last_modified = 1;
 
   repeated Transaction transactions = 2;
+
+  repeated ImportedRow imported_rows = 3;
 }

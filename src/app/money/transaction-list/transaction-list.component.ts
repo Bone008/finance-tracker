@@ -84,8 +84,16 @@ export class TransactionListComponent implements OnInit {
     });
     dialogRef.afterClosed().subscribe((result: boolean) => {
       if (result === true) {
-        this.dataService.addTransactions(dialogRef.componentInstance.transactionsToImport);
-        this.loggerService.log(`Imported ${dialogRef.componentInstance.transactionsToImport.length} transactions.`);
+        const entries = dialogRef.componentInstance.entriesToImport;
+        // Store rows, which generates their ids.
+        this.dataService.addImportedRows(entries.map(e => e.row));
+        // Link transactions to their rows and store them.
+        for (let entry of entries) {
+          entry.transaction.single!.importedRowId = entry.row.id;
+          this.dataService.addTransactions(entry.transaction);
+        }
+
+        this.loggerService.log(`Imported ${dialogRef.componentInstance.entriesToImport.length} transactions.`);
       }
     });
   }
