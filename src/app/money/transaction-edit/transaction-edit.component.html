@@ -9,69 +9,92 @@
       <mat-tab label="Income"></mat-tab>
     </mat-tab-group>
 
-    <mat-form-field>
-      <input
-          matInput
-          type="date"
-          name="date"
-          [ngModel]="getDate() | date:'yyyy-MM-dd'"
-          (ngModelChange)="setDate($event)"
-          placeholder="Date">
-    </mat-form-field>
-    <mat-form-field class="amount-field" [class.negative]="isNegative">
-      <input
-          matInput
-          type="number"
-          name="amount"
-          min="0"
-          step="0.01"
-          [ngModel]="getAbsoluteAmount()"
-          (ngModelChange)="setAmount($event)"
-          [ngModelOptions]="{updateOn: 'blur'}"
-          placeholder="Amount">
-      <span matSuffix>&nbsp;€</span>
-    </mat-form-field>
-    <mat-form-field>
-      <input
-          matInput
-          name="who"
-          [(ngModel)]="singleData.who"
-          placeholder="Who">
-    </mat-form-field>
-    <mat-form-field>
-      <input
-          matInput
-          name="reasonForTransfer"
-          [(ngModel)]="singleData.reason"
-          placeholder="Reason for transfer">
-    </mat-form-field>
-    <mat-form-field>
-      <textarea
-          matInput
-          name="comment"
-          [(ngModel)]="singleData.comment"
-          placeholder="Comment">
-      </textarea>
-    </mat-form-field>
-    <mat-checkbox
-        name="isCash"
-        [(ngModel)]="singleData.isCash">
-      Cash
-    </mat-checkbox>
-    <mat-checkbox
-        name="isInternal"
-        [(ngModel)]="transaction.isInternal">
-      Internal
-    </mat-checkbox>
-    <mat-checkbox
-        name="isAmountEstimate"
-        [(ngModel)]="singleData.amount.isEstimate">
-      Estimate
-    </mat-checkbox>
+    <div fxLayout="row" fxLayoutGap="1em" fxLayout.lt-md="column" fxLayoutGap.lt-md="0">
+      <div fxFlex.gt-sm="60" fxLayout="column">
+        <div fxLayout="row" fxLayout.xs="column" fxLayoutGap="10px">
+          <mat-form-field fxFlex.gt-xs="50">
+            <input
+                matInput
+                type="date"
+                name="date"
+                [ngModel]="getDate() | date:'yyyy-MM-dd'"
+                (ngModelChange)="setDate($event)"
+                placeholder="Date"
+                required>
+          </mat-form-field>
+          <mat-form-field fxFlex.gt-xs="50" class="amount-field" [class.negative]="isNegative">
+            <input
+                cdkFocusInitial
+                matInput
+                type="number"
+                name="amount"
+                min="0"
+                step="0.01"
+                [ngModel]="getAbsoluteAmount()"
+                (ngModelChange)="setAmount($event)"
+                [ngModelOptions]="{updateOn: 'blur'}"
+                placeholder="Amount"
+                required>
+            <span matSuffix>&nbsp;€</span>
+          </mat-form-field>
+        </div>
+        <mat-form-field>
+          <input
+              matInput
+              name="reason"
+              [(ngModel)]="singleData.reason"
+              placeholder="Reason">
+        </mat-form-field>
+        <mat-form-field>
+          <input
+              matInput
+              name="who"
+              [(ngModel)]="singleData.who"
+              placeholder="Who">
+        </mat-form-field>
+        <mat-form-field>
+          <input
+              matInput
+              name="whoIdentifier"
+              [(ngModel)]="singleData.whoIdentifier"
+              placeholder="Who (identifier)">
+        </mat-form-field>
+      </div>
+
+      <div fxFlex.gt-sm="40" fxLayout="column">
+        <p>TODO: labels</p>
+        <mat-form-field>
+          <textarea
+              matInput
+              name="comment"
+              [(ngModel)]="singleData.comment"
+              placeholder="Comment"
+              rows="3">
+          </textarea>
+        </mat-form-field>
+        <div fxLayout="row" fxLayout.xs="column" fxLayoutGap="1em">
+            <mat-checkbox
+                name="isCash"
+                [(ngModel)]="singleData.isCash">
+              Cash
+            </mat-checkbox>
+            <mat-checkbox
+                name="isInternal"
+                [(ngModel)]="transaction.isInternal">
+              Internal
+            </mat-checkbox>
+            <mat-checkbox
+                name="isAmountEstimate"
+                [(ngModel)]="singleData.amount.isEstimate">
+              Estimate
+            </mat-checkbox>
+        </div>
+      </div>
+    </div>
   </mat-dialog-content>
   
   <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
     <button mat-button mat-dialog-close>Cancel</button>
-    <button mat-button type="submit">Save</button>
+    <button mat-button type="submit" [disabled]="!editForm.valid">Save</button>
   </mat-dialog-actions>
 </form>

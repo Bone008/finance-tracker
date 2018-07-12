@@ -1,5 +1,7 @@
-.mat-dialog-content {
-  min-width: 400px;
+@media screen and (min-width: 960px) {
+  .mat-dialog-content {
+    width: 760px;
+  }
 }
 
 .mat-tab-group {
