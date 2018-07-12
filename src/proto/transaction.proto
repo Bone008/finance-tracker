@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+message Transaction {
+  Timestamp date = 1;
+  sfixed32 amount = 2;
+  string who = 3;
+  string who_secondary = 4;
+  string reason_for_transfer = 6;
+  string booking_text = 7;
+  
+  repeated string labels = 8;
+  
+  bool is_cash = 9;
+  bool is_internal = 10;
+  bool amount_is_estimate = 11;
+  bool amount_is_dog = 12;
+
+  string comment = 25;
+}

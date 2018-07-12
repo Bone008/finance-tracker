@@ -5,6 +5,10 @@
 /tmp
 /out-tsc
 
+# compiled proto buffers
+**/proto/*.d.ts
+**/proto/*.js
+
 # dependencies
 /node_modules
 
