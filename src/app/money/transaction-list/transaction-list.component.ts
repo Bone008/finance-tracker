@@ -59,6 +59,11 @@ export class TransactionListComponent implements OnInit {
   updateFilterNow() {
     if (this.transactionsDataSource.filter !== this.filterInput) {
       this.transactionsDataSource.filter = this.filterInput;
+
+      // Deselect all transactions that are no longer visible.
+      this.selection.deselect(...this.selection.selected.filter(
+        t => this.transactionsDataSource.filteredData.indexOf(t) === -1)
+      );
     }
   }
 
@@ -117,7 +122,7 @@ export class TransactionListComponent implements OnInit {
     const tempTransaction = Transaction.decode(Transaction.encode(transaction).finish());
     this.dialogService.openTransactionEdit(tempTransaction, MODE_EDIT)
       .afterClosed().subscribe(value => {
-        if(value) {
+        if (value) {
           Object.assign(transaction, tempTransaction);
           console.log("Edited ", transaction);
         }
