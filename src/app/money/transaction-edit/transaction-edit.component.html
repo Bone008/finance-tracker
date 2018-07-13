@@ -91,10 +91,14 @@
         </div>
       </div>
     </div>
+    
+    <p *ngIf="editMode==='edit'">
+      This transaction is {{singleData.importedRowId > 0 ? 'linked to CSV row #' + singleData.importedRowId : 'not linked to a CSV row'}}.
+    </p>
   </mat-dialog-content>
   
   <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
     <button mat-button mat-dialog-close>Cancel</button>
-    <button mat-button type="submit" [disabled]="!editForm.valid">Save</button>
+    <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
   </mat-dialog-actions>
 </form>

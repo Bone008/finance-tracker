@@ -9,6 +9,7 @@ import { moneyToNumber, timestampNow, timestampToDate } from '../../core/proto-u
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
+import { extractAllTransactionData } from '../model-util';
 
 /** Time in ms to wait after input before applying the filter. */
 const FILTER_DEBOUNCE_TIME = 500;
@@ -120,9 +121,46 @@ export class TransactionListComponent implements OnInit {
       });
   }
 
-  deleteSelectedTransactions() {
-    this.dataService.removeTransactions(this.selection.selected);
+  async deleteSelectedTransactions() {
+    const transactionsToDelete = this.selection.selected;
+
+    // Detect orphans.
+    const affectedRowIds = extractAllTransactionData(transactionsToDelete)
+      .map(data => data.importedRowId)
+      .filter(rowId => rowId > 0);
+    const orphanedRowIds: number[] = [];
+    for (let rowId of affectedRowIds) {
+      const referrers = this.dataService.getTransactionsReferringToImportedRow(rowId);
+      // If there is no referring transaction left that is not about to be deleted,
+      // the row is about to be orphaned.
+      if (!referrers.some(transaction => transactionsToDelete.indexOf(transaction) === -1)) {
+        orphanedRowIds.push(rowId);
+      }
+    }
+
+    // Ask what should happen to orphans.
+    let deleteOrphans = false;
+    if (orphanedRowIds.length > 0) {
+      const result = await this.dialogService.openConfirmDeleteWithOrphans(
+        transactionsToDelete.length, orphanedRowIds.length).afterClosed().toPromise();
+
+      if (result === 'delete') {
+        deleteOrphans = true;
+      } else if (result === 'keep') {
+        // Just keep them as is.
+      } else {
+        return; // Cancel.
+      }
+    }
+
+    this.dataService.removeTransactions(transactionsToDelete);
     this.selection.clear();
+
+    if (deleteOrphans) {
+      for (let rowId of orphanedRowIds) {
+        this.dataService.removeImportedRow(rowId);
+      }
+    }
   }
 
   addLabelToTransaction(principal: Transaction, newLabel: string) {

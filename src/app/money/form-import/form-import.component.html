@@ -35,5 +35,9 @@
 
 <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
   <button mat-button mat-dialog-close>Cancel</button>
-  <button mat-button [mat-dialog-close]="true" [disabled]="entriesToImport.length === 0">Import</button>
+  <button
+      mat-button
+      [mat-dialog-close]="true"
+      [disabled]="entriesToImport.length === 0"
+      color="primary">Import</button>
 </mat-dialog-actions>

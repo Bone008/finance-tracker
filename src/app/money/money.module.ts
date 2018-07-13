@@ -8,6 +8,7 @@ import { MoneyComponent } from './money.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
 import { AddInlineLabelComponent } from './transaction-list/add-inline-label.component';
 import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
+import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 
 @NgModule({
   imports: [
@@ -22,10 +23,12 @@ import { TransactionEditComponent } from './transaction-edit/transaction-edit.co
     TransactionEditComponent,
     TransactionListComponent,
     AddInlineLabelComponent,
+    DialogDeleteWithOrphansComponent,
   ],
   entryComponents: [
     FormImportComponent,
     TransactionEditComponent,
+    DialogDeleteWithOrphansComponent,
   ],
   exports: [
     MoneyComponent,

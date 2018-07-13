@@ -1,8 +1,10 @@
-import { Injectable, EventEmitter } from "@angular/core";
+import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
 import { map } from "rxjs/operators";
-import { ITransaction, DataContainer, Transaction, ImportedRow } from "../../proto/model";
+import { DataContainer, ImportedRow, Transaction, TransactionData } from "../../proto/model";
 import { compareTimestamps } from "../core/proto-util";
+import { pluralizeArgument } from "../core/util";
+import { extractAllTransactionData } from "./model-util";
 
 @Injectable({
   providedIn: 'root'
@@ -42,12 +44,8 @@ export class DataService {
 
   addTransactions(toAdd: Transaction | Transaction[]) {
     // Validate all importedRowIds.
-    for (let transaction of pluralizeArgument(toAdd)) {
-      if (transaction.dataType === "single") {
-        this.validateImportedRowId(transaction.single!.importedRowId);
-      } else {
-        transaction.group!.children.forEach(child => this.validateImportedRowId(child.importedRowId));
-      }
+    for (let transactionData of extractAllTransactionData(toAdd)) {
+      this.validateImportedRowId(transactionData.importedRowId);
     }
 
     this.data.transactions = this.data.transactions.concat(toAdd);
@@ -65,6 +63,18 @@ export class DataService {
     }
   }
 
+  removeImportedRow(rowId: number) {
+    if (this.getTransactionDataReferringToImportedRow(rowId).length > 0) {
+      throw new Error(`cannot delete row ${rowId} because it has a transaction referring to it`);
+    }
+
+    const index = this.data.importedRows.findIndex(row => row.id === rowId);
+    this.data.importedRows.splice(index, 1);
+    if (this.highestImportedRowId === rowId) {
+      this.updateHighestImportedRowId();
+    }
+  }
+
   getImportedRowById(id: number): ImportedRow | null {
     return this.data.importedRows.find(row => row.id === id) || null;
   }
@@ -72,6 +82,20 @@ export class DataService {
   /** Returns all imported rows. DO NOT MODIFY THE RETURNED ARRAY. */
   getImportedRows(): ImportedRow[] {
     return this.data.importedRows;
+  }
+
+  getTransactionsReferringToImportedRow(importedRowId: number): Transaction[] {
+    return this.data.transactions.filter(transaction => {
+      if (transaction.dataType === 'single') {
+        return transaction.single!.importedRowId === importedRowId;
+      } else {
+        return transaction.group!.children.some(child => child.importedRowId === importedRowId);
+      }
+    });
+  }
+
+  getTransactionDataReferringToImportedRow(importedRowId: number): TransactionData[] {
+    return extractAllTransactionData(this.data.transactions).filter(data => data.importedRowId === importedRowId);
   }
 
   private notifyTransactions() {
@@ -95,13 +119,5 @@ export class DataService {
     if (!this.data.importedRows.some(row => row.id === rowId)) {
       throw new Error(`linked importedRowId ${rowId} was not found in the database`);
     }
-  }
-}
-
-function pluralizeArgument<T>(arg: T | T[]): T[] {
-  if (arg instanceof Array) {
-    return arg;
-  } else {
-    return [arg];
   }
 }

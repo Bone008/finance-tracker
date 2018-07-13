@@ -1,0 +1,31 @@
+<h2 mat-dialog-title>Confirmation</h2>
+
+<mat-dialog-content>
+  <p *ngIf="numTransactions === 1">
+    This transaction refers to {{numOrphans === 1 ? 'a CSV row' : numOrphans + ' CSV rows'}}
+    that will be orphaned after deleting it.
+  </p>
+  <p *ngIf="numTransactions !== 1">
+    The {{numTransactions}} transactions you are about to delete refer to
+    {{numOrphans === 1 ? 'a CSV row' : numOrphans + ' CSV rows'}}
+    that will be orphaned after deleting them.
+  </p>
+  <p>
+    Keeping a CSV row will stop the transaction from being automatically recreated again
+    on the next import.<br>
+    Deleting a CSV row will allow it to be reimported.
+  </p>
+  <p>
+    How do you want to proceed?
+  </p>
+</mat-dialog-content>
+
+<mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-button mat-dialog-close="keep" color="primary">
+    Keep CSV {{numOrphans === 1 ? 'row' : 'rows'}}
+  </button>
+  <button mat-button mat-dialog-close="delete" color="primary">
+    Delete CSV {{numOrphans === 1 ? 'row' : 'rows'}}
+  </button>
+</mat-dialog-actions>
