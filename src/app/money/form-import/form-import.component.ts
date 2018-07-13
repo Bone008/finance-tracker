@@ -1,10 +1,12 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, EventEmitter, OnInit } from '@angular/core';
+import { PapaParseResult, PapaParseService } from 'ngx-papaparse';
+import { ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
-import { PapaParseService, PapaParseResult } from 'ngx-papaparse';
-import { MAT_DIALOG_DATA } from '@angular/material';
-import { Transaction, TransactionData, ITransactionData, ImportedRow } from '../../../proto/model';
-import { dateToTimestamp, numberToMoney, timestampToDate, timestampToWholeSeconds } from '../../core/proto-util';
+import { dateToTimestamp, numberToMoney, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
+
+type FileFormat = 'ksk_camt';
+type FileEncoding = 'windows-1252' | 'utf-8';
 
 @Component({
   selector: 'app-form-import',
@@ -12,8 +14,19 @@ import { DataService } from '../data.service';
   styleUrls: ['./form-import.component.css']
 })
 export class FormImportComponent implements OnInit {
-  fileFormat: 'ksk_camt' = 'ksk_camt';
-  
+  // Form data.
+  private _file: File | null = null;
+  private _fileFormat: FileFormat = 'ksk_camt';
+  private _fileEncoding: FileEncoding = 'windows-1252';
+  private readonly formInputChange = new EventEmitter<void>();
+
+  get file() { return this._file; }
+  set file(value: File | null) { this._file = value; this.formInputChange.emit(); }
+  get fileFormat() { return this._fileFormat; }
+  set fileFormat(value: FileFormat) { this._fileFormat = value; this.formInputChange.emit(); }
+  get fileEncoding() { return this._fileEncoding; }
+  set fileEncoding(value: FileEncoding) { this._fileEncoding = value; this.formInputChange.emit(); }
+
   /**
    * Contains parsed transactions and raw row data to preview.
    * They are not yet linked to each other, because the rows will only get
@@ -30,10 +43,11 @@ export class FormImportComponent implements OnInit {
   constructor(
     private readonly dataService: DataService,
     private readonly loggerService: LoggerService,
-    private readonly papaService: PapaParseService) {
-  }
+    private readonly papaService: PapaParseService
+  ) { }
 
   ngOnInit() {
+    this.formInputChange.subscribe(() => this.updateFilePreview());
   }
 
   getPreviewMinDate(): Date | null {
@@ -56,19 +70,30 @@ export class FormImportComponent implements OnInit {
     }
   }
 
-  setFile(file: File) {
-    console.log(file);
-    this.papaService.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: result => this.processFileContents(file.name, result),
-    });
+  private resetPreview() {
+    this.entriesToImport = [];
+    this.duplicateCount = 0;
+    this.errors = [];
   }
 
-  private processFileContents(fileName: string, csvData: PapaParseResult) {
+  private updateFilePreview() {
+    if (this.file) {
+      const file = this.file;
+      const fileFormat = this.fileFormat;
+      this.papaService.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        encoding: this.fileEncoding,
+        complete: result => this.processFileContents(file.name, fileFormat, result),
+      });
+    } else {
+      this.resetPreview();
+    }
+  }
+
+  private processFileContents(fileName: string, fileFormat: FileFormat, csvData: PapaParseResult) {
     console.log(csvData);
-    this.entriesToImport = [];
-    this.errors = [];
+    this.resetPreview();
 
     if (!this.validateRequiredColumns(csvData.meta.fields)) {
       return;
@@ -80,7 +105,7 @@ export class FormImportComponent implements OnInit {
     for (let i = 0; i < csvData.data.length; i++) {
       const row = csvData.data[i] as KskCamtRow;
 
-      if(this.isDuplicate(row, existingRows)) {
+      if (this.isDuplicate(row, existingRows)) {
         this.duplicateCount++;
         continue;
       }
@@ -146,8 +171,8 @@ export class FormImportComponent implements OnInit {
       // the new row. This is supposed to provide some robustness
       // against small file format changes by only checking the fields
       // that are relevant to the app instead of all of them.
-      for(let mapping of KSK_CAMT_MAPPINGS) {
-        if(row[mapping.column] !== existing.values[mapping.column]) {
+      for (let mapping of KSK_CAMT_MAPPINGS) {
+        if (row[mapping.column] !== existing.values[mapping.column]) {
           return false;
         }
       }

@@ -1,15 +1,21 @@
 <h2 mat-dialog-title>Import CSV</h2>
 
-<mat-dialog-content>
+<mat-dialog-content fxLayout="column">
   <div class="mat-form-field-wrapper">
     <label>
       <span class="file-label">Select file to import</span>
-      <input type="file" (change)="setFile($event.target.files[0])">
+      <input type="file" (change)="file = $event.target.files[0]">
     </label>
   </div>
   <mat-form-field>
     <mat-select [(ngModel)]="fileFormat" placeholder="File format">
       <mat-option value="ksk_camt">Kreissparkasse CAMT</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-select [(ngModel)]="fileEncoding" placeholder="File encoding">
+      <mat-option value="utf-8">UTF-8</mat-option>
+      <mat-option value="windows-1252">Windows-1252</mat-option>
     </mat-select>
   </mat-form-field>
 
