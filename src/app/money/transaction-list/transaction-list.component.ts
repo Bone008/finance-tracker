@@ -1,14 +1,14 @@
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
-import { MatPaginator, MatTableDataSource, MatDialog } from '@angular/material';
-import { FormImportComponent } from '../form-import/form-import.component';
-import { LoggerService } from '../../core/logger.service';
 import { SelectionModel } from '@angular/cdk/collections';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { MatPaginator, MatTableDataSource } from '@angular/material';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
-import { DataService } from '../data.service';
-import { TransactionEditComponent, MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 import { Transaction, TransactionData } from '../../../proto/model';
-import { timestampNow, timestampToDate, moneyToNumber } from '../../core/proto-util';
+import { LoggerService } from '../../core/logger.service';
+import { moneyToNumber, timestampNow, timestampToDate } from '../../core/proto-util';
+import { DataService } from '../data.service';
+import { DialogService } from '../dialog.service';
+import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 
 /** Time in ms to wait after input before applying the filter. */
 const FILTER_DEBOUNCE_TIME = 500;
@@ -37,7 +37,7 @@ export class TransactionListComponent implements OnInit {
   constructor(
     private readonly dataService: DataService,
     private readonly loggerService: LoggerService,
-    private readonly dialogService: MatDialog) { }
+    private readonly dialogService: DialogService) { }
 
   ngOnInit() {
     this.transactionsDataSource.paginator = this.paginator;
@@ -79,10 +79,8 @@ export class TransactionListComponent implements OnInit {
   }
 
   openImportCsvDialog() {
-    const dialogRef = this.dialogService.open(FormImportComponent, {
-      data: { "existingTransactions": this.dataService.getCurrentTransactionList() }
-    });
-    dialogRef.afterClosed().subscribe((result: boolean) => {
+    const dialogRef = this.dialogService.openFormImport();
+    dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
         const entries = dialogRef.componentInstance.entriesToImport;
         // Store rows, which generates their ids.
@@ -106,28 +104,20 @@ export class TransactionListComponent implements OnInit {
       }),
     });
 
-    this.dialogService.open(TransactionEditComponent, {
-      data: {
-        transaction,
-        editMode: MODE_ADD,
-      }
-    }).afterClosed().subscribe((value: boolean) => {
-      if (value) {
-        this.dataService.addTransactions(transaction);
-      }
-    });
+    this.dialogService.openTransactionEdit(transaction, MODE_ADD)
+      .afterClosed().subscribe((value: boolean) => {
+        if (value) {
+          this.dataService.addTransactions(transaction);
+        }
+      });
   }
 
   editTransaction(transaction: Transaction) {
     // TODO: Modify a clone of the transaction to allow cancel.
-    this.dialogService.open(TransactionEditComponent, {
-      data: {
-        transaction,
-        editMode: MODE_EDIT,
-      }
-    }).afterClosed().subscribe(value => {
-      console.log(value);
-    });
+    this.dialogService.openTransactionEdit(transaction, MODE_EDIT)
+      .afterClosed().subscribe(value => {
+        console.log(value);
+      });
   }
 
   deleteSelectedTransactions() {
