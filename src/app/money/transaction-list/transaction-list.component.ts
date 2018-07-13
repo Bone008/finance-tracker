@@ -114,10 +114,13 @@ export class TransactionListComponent implements OnInit {
   }
 
   editTransaction(transaction: Transaction) {
-    // TODO: Modify a clone of the transaction to allow cancel.
-    this.dialogService.openTransactionEdit(transaction, MODE_EDIT)
+    const tempTransaction = Transaction.decode(Transaction.encode(transaction).finish());
+    this.dialogService.openTransactionEdit(tempTransaction, MODE_EDIT)
       .afterClosed().subscribe(value => {
-        console.log(value);
+        if(value) {
+          Object.assign(transaction, tempTransaction);
+          console.log("Edited ", transaction);
+        }
       });
   }
 
