@@ -13,8 +13,11 @@
     </mat-select>
   </mat-form-field>
 
+  <p *ngIf="duplicateCount > 0">
+    Skipped {{duplicateCount}} transactions that have already been imported.
+  </p>
   <p *ngIf="entriesToImport.length > 0">
-    Found {{entriesToImport.length}} transactions between {{getPreviewMinDate() | date}} and {{getPreviewMaxDate() | date}}.
+    Found {{entriesToImport.length}} new transactions between {{getPreviewMinDate() | date}} and {{getPreviewMaxDate() | date}}.
   </p>
   <div *ngIf="errors.length > 0">
     <p>There were errors:</p>

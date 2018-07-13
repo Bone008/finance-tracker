@@ -21,6 +21,9 @@ export class FormImportComponent implements OnInit {
    */
   entriesToImport: { transaction: Transaction, row: ImportedRow }[] = [];
 
+  /** Amount of existing rows that were found during parsing. */
+  duplicateCount = 0;
+
   /** List of errors that happened during parsing. */
   errors: string[] = [];
 
@@ -65,17 +68,22 @@ export class FormImportComponent implements OnInit {
   private processFileContents(fileName: string, csvData: PapaParseResult) {
     console.log(csvData);
     this.entriesToImport = [];
-    this.entriesToImport = [];
     this.errors = [];
 
     if (!this.validateRequiredColumns(csvData.meta.fields)) {
       return;
     }
 
+    const existingRows = this.dataService.getImportedRows();
+
     // Process rows.
-    // TODO: Deduplicate with existing rows.
     for (let i = 0; i < csvData.data.length; i++) {
       const row = csvData.data[i] as KskCamtRow;
+
+      if(this.isDuplicate(row, existingRows)) {
+        this.duplicateCount++;
+        continue;
+      }
 
       // Create imported row without an id, which will be assigned
       // once (if) it is entered into the database.
@@ -121,15 +129,30 @@ export class FormImportComponent implements OnInit {
     console.log(this.entriesToImport);
   }
 
-  private validateRequiredColumns(existingColumns: string[]): boolean {
+  private validateRequiredColumns(presentColumns: string[]): boolean {
     const missingColumns = KSK_CAMT_MAPPINGS
       .map(mapping => mapping.column)
-      .filter(column => existingColumns.indexOf(column) === -1);
+      .filter(column => presentColumns.indexOf(column) === -1);
     if (missingColumns.length > 0) {
       this.reportError("Import failed: Required columns are missing from data: " + missingColumns.join(", "));
       return false;
     }
     return true;
+  }
+
+  private isDuplicate(row: KskCamtRow, existingRows: ImportedRow[]): boolean {
+    return existingRows.some(existing => {
+      // Check if the set of all mapped columns is identical to
+      // the new row. This is supposed to provide some robustness
+      // against small file format changes by only checking the fields
+      // that are relevant to the app instead of all of them.
+      for(let mapping of KSK_CAMT_MAPPINGS) {
+        if(row[mapping.column] !== existing.values[mapping.column]) {
+          return false;
+        }
+      }
+      return true;
+    });
   }
 
   private reportError(error: string) {
