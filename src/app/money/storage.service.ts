@@ -20,18 +20,21 @@ export class StorageService {
    * Returns null if no data was saved yet.
    */
   loadData(): Promise<DataContainer | null> {
-    const stringified = localStorage.getItem(STORAGE_KEY);
-    if (!stringified) {
-      return Promise.resolve(null);
-    }
+    return delay(100).then(() => {
+      const timeStart = performance.now();
 
-    try {
+      const stringified = localStorage.getItem(STORAGE_KEY);
+      if (!stringified) {
+        return null;
+      }
+
       const dataArray = this.stringToBinary(stringified);
       const data = DataContainer.decodeDelimited(dataArray);
-      return delay(0, data);
-    } catch (e) {
-      return Promise.reject(e);
-    }
+
+      const timeEnd = performance.now();
+      console.log(`Loaded data from storage (packed: ${dataArray.length.toLocaleString()} B) in ${timeEnd - timeStart} ms.`);
+      return data;
+    });
   }
 
   saveData(data: DataContainer): Promise<void> {
