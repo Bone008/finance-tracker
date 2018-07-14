@@ -2,13 +2,13 @@
   <mat-card-title fxLayout="row" fxLayoutGap="10px">
     <span fxFlex>Transactions</span>
     <button
-        (click)="openImportCsvDialog()"
+        (click)="startImportCsv()"
         mat-fab
         matTooltip="Import CSV">
         <mat-icon>attachment</mat-icon>
     </button>
     <button
-        (click)="openAddTransactionDialog()"
+        (click)="startAddTransaction()"
         mat-fab
         matTooltip="Add transaction">
         <mat-icon>add</mat-icon>
@@ -35,15 +35,23 @@
           color="primary"
           matTooltip="Edit selected"
           [disabled]="selection.selected.length !== 1"
-          (click)="editTransaction(selection.selected[0])">
+          (click)="startEditTransaction(selection.selected[0])">
         <mat-icon>edit</mat-icon>
+      </button>
+      <button
+          mat-icon-button
+          color="primary"
+          matTooltip="Group selected"
+          [disabled]="selection.selected.length < 2"
+          (click)="groupTransactions(selection.selected)">
+        <mat-icon>ballot</mat-icon>
       </button>
       <button
           mat-icon-button
           color="primary"
           matTooltip="Delete selected"
           [disabled]="selection.selected.length === 0"
-          (click)="deleteSelectedTransactions()">
+          (click)="deleteTransactions(selection.selected)">
         <mat-icon>delete</mat-icon>
       </button>
     </div>

@@ -3,7 +3,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource } from '@angular/material';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
-import { Transaction, TransactionData } from '../../../proto/model';
+import { GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { moneyToNumber, timestampNow, timestampToDate } from '../../core/proto-util';
 import { DataService } from '../data.service';
@@ -84,7 +84,7 @@ export class TransactionListComponent implements OnInit {
     this.updateFilterNow();
   }
 
-  openImportCsvDialog() {
+  startImportCsv() {
     const dialogRef = this.dialogService.openFormImport();
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
@@ -102,7 +102,7 @@ export class TransactionListComponent implements OnInit {
     });
   }
 
-  openAddTransactionDialog() {
+  startAddTransaction() {
     const transaction = new Transaction({
       single: new TransactionData({
         date: timestampNow(),
@@ -118,7 +118,7 @@ export class TransactionListComponent implements OnInit {
       });
   }
 
-  editTransaction(transaction: Transaction) {
+  startEditTransaction(transaction: Transaction) {
     const tempTransaction = Transaction.decode(Transaction.encode(transaction).finish());
     this.dialogService.openTransactionEdit(tempTransaction, MODE_EDIT)
       .afterClosed().subscribe(value => {
@@ -129,11 +129,9 @@ export class TransactionListComponent implements OnInit {
       });
   }
 
-  async deleteSelectedTransactions() {
-    const transactionsToDelete = this.selection.selected;
-
+  async deleteTransactions(transactions: Transaction[]) {
     // Detect orphans.
-    const affectedRowIds = extractAllTransactionData(transactionsToDelete)
+    const affectedRowIds = extractAllTransactionData(transactions)
       .map(data => data.importedRowId)
       .filter(rowId => rowId > 0);
     const orphanedRowIds: number[] = [];
@@ -141,7 +139,7 @@ export class TransactionListComponent implements OnInit {
       const referrers = this.dataService.getTransactionsReferringToImportedRow(rowId);
       // If there is no referring transaction left that is not about to be deleted,
       // the row is about to be orphaned.
-      if (!referrers.some(transaction => transactionsToDelete.indexOf(transaction) === -1)) {
+      if (!referrers.some(transaction => transactions.indexOf(transaction) === -1)) {
         orphanedRowIds.push(rowId);
       }
     }
@@ -150,7 +148,7 @@ export class TransactionListComponent implements OnInit {
     let deleteOrphans = false;
     if (orphanedRowIds.length > 0) {
       const result = await this.dialogService.openConfirmDeleteWithOrphans(
-        transactionsToDelete.length, orphanedRowIds.length).afterClosed().toPromise();
+        transactions.length, orphanedRowIds.length).afterClosed().toPromise();
 
       if (result === 'delete') {
         deleteOrphans = true;
@@ -161,14 +159,40 @@ export class TransactionListComponent implements OnInit {
       }
     }
 
-    this.dataService.removeTransactions(transactionsToDelete);
     this.selection.clear();
+    this.dataService.removeTransactions(transactions);
 
     if (deleteOrphans) {
       for (let rowId of orphanedRowIds) {
         this.dataService.removeImportedRow(rowId);
       }
     }
+  }
+
+  /**
+   * Puts a set of transactions into a single group. The set may contain
+   * both single and group transactions. The resulting group will have a union
+   * of all labels of its children.
+   */
+  groupTransactions(transactions: Transaction[]) {
+    const newChildren = extractAllTransactionData(transactions);
+    const newLabelsSet = new Set<string>();
+    for (let transaction of transactions) {
+      transaction.labels.forEach(newLabelsSet.add, newLabelsSet);
+    }
+
+    const newTransaction = new Transaction({
+      labels: Array.from(newLabelsSet),
+      isInternal: transactions.every(t => t.isInternal),
+      group: new GroupData({
+        children: newChildren,
+      }),
+    });
+
+    this.selection.clear();
+    this.dataService.removeTransactions(transactions);
+    this.dataService.addTransactions(newTransaction);
+    this.selection.select(newTransaction);
   }
 
   addLabelToTransaction(principal: Transaction, newLabel: string) {
