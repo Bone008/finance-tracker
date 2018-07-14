@@ -8,8 +8,8 @@ import { LoggerService } from '../../core/logger.service';
 import { moneyToNumber, timestampNow, timestampToDate } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
-import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 import { extractAllTransactionData } from '../model-util';
+import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 
 /** Time in ms to wait after input before applying the filter. */
 const FILTER_DEBOUNCE_TIME = 500;
@@ -248,11 +248,14 @@ export class TransactionListComponent implements OnInit {
     return moneyToNumber(transaction.single!.amount);
   }
 
+  isTransactionCash(transaction: Transaction): boolean {
+    return transaction.single!.isCash;
+  }
+
   formatTransactionNotes(transaction: Transaction): string {
     const data = [
       transaction.single!.who,
       transaction.single!.reason,
-      transaction.single!.comment
     ];
     return data.filter(value => !!value).join(", ");
   }

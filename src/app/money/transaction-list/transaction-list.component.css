@@ -22,13 +22,20 @@
 .mat-column-date {
   width: 90px;
 }
+
 .mat-column-amount {
-  width: 72px;
+  width: 100px;
   text-align: right;
 }
 .mat-column-amount.negative {
   color: #e74c3c;
 }
+.mat-column-amount .mat-icon {
+  font-size: 18px;
+  vertical-align: middle;
+  color: rgba(0, 0, 0, 0.54);
+}
+
 .mat-column-labels {
   width: 350px;
 }
@@ -48,11 +55,9 @@
   cursor: pointer;
   font: inherit;
 }
-
 .mat-column-labels .label-delete-button {
   border-left: 1px solid #999;
 }
-
 .mat-column-labels .label-delete-button .mat-icon {
   width: 1em;
   height: 1em;
@@ -71,4 +76,9 @@
 .add-inline-label.open {
   width: 75px;
   flex-grow: 1;
+}
+
+.mat-column-notes .notes-comment {
+  color: rgba(0,0,0, 0.54);
+  font-size: 90%;
 }

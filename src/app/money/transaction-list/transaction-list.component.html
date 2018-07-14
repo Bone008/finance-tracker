@@ -76,7 +76,10 @@
           <td mat-cell
               *matCellDef="let transaction"
               [class.negative]="getTransactionAmount(transaction) < 0">
-            {{getTransactionAmount(transaction) | number:'1.2-2'}}&nbsp;€
+            <span>{{getTransactionAmount(transaction) | number:'1.2-2'}}&nbsp;€</span>
+            <mat-icon>
+              {{isTransactionCash(transaction) ? 'money' : 'assignment'}}
+            </mat-icon>
           </td>
         </ng-container>
         <ng-container matColumnDef="labels">
@@ -109,15 +112,20 @@
             </div>
           </td>
         </ng-container>
-        <ng-container matColumnDef="note">
+        <ng-container matColumnDef="notes">
           <th mat-header-cell *matHeaderCellDef>Notes</th>
-          <td mat-cell *matCellDef="let transaction">{{formatTransactionNotes(transaction)}}</td>
+          <td mat-cell *matCellDef="let transaction">
+            {{formatTransactionNotes(transaction)}}
+            <span *ngIf="transaction.single?.comment" class="notes-comment">
+              <br>{{transaction.single!.comment}}
+            </span>
+          </td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="['select', 'date', 'amount', 'note', 'labels']; sticky: true"></tr>
+        <tr mat-header-row *matHeaderRowDef="['select', 'date', 'amount', 'notes', 'labels']; sticky: true"></tr>
         <tr
             mat-row
-            *matRowDef="let row; columns: ['select', 'date', 'amount', 'note', 'labels']"
+            *matRowDef="let row; columns: ['select', 'date', 'amount', 'notes', 'labels']"
             (click)="$event.stopPropagation(); selection.toggle(row)"
             [class.selected]="selection.isSelected(row)">
         </tr>

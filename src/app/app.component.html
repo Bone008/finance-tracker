@@ -1,8 +1,10 @@
 <mat-toolbar color="primary" class="primary-toolbar">
-  <img src="assets/app_icon_white.png" height="24" alt="">
+  <img src="assets/app_icon_white.png" height="24" alt="" class="app-icon">
   <span fxFlex>Finance Tracker</span>
-  <span>{{appMoney.status}}</span>
-  <button mat-button (click)="appMoney.syncData()">Save</button>
+  <span class="status">{{appMoney.status}}</span>
+  <button mat-icon-button (click)="appMoney.syncData()" matTooltip="Save">
+    <mat-icon>save</mat-icon>
+  </button>
 </mat-toolbar>
 
 <div class="main-app">
