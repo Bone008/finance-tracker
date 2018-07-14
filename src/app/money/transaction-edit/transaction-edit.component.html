@@ -30,7 +30,7 @@
                 name="amount"
                 min="0"
                 step="0.01"
-                [ngModel]="getAbsoluteAmount()"
+                [ngModel]="getAbsoluteAmount() || null"
                 (ngModelChange)="setAmount($event)"
                 [ngModelOptions]="{updateOn: 'blur'}"
                 placeholder="Amount"
