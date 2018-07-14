@@ -1,0 +1,8 @@
+.mat-dialog-content {
+  max-width: 300px;
+}
+
+.amount-remaining-field {
+  /* TODO: use theme color */
+  color: rgba(0, 0, 0, 0.38);
+}

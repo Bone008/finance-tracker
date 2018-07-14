@@ -1,5 +1,9 @@
 @import "~@angular/material/prebuilt-themes/indigo-pink.css";
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   background: #eef;
@@ -10,6 +14,15 @@ body {
   margin-top: 20px;
 }
 
-[hidden] {
-  display: none !important;
+.amount-field input {
+  text-align: right;
+  -moz-appearance: textfield; /* hide spinner in Firefox */
+}
+.amount-field.negative {
+  color: #e74c3c;
+}
+
+.amount-field input::-webkit-outer-spin-button,
+.amount-field input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
 }

@@ -5,7 +5,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
 import { GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
-import { cloneMessage, compareTimestamps, moneyToNumber, timestampNow, timestampToDate, timestampToWholeSeconds } from '../../core/proto-util';
+import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { extractTransactionData, forEachTransactionData, isGroup, isSingle, mapTransactionData, mapTransactionDataField } from '../model-util';
@@ -127,9 +127,33 @@ export class TransactionListComponent implements OnInit {
       .afterClosed().subscribe(value => {
         if (value) {
           Object.assign(transaction, tempTransaction);
-          console.log("Edited ", transaction);
+          console.log("Edited", transaction);
         }
       });
+  }
+
+  startSplitTransaction(transaction: Transaction) {
+    if (!isSingle(transaction)) throw new Error('only single transactions supported');
+    const data = transaction.single;
+
+    const dialogRef = this.dialogService.openTransactionSplit(data);
+    dialogRef.afterClosed().subscribe(value => {
+      if (value) {
+        const totalAmount = moneyToNumber(data.amount);
+        const newAmount =
+          Math.sign(totalAmount) * dialogRef.componentInstance.splitAmount;
+        const remainingAmount = totalAmount - newAmount;
+
+        const newTransaction = cloneMessage(Transaction, <Transaction>transaction);
+        newTransaction.single!.amount = numberToMoney(newAmount);
+        data.amount = numberToMoney(remainingAmount);
+
+        this.dataService.addTransactions(newTransaction);
+
+        this.selection.select(newTransaction);
+        console.log("Split", data, `into ${newAmount} + ${remainingAmount}.`);
+      }
+    });
   }
 
   async deleteTransactions(transactions: Transaction[]) {

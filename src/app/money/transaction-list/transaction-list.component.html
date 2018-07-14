@@ -33,10 +33,18 @@
       <button
           mat-icon-button
           color="primary"
-          matTooltip="Edit selected"
+          matTooltip="Edit selected ..."
           [disabled]="selection.selected.length !== 1"
           (click)="startEditTransaction(selection.selected[0])">
         <mat-icon>edit</mat-icon>
+      </button>
+      <button
+          mat-icon-button
+          color="primary"
+          matTooltip="Split selected ..."
+          [disabled]="selection.selected.length !== 1 || !selection.selected[0].single"
+          (click)="startSplitTransaction(selection.selected[0])">
+        <mat-icon>call_split</mat-icon>
       </button>
       <button
           mat-icon-button
