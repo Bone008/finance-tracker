@@ -94,7 +94,7 @@ export class TransactionListComponent implements OnInit {
         this.dataService.addImportedRows(entries.map(e => e.row));
         // Link transactions to their rows and store them.
         for (let entry of entries) {
-          console.assert(entry.transaction.single,
+          console.assert(entry.transaction.single != null,
             "import should only generate single transactions");
           entry.transaction.single!.importedRowId = entry.row.id;
           this.dataService.addTransactions(entry.transaction);
@@ -365,11 +365,14 @@ export class TransactionListComponent implements OnInit {
     const dataList = extractTransactionData(transaction);
 
     return filter.split(/\s+/).every(filterPart => {
+      const inverted = filterPart.startsWith("-");
+      if (inverted) filterPart = filterPart.substr(1);
+
       let filterRegex;
       try { filterRegex = new RegExp(filterPart, 'i'); }
       catch (e) { return true; } // Assume user is still typing, always pass.
 
-      return dataList.some(data =>
+      const match = dataList.some(data =>
         filterRegex.test(data.who)
         || filterRegex.test(data.whoIdentifier)
         || filterRegex.test(data.reason)
@@ -377,6 +380,8 @@ export class TransactionListComponent implements OnInit {
         || filterRegex.test(data.comment)
         || transaction.labels.some(label => filterRegex.test(label))
       );
+
+      return match !== inverted;
     });
   }
 
