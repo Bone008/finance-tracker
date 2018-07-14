@@ -8,7 +8,7 @@ import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, timestampNow, timestampToDate, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
-import { extractTransactionData, forEachTransactionData, isSingle, mapTransactionData, mapTransactionDataField } from '../model-util';
+import { extractTransactionData, forEachTransactionData, isGroup, isSingle, mapTransactionData, mapTransactionDataField } from '../model-util';
 import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 
 /** Time in ms to wait after input before applying the filter. */
@@ -197,6 +197,34 @@ export class TransactionListComponent implements OnInit {
     this.selection.select(newTransaction);
   }
 
+  ungroupTransaction(transaction: Transaction) {
+    if (!isGroup(transaction)) throw new Error('can only ungroup a group');
+
+    const newTransactions = transaction.group.children.map(
+      data => new Transaction({
+        single: data,
+        labels: transaction.labels.slice(),
+        isInternal: transaction.isInternal,
+        // TODO: Group comment is lost right now.
+      }));
+
+    this.selection.deselect(transaction);
+    this.dataService.removeTransactions(transaction);
+    this.dataService.addTransactions(newTransactions);
+    this.selection.select(...newTransactions);
+  }
+
+  /** Calls groupSelection or ungroupSelection, depending on what makes sense. */
+  groupOrUngroupTransactions(transactions: Transaction[]) {
+    if (this.canGroup(transactions)) {
+      this.groupTransactions(transactions);
+    } else if (this.canUngroup(transactions)) {
+      this.ungroupTransaction(transactions[0]);
+    } else {
+      throw new Error('invalid argument, can neither group nor ungroup');
+    }
+  }
+
   addLabelToTransaction(principal: Transaction, newLabel: string) {
     if (newLabel.length === 0) return;
     // If the principal is within the selection,
@@ -298,6 +326,20 @@ export class TransactionListComponent implements OnInit {
         [data.who, data.reason].filter(value => !!value).join(", "),
         data.comment
       ]);
+  }
+
+  canGroup(selected: Transaction[]): boolean {
+    return selected.length >= 2;
+  }
+
+  canUngroup(selected: Transaction[]): boolean {
+    return selected.length === 1 && isGroup(selected[0]);
+  }
+
+  getGroupTooltip(selected: Transaction[]): string {
+    if (this.canGroup(selected)) return "Group selection";
+    if (this.canUngroup(selected)) return "Ungroup selection";
+    return "Group/ungroup selection";
   }
 
   /** Comparator for transactions so they are sorted by date in descending order. */
