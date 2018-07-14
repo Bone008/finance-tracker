@@ -1,10 +1,8 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
-import { map } from "rxjs/operators";
 import { DataContainer, ImportedRow, Transaction, TransactionData } from "../../proto/model";
-import { compareTimestamps } from "../core/proto-util";
 import { pluralizeArgument } from "../core/util";
-import { extractAllTransactionData } from "./model-util";
+import { extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
 @Injectable({
   providedIn: 'root'
@@ -15,9 +13,6 @@ export class DataService {
   private readonly transactionsSubject = new BehaviorSubject<Transaction[]>([]);
 
   readonly transactions$ = this.transactionsSubject.asObservable();
-  readonly transactionsSorted$ = this.transactions$
-    // TODO: Also support group transactions.
-    .pipe(map(arr => arr.slice().sort((a, b) => -compareTimestamps(a.single!.date, b.single!.date))));
 
   setDataContainer(data: DataContainer) {
     this.data = data;
@@ -44,9 +39,8 @@ export class DataService {
 
   addTransactions(toAdd: Transaction | Transaction[]) {
     // Validate all importedRowIds.
-    for (let transactionData of extractAllTransactionData(toAdd)) {
-      this.validateImportedRowId(transactionData.importedRowId);
-    }
+    forEachTransactionData(toAdd,
+      data => this.validateImportedRowId(data.importedRowId));
 
     this.data.transactions = this.data.transactions.concat(toAdd);
     this.notifyTransactions();
@@ -86,8 +80,8 @@ export class DataService {
 
   getTransactionsReferringToImportedRow(importedRowId: number): Transaction[] {
     return this.data.transactions.filter(transaction => {
-      if (transaction.dataType === 'single') {
-        return transaction.single!.importedRowId === importedRowId;
+      if (isSingle(transaction)) {
+        return transaction.single.importedRowId === importedRowId;
       } else {
         return transaction.group!.children.some(child => child.importedRowId === importedRowId);
       }
@@ -95,7 +89,7 @@ export class DataService {
   }
 
   getTransactionDataReferringToImportedRow(importedRowId: number): TransactionData[] {
-    return extractAllTransactionData(this.data.transactions).filter(data => data.importedRowId === importedRowId);
+    return extractTransactionData(this.data.transactions).filter(data => data.importedRowId === importedRowId);
   }
 
   private notifyTransactions() {

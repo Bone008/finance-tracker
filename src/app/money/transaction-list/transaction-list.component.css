@@ -78,6 +78,9 @@
   flex-grow: 1;
 }
 
+.mat-column-notes {
+  padding: 10px 0;
+}
 .mat-column-notes .notes-comment {
   color: rgba(0,0,0, 0.54);
   font-size: 90%;

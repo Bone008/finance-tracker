@@ -1,11 +1,21 @@
-import { Money, google } from "../../proto/model";
 import * as Long from "long";
+import * as $protobuf from "protobufjs";
+import { google, Money } from "../../proto/model";
+
+/** Creates a deep copy of a message by encoding and decoding it. */
+export function cloneMessage<T extends {
+  encode: (message: M, writer?: $protobuf.Writer) => $protobuf.Writer,
+  decode: (reader: ($protobuf.Reader | Uint8Array), length?: number) => M,
+}, M>(messageType: T, message: M) {
+  const encoded = messageType.encode(message).finish();
+  return messageType.decode(encoded);
+}
 
 export function timestampNow(): google.protobuf.Timestamp {
   return dateToTimestamp(Date.now());
 }
 
-export function dateToTimestamp(date: Date|number): google.protobuf.Timestamp {
+export function dateToTimestamp(date: Date | number): google.protobuf.Timestamp {
   const time = date instanceof Date ? date.getTime() : date;
   return new google.protobuf.Timestamp({
     seconds: Math.trunc(time / 1000),

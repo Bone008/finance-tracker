@@ -2,13 +2,13 @@ import { SelectionModel } from '@angular/cdk/collections';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource } from '@angular/material';
 import { Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime, map } from 'rxjs/operators';
 import { GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
-import { moneyToNumber, timestampNow, timestampToDate } from '../../core/proto-util';
+import { cloneMessage, compareTimestamps, moneyToNumber, timestampNow, timestampToDate, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
-import { extractAllTransactionData } from '../model-util';
+import { extractTransactionData, forEachTransactionData, isSingle, mapTransactionData, mapTransactionDataField } from '../model-util';
 import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 
 /** Time in ms to wait after input before applying the filter. */
@@ -44,9 +44,10 @@ export class TransactionListComponent implements OnInit {
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsDataSource.filterPredicate = (transaction, filter) => this.matchesFilter(transaction, filter);
 
-    this.dataService.transactionsSorted$.subscribe(
-      value => this.transactionsDataSource.data = value
-    );
+    this.dataService.transactions$
+      .pipe(map(transactions => transactions.slice().sort(
+        (a, b) => this.compareTransactions(a, b))))
+      .subscribe(value => this.transactionsDataSource.data = value);
 
     this.filterSubject
       .pipe(debounceTime(FILTER_DEBOUNCE_TIME))
@@ -93,6 +94,8 @@ export class TransactionListComponent implements OnInit {
         this.dataService.addImportedRows(entries.map(e => e.row));
         // Link transactions to their rows and store them.
         for (let entry of entries) {
+          console.assert(entry.transaction.single,
+            "import should only generate single transactions");
           entry.transaction.single!.importedRowId = entry.row.id;
           this.dataService.addTransactions(entry.transaction);
         }
@@ -119,7 +122,7 @@ export class TransactionListComponent implements OnInit {
   }
 
   startEditTransaction(transaction: Transaction) {
-    const tempTransaction = Transaction.decode(Transaction.encode(transaction).finish());
+    const tempTransaction = cloneMessage(Transaction, transaction);
     this.dialogService.openTransactionEdit(tempTransaction, MODE_EDIT)
       .afterClosed().subscribe(value => {
         if (value) {
@@ -131,8 +134,7 @@ export class TransactionListComponent implements OnInit {
 
   async deleteTransactions(transactions: Transaction[]) {
     // Detect orphans.
-    const affectedRowIds = extractAllTransactionData(transactions)
-      .map(data => data.importedRowId)
+    const affectedRowIds = mapTransactionDataField(transactions, 'importedRowId')
       .filter(rowId => rowId > 0);
     const orphanedRowIds: number[] = [];
     for (let rowId of affectedRowIds) {
@@ -175,7 +177,7 @@ export class TransactionListComponent implements OnInit {
    * of all labels of its children.
    */
   groupTransactions(transactions: Transaction[]) {
-    const newChildren = extractAllTransactionData(transactions);
+    const newChildren = extractTransactionData(transactions);
     const newLabelsSet = new Set<string>();
     for (let transaction of transactions) {
       transaction.labels.forEach(newLabelsSet.add, newLabelsSet);
@@ -265,40 +267,74 @@ export class TransactionListComponent implements OnInit {
   }
 
   getTransactionDate(transaction: Transaction): Date {
-    return timestampToDate(transaction.single!.date);
+    // TODO properly create aggregate date of groups.
+    return timestampToDate(extractTransactionData(transaction)[0].date);
   }
 
   getTransactionAmount(transaction: Transaction): number {
-    return moneyToNumber(transaction.single!.amount);
+    return mapTransactionData(transaction, data => moneyToNumber(data.amount))
+      .reduce((a, b) => a + b, 0);
   }
 
-  isTransactionCash(transaction: Transaction): boolean {
-    return transaction.single!.isCash;
+  isTransactionCash(transaction: Transaction): boolean | null {
+    let anyFalse = false;
+    let anyTrue = false;
+    forEachTransactionData(transaction, data => {
+      if (data.isCash) anyTrue = true;
+      else anyFalse = true;
+    });
+
+    // Both or none present --> indeterminate.
+    if (anyFalse === anyTrue) return null;
+    // Either all true or all false.
+    return anyTrue;
   }
 
-  formatTransactionNotes(transaction: Transaction): string {
-    const data = [
-      transaction.single!.who,
-      transaction.single!.reason,
-    ];
-    return data.filter(value => !!value).join(", ");
+  /** Returns array of lines. */
+  formatTransactionNotes(transaction: Transaction): [string, string][] {
+    return extractTransactionData(transaction)
+      .sort((a, b) => -compareTimestamps(a.date, b.date))
+      .map<[string, string]>(data => [
+        [data.who, data.reason].filter(value => !!value).join(", "),
+        data.comment
+      ]);
+  }
+
+  /** Comparator for transactions so they are sorted by date in descending order. */
+  private compareTransactions(a: Transaction, b: Transaction) {
+    // NOTE: Could be optimized by calculating max in a manual loop
+    // and thus avoiding array allocations.
+    const timeA = isSingle(a)
+      ? timestampToWholeSeconds(a.single.date)
+      : Math.max(...a.group!.children.map(
+        child => timestampToWholeSeconds(child.date)));
+    const timeB = isSingle(b)
+      ? timestampToWholeSeconds(b.single.date)
+      : Math.max(...b.group!.children.map(
+        child => timestampToWholeSeconds(child.date)));
+
+    // TODO: If equal, sort by dateCreated, once it exists.
+    return -(timeA - timeB);
   }
 
   private matchesFilter(transaction: Transaction, filter: string): boolean {
     if (!filter) return true;
+
+    const dataList = extractTransactionData(transaction);
 
     return filter.split(/\s+/).every(filterPart => {
       let filterRegex;
       try { filterRegex = new RegExp(filterPart, 'i'); }
       catch (e) { return true; } // Assume user is still typing, always pass.
 
-      const data = transaction.single!;
-      return filterRegex.test(data.who)
+      return dataList.some(data =>
+        filterRegex.test(data.who)
         || filterRegex.test(data.whoIdentifier)
         || filterRegex.test(data.reason)
         || filterRegex.test(data.bookingText)
         || filterRegex.test(data.comment)
-        || transaction.labels.some(label => filterRegex.test(label));
+        || transaction.labels.some(label => filterRegex.test(label))
+      );
     });
   }
 
