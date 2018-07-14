@@ -136,21 +136,21 @@ export class TransactionListComponent implements OnInit {
     // Detect orphans.
     const affectedRowIds = mapTransactionDataField(transactions, 'importedRowId')
       .filter(rowId => rowId > 0);
-    const orphanedRowIds: number[] = [];
+    const orphanedRowIds = new Set<number>();
     for (let rowId of affectedRowIds) {
       const referrers = this.dataService.getTransactionsReferringToImportedRow(rowId);
       // If there is no referring transaction left that is not about to be deleted,
       // the row is about to be orphaned.
       if (!referrers.some(transaction => transactions.indexOf(transaction) === -1)) {
-        orphanedRowIds.push(rowId);
+        orphanedRowIds.add(rowId);
       }
     }
 
     // Ask what should happen to orphans.
     let deleteOrphans = false;
-    if (orphanedRowIds.length > 0) {
+    if (orphanedRowIds.size > 0) {
       const result = await this.dialogService.openConfirmDeleteWithOrphans(
-        transactions.length, orphanedRowIds.length).afterClosed().toPromise();
+        transactions.length, orphanedRowIds.size).afterClosed().toPromise();
 
       if (result === 'delete') {
         deleteOrphans = true;
@@ -165,7 +165,7 @@ export class TransactionListComponent implements OnInit {
     this.dataService.removeTransactions(transactions);
 
     if (deleteOrphans) {
-      for (let rowId of orphanedRowIds) {
+      for (let rowId of Array.from(orphanedRowIds)) {
         this.dataService.removeImportedRow(rowId);
       }
     }

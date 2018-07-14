@@ -63,6 +63,9 @@ export class DataService {
     }
 
     const index = this.data.importedRows.findIndex(row => row.id === rowId);
+    if (index === -1) {
+      throw new Error(`cannot delete row ${rowId} because it was not found`);
+    }
     this.data.importedRows.splice(index, 1);
     if (this.highestImportedRowId === rowId) {
       this.updateHighestImportedRowId();
