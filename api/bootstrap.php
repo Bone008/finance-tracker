@@ -26,6 +26,6 @@ Flight::map('error', function(Exception $e) {
 });
 
 // Set up routes.
-require_once 'blobstore.php';
+require_once 'storage.php';
 
 Flight::start();
