@@ -1,18 +1,46 @@
+import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable } from "@angular/core";
+import { Observable, of, throwError } from "rxjs";
+import { catchError, map } from "rxjs/operators";
 import { DataContainer, Transaction, TransactionData } from "../../proto/model";
+import { LoggerService } from "../core/logger.service";
 import { dateToTimestamp, numberToMoney, timestampNow } from "../core/proto-util";
 import { delay } from "../core/util";
 
 const STORAGE_KEY = "money_data_container";
+// For now a fixed value.
+const BLOB_ID = "0000-cafe-42ba";
+
+interface ApiResponse {
+  error?: string;
+  code?: number;
+  stackTrace?: number;
+}
+
+interface SaveStorageResponse extends ApiResponse {
+  success?: boolean;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class StorageService {
-  constructor() {
-    //this.mockData = new DataContainer();
-    //this.mockData.lastModified = dateToTimestamp(new Date('2018-05-20 19:34:52'));
-    //this.mockData.transactions = createDummyTransactions(50);
+  constructor(
+    private readonly httpClient: HttpClient,
+    private readonly loggerService: LoggerService
+  ) {
+  }
+
+  private logHttpErrors(error: HttpErrorResponse, friendlyError: string): Observable<never> {
+    if (error.error instanceof ErrorEvent) {
+      // A client-side or network error occurred.
+      this.loggerService.error("A network error occurred:", error.error.message);
+    } else {
+      // The backend returned an unsuccessful response code.
+      this.loggerService.error(`Server returned error code ${error.status}.`, error.error);
+    }
+
+    return throwError(friendlyError);
   }
 
   /**
@@ -20,6 +48,31 @@ export class StorageService {
    * Returns null if no data was saved yet.
    */
   loadData(): Promise<DataContainer | null> {
+    return this.httpClient.get(
+      '/api/storage/' + BLOB_ID,
+      { responseType: 'arraybuffer' }
+    )
+      .pipe(catchError((error: HttpErrorResponse) => {
+        if (error.status === 404) return of(null);
+        else return throwError(error);
+      }))
+      .pipe(catchError(e => this.logHttpErrors(e, "Error loading data!")))
+      .pipe(map(responseData => {
+        // Pass through not found.
+        if (responseData === null) return null;
+
+        // Decode if we have a response.
+        try {
+          return DataContainer.decode(new Uint8Array(responseData));
+        } catch (e) {
+          this.loggerService.error("Failed to decode:", e);
+          throw "Error decoding loaded data!";
+        }
+      }))
+      .toPromise();
+  }
+
+  loadDataLegacy(): Promise<DataContainer | null> {
     return delay(100).then(() => {
       const timeStart = performance.now();
 
@@ -40,6 +93,36 @@ export class StorageService {
   saveData(data: DataContainer): Promise<void> {
     data.lastModified = timestampNow();
 
+    const encodedData = DataContainer.encode(data).finish();
+
+    // The slicing is necessary because the ArrayBuffer that is underlying
+    // the Uint8Array may have a larger size than the actual data, which messes
+    // up the Content-Length header sent in the request, so the saved file
+    // on the server may contain bogus data.
+    const compactBuffer = encodedData.buffer.slice(0, encodedData.byteLength);
+
+    return this.httpClient.post<SaveStorageResponse>(
+      '/api/storage/' + BLOB_ID,
+      compactBuffer,
+      {
+        'headers': {
+          'Content-Type': 'application/octet-stream',
+        }
+      }
+    )
+      .pipe(catchError(e => this.logHttpErrors(e, "Saving failed!")))
+      .pipe(map(response => {
+        if (!response.success) {
+          this.loggerService.error("Server error while saving:", response.error);
+          if (response.stackTrace) {
+            this.loggerService.error("Server stack trace:\n" + response.stackTrace);
+          }
+          throw response.error;
+        }
+      })).toPromise();
+  }
+
+  saveDataLegacy(data: DataContainer): Promise<void> {
     const error = DataContainer.verify(data);
     if (error) return Promise.reject(error);
 
@@ -47,12 +130,6 @@ export class StorageService {
       const dataArray = DataContainer.encodeDelimited(data).finish();
       const stringified = this.binaryToString(dataArray);
       localStorage.setItem(STORAGE_KEY, stringified);
-
-      const dataArray2 = this.stringToBinary(stringified);
-      console.log(dataArray);
-      console.log(dataArray2);
-      const data2 = DataContainer.decodeDelimited(dataArray2);
-
       return Promise.resolve();
     } catch (e) {
       return Promise.reject(e);

@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PapaParseModule } from 'ngx-papaparse';
@@ -15,6 +16,7 @@ import { TransactionListComponent } from './transaction-list/transaction-list.co
   imports: [
     CommonModule,
     FormsModule,
+    HttpClientModule,
     MaterialModule,
     PapaParseModule,
   ],

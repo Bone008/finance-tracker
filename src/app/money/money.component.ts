@@ -1,9 +1,9 @@
 import { Component, OnInit, Output } from '@angular/core';
-import { StorageService, createDummyTransactions } from './storage.service';
-import { DataService } from './data.service';
 import { DataContainer } from '../../proto/model';
-import { timestampToDate } from '../core/proto-util';
 import { LoggerService } from '../core/logger.service';
+import { timestampToDate } from '../core/proto-util';
+import { DataService } from './data.service';
+import { createDummyTransactions, StorageService } from './storage.service';
 
 @Component({
   selector: 'app-money',
@@ -36,9 +36,8 @@ export class MoneyComponent implements OnInit {
           }
         },
         error => {
-          this.loggerService.error("Failed to load data: ", error);
           this.dataService.setDataContainer(new DataContainer());
-          this.status = "Error loading data";
+          this.status = error;
         })
       .then(() => this.hasData = true);
   }
@@ -49,9 +48,13 @@ export class MoneyComponent implements OnInit {
     this.status = "Saving ...";
 
     const data = this.dataService.getDataContainer();
-    await this.storageService.saveData(data)
-      .catch(e => this.loggerService.error("failed to sync data", e));
-    this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
+
+    try {
+      await this.storageService.saveData(data);
+      this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
+    } catch (e) {
+      this.status = e;
+    }
   }
 
   private formatDate(date: Date) {
