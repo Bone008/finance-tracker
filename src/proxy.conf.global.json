@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://REPLACE_WITH_BACKEND_HOST",
+    "auth": "REPLACE_WITH_USERNAME:PASSWORD",
+	"logLevel": "debug",
+    "changeOrigin": true
+  }
+}

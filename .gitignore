@@ -1,5 +1,9 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
+# local files containing credentials or other sensitive data
+*.local
+*.local.*
+
 # compiled output
 /dist
 /tmp
