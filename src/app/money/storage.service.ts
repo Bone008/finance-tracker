@@ -1,5 +1,6 @@
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable } from "@angular/core";
+import { gzip, ungzip } from "pako";
 import { Observable, of, throwError } from "rxjs";
 import { catchError, map } from "rxjs/operators";
 import { DataContainer, Transaction, TransactionData } from "../../proto/model";
@@ -61,9 +62,19 @@ export class StorageService {
         // Pass through not found.
         if (responseData === null) return null;
 
-        // Decode if we have a response.
+        // Decompress & decode if we have a response.
+        let uncompressedData: Uint8Array;
         try {
-          return DataContainer.decode(new Uint8Array(responseData));
+          uncompressedData = ungzip(new Uint8Array(responseData));
+        } catch (e) {
+          this.loggerService.error("Failed to decompress:", e);
+          // Attempt to decode without decompressing, the data may have been
+          // saved without compression.
+          uncompressedData = new Uint8Array(responseData);
+        }
+
+        try {
+          return DataContainer.decode(uncompressedData);
         } catch (e) {
           this.loggerService.error("Failed to decode:", e);
           throw "Error decoding loaded data!";
@@ -94,12 +105,13 @@ export class StorageService {
     data.lastModified = timestampNow();
 
     const encodedData = DataContainer.encode(data).finish();
+    const compressedData = gzip(encodedData);
 
     // The slicing is necessary because the ArrayBuffer that is underlying
     // the Uint8Array may have a larger size than the actual data, which messes
     // up the Content-Length header sent in the request, so the saved file
     // on the server may contain bogus data.
-    const compactBuffer = encodedData.buffer.slice(0, encodedData.byteLength);
+    const compactBuffer = compressedData.buffer.slice(0, compressedData.byteLength);
 
     return this.httpClient.post<SaveStorageResponse>(
       '/api/storage/' + BLOB_ID,

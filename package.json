@@ -8,8 +8,8 @@
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e",
-	"prepare": "npx patch-package",
-	"protoc": "node node_modules/protobufjs/cli/bin/pbjs -t static-module --force-message -o src/proto/model.js src/proto/*.proto && node node_modules/protobufjs/cli/bin/pbts -o src/proto/model.d.ts src/proto/model.js"
+    "prepare": "npx patch-package",
+    "protoc": "node node_modules/protobufjs/cli/bin/pbjs -t static-module --force-message -o src/proto/model.js src/proto/*.proto && node node_modules/protobufjs/cli/bin/pbts -o src/proto/model.d.ts src/proto/model.js"
   },
   "private": true,
   "dependencies": {
@@ -27,6 +27,7 @@
     "@angular/router": "^6.0.3",
     "core-js": "^2.5.4",
     "ngx-papaparse": "^2.1.4",
+    "pako": "^1.0.6",
     "protobufjs": "^6.8.6",
     "readable-stream": "^2.3.6",
     "rxjs": "^6.0.0",
@@ -40,6 +41,7 @@
     "@types/jasmine": "~2.8.6",
     "@types/jasminewd2": "~2.0.3",
     "@types/node": "~8.9.4",
+    "@types/pako": "^1.0.0",
     "codelyzer": "~4.2.1",
     "jasmine-core": "~2.99.1",
     "jasmine-spec-reporter": "~4.2.1",
