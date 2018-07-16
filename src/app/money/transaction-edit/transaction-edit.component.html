@@ -3,6 +3,7 @@
 <form #editForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
   <mat-dialog-content fxLayout="column">
     <mat-tab-group
+        fxFlex="none"
         [selectedIndex]="isNegative ? 0 : 1"
         (selectedTabChange)="isNegative = ($event.index === 0)">
       <mat-tab label="Expense"></mat-tab>
@@ -10,9 +11,9 @@
     </mat-tab-group>
 
     <div fxLayout="row" fxLayoutGap="1em" fxLayout.lt-md="column" fxLayoutGap.lt-md="0">
-      <div fxFlex.gt-sm="60" fxLayout="column">
-        <div fxLayout="row" fxLayout.xs="column" fxLayoutGap="10px">
-          <mat-form-field fxFlex.gt-xs="50">
+      <div fxFlex="none" fxFlex.gt-sm="60" fxLayout="column">
+        <div fxLayout="row" fxLayoutGap="10px" fxLayout.xs="column" fxLayoutGap.xs="0">
+          <mat-form-field fxFlex="none" fxFlex.gt-xs="50">
             <input
                 matInput
                 type="date"
@@ -22,7 +23,11 @@
                 placeholder="Date"
                 required>
           </mat-form-field>
-          <mat-form-field fxFlex.gt-xs="50" class="amount-field" [class.negative]="isNegative">
+          <mat-form-field
+              fxFlex="none"
+              fxFlex.gt-xs="50"
+              class="amount-field"
+              [class.negative]="isNegative">
             <input
                 cdkFocusInitial
                 matInput
@@ -68,7 +73,7 @@
         </mat-form-field>
       </div>
 
-      <div fxFlex.gt-sm="40" fxLayout="column">
+      <div fxFlex="none" fxFlex.gt-sm="40" fxLayout="column">
         <p>TODO: labels</p>
         <mat-form-field>
           <textarea
