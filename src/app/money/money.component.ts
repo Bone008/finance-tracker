@@ -4,7 +4,7 @@ import { timestampToDate } from '../core/proto-util';
 import { DataService } from './data.service';
 import { DialogService } from './dialog.service';
 import { StorageSettingsService } from './storage-settings.service';
-import { StorageService } from './storage.service';
+import { createDummyTransactions, StorageService } from './storage.service';
 
 @Component({
   selector: 'app-money',
@@ -56,8 +56,10 @@ export class MoneyComponent implements OnInit {
             this.dataService.setDataContainer(data);
             this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
           } else {
-            this.dataService.setDataContainer(new DataContainer());
-            this.status = "No saved data";
+            this.dataService.setDataContainer(new DataContainer({
+              transactions: createDummyTransactions(50),
+            }));
+            this.status = "Using dummy data";
           }
         },
         error => {
