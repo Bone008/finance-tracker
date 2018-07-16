@@ -1,8 +1,9 @@
 import { Component, OnInit, Output } from '@angular/core';
 import { DataContainer } from '../../proto/model';
-import { LoggerService } from '../core/logger.service';
 import { timestampToDate } from '../core/proto-util';
 import { DataService } from './data.service';
+import { DialogService } from './dialog.service';
+import { StorageSettingsService } from './storage-settings.service';
 import { createDummyTransactions, StorageService } from './storage.service';
 
 @Component({
@@ -18,9 +19,35 @@ export class MoneyComponent implements OnInit {
   constructor(
     private readonly dataService: DataService,
     private readonly storageService: StorageService,
-    private readonly loggerService: LoggerService, ) { }
+    private readonly storageSettingsService: StorageSettingsService,
+    private readonly dialogService: DialogService, ) { }
 
   ngOnInit() {
+    this.refreshData();
+  }
+
+  openSettings() {
+    const storageSettings = this.storageSettingsService.getSettings();
+    const originalSettings = Object.assign({}, storageSettings);
+
+    this.dialogService.openSettings(storageSettings)
+      .afterConfirmed().subscribe(() => {
+        this.storageSettingsService.setSettings(storageSettings);
+
+        const hasChanges = Object.keys(originalSettings).some(
+          key => originalSettings[key] !== storageSettings[key]);
+        if (hasChanges) {
+          this.refreshData();
+        }
+      });
+  }
+
+  refreshData() {
+    if (this.hasData) {
+      const choice = confirm("Refreshing data from the server will overwrite all unsaved changes. Are you sure?");
+      if (!choice) return;
+    }
+
     this.status = "Loading ...";
     this.storageService.loadData()
       .then(

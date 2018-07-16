@@ -2,11 +2,13 @@ import { ComponentType } from '@angular/cdk/portal';
 import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
 import { Observable } from 'rxjs';
-import { filter, map } from '../../../node_modules/rxjs/operators';
+import { filter, map } from 'rxjs/operators';
 import { Transaction, TransactionData } from '../../proto/model';
 import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
+import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogSplitTransactionComponent } from './dialog-split-transaction/dialog-split-transaction.component';
 import { FormImportComponent } from './form-import/form-import.component';
+import { StorageSettings } from './storage-settings.service';
 import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
 
 export type ConfirmableDialogRef<T> =
@@ -28,6 +30,12 @@ export type ConfirmableDialogRef<T> =
 export class DialogService {
 
   constructor(private readonly matDialog: MatDialog) { }
+
+  openSettings(storageSettings: StorageSettings): ConfirmableDialogRef<DialogSettingsComponent> {
+    return this.openConfirmable(DialogSettingsComponent, {
+      data: { storageSettings },
+    });
+  }
 
   openFormImport(): ConfirmableDialogRef<FormImportComponent> {
     return this.openConfirmable(FormImportComponent);

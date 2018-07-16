@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
 import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
+import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogSplitTransactionComponent } from './dialog-split-transaction/dialog-split-transaction.component';
 import { FormImportComponent } from './form-import/form-import.component';
 import { MoneyComponent } from './money.component';
@@ -28,12 +29,14 @@ import { TransactionListComponent } from './transaction-list/transaction-list.co
     AddInlineLabelComponent,
     DialogDeleteWithOrphansComponent,
     DialogSplitTransactionComponent,
+    DialogSettingsComponent,
   ],
   entryComponents: [
     FormImportComponent,
     TransactionEditComponent,
     DialogDeleteWithOrphansComponent,
     DialogSplitTransactionComponent,
+    DialogSettingsComponent,
   ],
   exports: [
     MoneyComponent,

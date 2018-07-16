@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { getRandomInt } from '../core/util';
 
 /** Regular expression that only matches properly formatted data keys. */
-const DATA_KEY_REGEXP = /^[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}$/;
+export const DATA_KEY_REGEXP = /^[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}$/;
 const DATA_KEY_BYTE_LENGTH = 8;
 
 export interface StorageSettings {
