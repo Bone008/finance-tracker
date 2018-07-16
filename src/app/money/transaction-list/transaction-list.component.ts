@@ -87,21 +87,19 @@ export class TransactionListComponent implements OnInit {
 
   startImportCsv() {
     const dialogRef = this.dialogService.openFormImport();
-    dialogRef.afterClosed().subscribe(result => {
-      if (result === true) {
-        const entries = dialogRef.componentInstance.entriesToImport;
-        // Store rows, which generates their ids.
-        this.dataService.addImportedRows(entries.map(e => e.row));
-        // Link transactions to their rows and store them.
-        for (let entry of entries) {
-          console.assert(entry.transaction.single != null,
-            "import should only generate single transactions");
-          entry.transaction.single!.importedRowId = entry.row.id;
-          this.dataService.addTransactions(entry.transaction);
-        }
-
-        this.loggerService.log(`Imported ${dialogRef.componentInstance.entriesToImport.length} transactions.`);
+    dialogRef.afterConfirmed().subscribe(() => {
+      const entries = dialogRef.componentInstance.entriesToImport;
+      // Store rows, which generates their ids.
+      this.dataService.addImportedRows(entries.map(e => e.row));
+      // Link transactions to their rows and store them.
+      for (let entry of entries) {
+        console.assert(entry.transaction.single != null,
+          "import should only generate single transactions");
+        entry.transaction.single!.importedRowId = entry.row.id;
+        this.dataService.addTransactions(entry.transaction);
       }
+
+      this.loggerService.log(`Imported ${dialogRef.componentInstance.entriesToImport.length} transactions.`);
     });
   }
 
@@ -114,21 +112,17 @@ export class TransactionListComponent implements OnInit {
     });
 
     this.dialogService.openTransactionEdit(transaction, MODE_ADD)
-      .afterClosed().subscribe((value: boolean) => {
-        if (value) {
-          this.dataService.addTransactions(transaction);
-        }
+      .afterConfirmed().subscribe(() => {
+        this.dataService.addTransactions(transaction);
       });
   }
 
   startEditTransaction(transaction: Transaction) {
     const tempTransaction = cloneMessage(Transaction, transaction);
     this.dialogService.openTransactionEdit(tempTransaction, MODE_EDIT)
-      .afterClosed().subscribe(value => {
-        if (value) {
-          Object.assign(transaction, tempTransaction);
-          console.log("Edited", transaction);
-        }
+      .afterConfirmed().subscribe(() => {
+        Object.assign(transaction, tempTransaction);
+        console.log("Edited", transaction);
       });
   }
 
@@ -137,22 +131,20 @@ export class TransactionListComponent implements OnInit {
     const data = transaction.single;
 
     const dialogRef = this.dialogService.openTransactionSplit(data);
-    dialogRef.afterClosed().subscribe(value => {
-      if (value) {
-        const totalAmount = moneyToNumber(data.amount);
-        const newAmount =
-          Math.sign(totalAmount) * dialogRef.componentInstance.splitAmount;
-        const remainingAmount = totalAmount - newAmount;
+    dialogRef.afterConfirmed().subscribe(() => {
+      const totalAmount = moneyToNumber(data.amount);
+      const newAmount =
+        Math.sign(totalAmount) * dialogRef.componentInstance.splitAmount;
+      const remainingAmount = totalAmount - newAmount;
 
-        const newTransaction = cloneMessage(Transaction, <Transaction>transaction);
-        newTransaction.single!.amount = numberToMoney(newAmount);
-        data.amount = numberToMoney(remainingAmount);
+      const newTransaction = cloneMessage(Transaction, <Transaction>transaction);
+      newTransaction.single!.amount = numberToMoney(newAmount);
+      data.amount = numberToMoney(remainingAmount);
 
-        this.dataService.addTransactions(newTransaction);
+      this.dataService.addTransactions(newTransaction);
 
-        this.selection.select(newTransaction);
-        console.log("Split", data, `into ${newAmount} + ${remainingAmount}.`);
-      }
+      this.selection.select(newTransaction);
+      console.log("Split", data, `into ${newAmount} + ${remainingAmount}.`);
     });
   }
 

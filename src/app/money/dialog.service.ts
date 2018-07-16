@@ -1,10 +1,22 @@
+import { ComponentType } from '@angular/cdk/portal';
 import { Injectable } from '@angular/core';
-import { MatDialog, MatDialogRef } from '@angular/material';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
+import { Observable } from 'rxjs';
+import { filter, map } from '../../../node_modules/rxjs/operators';
 import { Transaction, TransactionData } from '../../proto/model';
 import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './dialog-split-transaction/dialog-split-transaction.component';
 import { FormImportComponent } from './form-import/form-import.component';
 import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
+
+export type ConfirmableDialogRef<T> =
+  MatDialogRef<T, boolean> & {
+    /** Gets an observable that is notified when the dialog was confirmed. */
+    afterConfirmed: () => Observable<void>
+
+    /** Gets an observable that is notified when the dialog was cancelled. */
+    afterCancelled: () => Observable<void>
+  };
 
 /**
  * Specialized wrapper around MatDialog functionality
@@ -15,30 +27,52 @@ import { TransactionEditComponent } from './transaction-edit/transaction-edit.co
 })
 export class DialogService {
 
-  constructor(private readonly dialogService: MatDialog) { }
+  constructor(private readonly matDialog: MatDialog) { }
 
-  openFormImport(): MatDialogRef<FormImportComponent, boolean> {
-    return this.dialogService.open(FormImportComponent);
+  openFormImport(): ConfirmableDialogRef<FormImportComponent> {
+    return this.openConfirmable(FormImportComponent);
   }
 
   openTransactionEdit(transaction: Transaction, editMode: typeof TransactionEditComponent.prototype.editMode)
-    : MatDialogRef<TransactionEditComponent, boolean> {
-    return this.dialogService.open(TransactionEditComponent, {
+    : ConfirmableDialogRef<TransactionEditComponent> {
+    return this.openConfirmable(TransactionEditComponent, {
       data: { transaction, editMode },
     });
   }
 
   openTransactionSplit(transactionData: TransactionData)
-    : MatDialogRef<DialogSplitTransactionComponent, boolean> {
-    return this.dialogService.open(DialogSplitTransactionComponent, {
+    : ConfirmableDialogRef<DialogSplitTransactionComponent> {
+    return this.openConfirmable(DialogSplitTransactionComponent, {
       data: { transactionData },
     });
   }
 
   openConfirmDeleteWithOrphans(numTransactions: number, numOrphans: number)
     : MatDialogRef<DialogDeleteWithOrphansComponent, 'keep' | 'delete'> {
-    return this.dialogService.open(DialogDeleteWithOrphansComponent, {
+    return this.matDialog.open(DialogDeleteWithOrphansComponent, {
       data: { numTransactions, numOrphans },
     });
+  }
+
+  private openConfirmable<T, D = any>(
+    component: ComponentType<T>, config?: MatDialogConfig<D>)
+    : ConfirmableDialogRef<T> {
+    const dialogRef = this.matDialog.open(component, config) as ConfirmableDialogRef<T>;
+
+    dialogRef.afterConfirmed =
+      () => this.afterFilteredCloseImpl(dialogRef, value => value === true);
+    dialogRef.afterCancelled =
+      () => this.afterFilteredCloseImpl(dialogRef, value => value !== true);
+
+    return dialogRef;
+  }
+
+  private afterFilteredCloseImpl<T>(
+    dialogRef: MatDialogRef<T, boolean>,
+    predicate: (value: boolean | undefined) => boolean
+  ): Observable<void> {
+    return dialogRef.afterClosed()
+      .pipe(filter(predicate))
+      .pipe(map(value => { }));
   }
 }
