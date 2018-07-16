@@ -49,7 +49,12 @@ export class StorageService {
    * Returns null if no data was saved yet.
    */
   loadData(): Promise<DataContainer | null> {
-    const dataKey = this.storageSettingsService.getSettings().dataKey;
+    const storageSettings = this.storageSettingsService.getSettings();
+    if (!storageSettings) {
+      // We don't even have a data key yet.
+      return Promise.resolve(null);
+    }
+    const dataKey = storageSettings.dataKey;
 
     return this.httpClient.get(
       '/api/storage/' + dataKey,
@@ -115,7 +120,7 @@ export class StorageService {
     // on the server may contain bogus data.
     const compactBuffer = compressedData.buffer.slice(0, compressedData.byteLength);
 
-    const dataKey = this.storageSettingsService.getSettings().dataKey;
+    const dataKey = this.storageSettingsService.getOrInitSettings().dataKey;
     return this.httpClient.post<SaveStorageResponse>(
       '/api/storage/' + dataKey,
       compactBuffer,

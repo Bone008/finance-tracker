@@ -13,17 +13,26 @@ export interface StorageSettings {
   providedIn: 'root'
 })
 export class StorageSettingsService {
-  private settings: StorageSettings | null = null;
-
   constructor() { }
 
-  getSettings(): StorageSettings {
+  getSettings(): StorageSettings | null {
     let dataKey = localStorage.getItem('storage_settings_dataKey');
     if (!dataKey) {
-      dataKey = this.generateDataKey();
-      localStorage.setItem('storage_settings_dataKey', dataKey);
+      return null;
     }
     return { dataKey };
+  }
+
+  getOrInitSettings(): StorageSettings {
+    let settings = this.getSettings();
+    if (!settings) {
+      settings = {
+        dataKey: this.generateDataKey(),
+      };
+      this.setSettings(settings);
+    }
+
+    return settings;
   }
 
   setSettings(settings: StorageSettings) {

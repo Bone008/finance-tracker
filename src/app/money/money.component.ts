@@ -27,7 +27,7 @@ export class MoneyComponent implements OnInit {
   }
 
   openSettings() {
-    const storageSettings = this.storageSettingsService.getSettings();
+    const storageSettings = this.storageSettingsService.getOrInitSettings();
     const originalSettings = Object.assign({}, storageSettings);
 
     this.dialogService.openSettings(storageSettings)
