@@ -6,11 +6,10 @@ import { catchError, map } from "rxjs/operators";
 import { DataContainer, Transaction, TransactionData } from "../../proto/model";
 import { LoggerService } from "../core/logger.service";
 import { dateToTimestamp, numberToMoney, timestampNow } from "../core/proto-util";
-import { delay } from "../core/util";
+import { delay, getRandomBoolean, getRandomElement, getRandomInt } from "../core/util";
+import { StorageSettingsService } from "./storage-settings.service";
 
-const STORAGE_KEY = "money_data_container";
-// For now a fixed value.
-const BLOB_ID = "0000-cafe-42ba";
+const LEGACY_STORAGE_KEY = "money_data_container";
 
 interface ApiResponse {
   error?: string;
@@ -27,6 +26,7 @@ interface SaveStorageResponse extends ApiResponse {
 })
 export class StorageService {
   constructor(
+    private readonly storageSettingsService: StorageSettingsService,
     private readonly httpClient: HttpClient,
     private readonly loggerService: LoggerService
   ) {
@@ -49,8 +49,10 @@ export class StorageService {
    * Returns null if no data was saved yet.
    */
   loadData(): Promise<DataContainer | null> {
+    const dataKey = this.storageSettingsService.getSettings().dataKey;
+
     return this.httpClient.get(
-      '/api/storage/' + BLOB_ID,
+      '/api/storage/' + dataKey,
       { responseType: 'arraybuffer' }
     )
       .pipe(catchError((error: HttpErrorResponse) => {
@@ -87,7 +89,7 @@ export class StorageService {
     return delay(100).then(() => {
       const timeStart = performance.now();
 
-      const stringified = localStorage.getItem(STORAGE_KEY);
+      const stringified = localStorage.getItem(LEGACY_STORAGE_KEY);
       if (!stringified) {
         return null;
       }
@@ -113,8 +115,9 @@ export class StorageService {
     // on the server may contain bogus data.
     const compactBuffer = compressedData.buffer.slice(0, compressedData.byteLength);
 
+    const dataKey = this.storageSettingsService.getSettings().dataKey;
     return this.httpClient.post<SaveStorageResponse>(
-      '/api/storage/' + BLOB_ID,
+      '/api/storage/' + dataKey,
       compactBuffer,
       {
         'headers': {
@@ -141,7 +144,7 @@ export class StorageService {
     try {
       const dataArray = DataContainer.encodeDelimited(data).finish();
       const stringified = this.binaryToString(dataArray);
-      localStorage.setItem(STORAGE_KEY, stringified);
+      localStorage.setItem(LEGACY_STORAGE_KEY, stringified);
       return Promise.resolve();
     } catch (e) {
       return Promise.reject(e);
@@ -149,7 +152,7 @@ export class StorageService {
   }
 
   deleteData(): Promise<void> {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
     return Promise.resolve();
   }
 
@@ -217,17 +220,4 @@ export function createDummyTransactions(num: number): Transaction[] {
   }
 
   return transactions;
-}
-
-function getRandomElement<T>(arr: T[]): T {
-  return arr[getRandomInt(0, arr.length)];
-}
-
-/** Returns a random integer between min (inclusive) and max (exclusive). */
-function getRandomInt(min: number, max: number): number {
-  return min + Math.floor(Math.random() * (max - min));
-}
-
-function getRandomBoolean(): boolean {
-  return Math.random() < 0.5;
 }

@@ -8,7 +8,7 @@ function getVersionedFileFromId($id, $version) {
 	return STORAGE_DIR . $id . '__' . $version . '.bin';
 }
 
-Flight::route('GET /storage/@id:[0-9a-f-]+', function($id) {
+Flight::route('GET /storage/@id:[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}', function($id) {
 	$binFile = getFileFromId($id);
 	
 	if(file_exists($binFile)) {
@@ -19,7 +19,7 @@ Flight::route('GET /storage/@id:[0-9a-f-]+', function($id) {
 	}
 });
 
-Flight::route('POST /storage/@id', function($id) {
+Flight::route('POST /storage/@id:[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}', function($id) {
 	// Note: Not using $_POST because the data is coming in in raw binary form.
 	$postData = file_get_contents('php://input');
 	
