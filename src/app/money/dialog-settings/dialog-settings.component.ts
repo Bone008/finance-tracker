@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-import { DATA_KEY_REGEXP, StorageSettings } from '../storage-settings.service';
+import { DATA_KEY_REGEXP, StorageSettings, StorageSettingsService } from '../storage-settings.service';
 
 @Component({
   selector: 'app-dialog-settings',
@@ -13,12 +13,17 @@ export class DialogSettingsComponent implements OnInit {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) data: { storageSettings: StorageSettings },
+    private readonly storageSettingsService: StorageSettingsService,
     private readonly matDialogRef: MatDialogRef<DialogSettingsComponent>
   ) {
     this.storageSettings = data.storageSettings;
   }
 
   ngOnInit() {
+  }
+
+  randomizeDataKey() {
+    this.storageSettings.dataKey = this.storageSettingsService.generateDataKey();
   }
 
   onSubmit() {

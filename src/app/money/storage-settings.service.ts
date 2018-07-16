@@ -46,7 +46,7 @@ export class StorageSettingsService {
     return DATA_KEY_REGEXP.test(key);
   }
 
-  private generateDataKey(): string {
+  generateDataKey(): string {
     let key = '';
     for (let i = 0; i < DATA_KEY_BYTE_LENGTH * 2; i++) {
       if (i > 0 && i % 4 === 0) {

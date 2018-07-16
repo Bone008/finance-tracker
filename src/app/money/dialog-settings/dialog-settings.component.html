@@ -7,23 +7,31 @@
       to the server. To access your data on a different device, enter this key
       in the settings of that device.
     </p>
-    <mat-form-field floatLabel="always">
-      <input
-          #dataKey="ngModel"
-          matInput
-          name="dataKey"
-          [(ngModel)]="storageSettings.dataKey"
-          [pattern]="dataKeyPattern"
-          placeholder="Data key"
-          required>
-    </mat-form-field>
+    <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
+      <mat-form-field fxFlex>
+        <input
+            #dataKey="ngModel"
+            matInput
+            name="dataKey"
+            [(ngModel)]="storageSettings.dataKey"
+            [pattern]="dataKeyPattern"
+            placeholder="Data key"
+            required>
+      </mat-form-field>
+      <button
+          mat-raised-button
+          type="button"
+          (click)="randomizeDataKey()">
+        Randomize
+      </button>
+    </div>
 
     <p class="error" *ngIf="dataKey.invalid && dataKey.touched && dataKey.errors.required">
       Please enter a data key.
     </p>
     <p class="error" *ngIf="dataKey.invalid && dataKey.touched && dataKey.errors.pattern">
       The pattern of the data key is incorrect.
-      It should have the form of XXXX-XXXX-XXXX-XXXX.
+      It should have the form XXXX-XXXX-XXXX-XXXX.
     </p>
   </mat-dialog-content>
   
