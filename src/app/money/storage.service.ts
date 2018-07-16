@@ -3,10 +3,10 @@ import { Injectable } from "@angular/core";
 import { gzip, ungzip } from "pako";
 import { Observable, of, throwError } from "rxjs";
 import { catchError, map } from "rxjs/operators";
-import { DataContainer, Transaction, TransactionData } from "../../proto/model";
+import { DataContainer } from "../../proto/model";
 import { LoggerService } from "../core/logger.service";
-import { dateToTimestamp, numberToMoney, timestampNow } from "../core/proto-util";
-import { delay, getRandomBoolean, getRandomElement, getRandomInt } from "../core/util";
+import { timestampNow } from "../core/proto-util";
+import { delay } from "../core/util";
 import { StorageSettingsService } from "./storage-settings.service";
 
 const LEGACY_STORAGE_KEY = "money_data_container";
@@ -175,49 +175,4 @@ export class StorageService {
     }
     return bufferView;
   }
-}
-
-
-const MOCK_WHOS = ['Mueller GmbH', 'REWE Buxdehude', 'Dönerfritze 2000', 'Worker dude', 'SWEET JESUS AUTOHANDEL', 'Aral GmbH', 'AMAZON EU S.A R.L., NIEDERLASSUNG DEUTSCHLAND', 'PayPal (Europe) S.a.r.l. et Cie., S.C.A.'];
-const MOCK_COMMENTS = [
-  "pizza place",
-  "hans im glück",
-  "gift from grandma",
-  "not sure lol",
-  "only an estimate",
-];
-
-export function createDummyTransactions(num: number): Transaction[] {
-  const transactions = new Array<Transaction>(num);
-  for (let i = 0; i < num; i++) {
-    const date = new Date(Date.now() - getRandomInt(0, 120) * (24 * 60 * 60 * 1000));
-    const baseAmount = getRandomInt(100, 1000);
-    const exponent = getRandomInt(-2, 2);
-    const amount = (Math.random() > 0.7 ? 1 : -1) * baseAmount * Math.pow(10, exponent);
-
-    const labels: string[] = [];
-    if (getRandomBoolean())
-      labels.push(getRandomBoolean() ? 'food/groceries' : 'food/supermarket');
-    if (getRandomBoolean())
-      labels.push('travel');
-    if (getRandomBoolean())
-      labels.push('car/fuel');
-    if (getRandomInt(0, 3) === 0)
-      labels.push('accommodation');
-    if (amount > 0 && getRandomBoolean())
-      labels.push(getRandomBoolean() ? 'scholarship' : 'salary');
-
-    transactions[i] = new Transaction({
-      labels,
-      single: new TransactionData({
-        date: dateToTimestamp(date),
-        amount: numberToMoney(amount),
-        who: getRandomElement(MOCK_WHOS),
-        isCash: Math.random() > 0.8,
-        comment: getRandomBoolean() ? "" : getRandomElement(MOCK_COMMENTS),
-      }),
-    });
-  }
-
-  return transactions;
 }
