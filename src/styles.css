@@ -26,3 +26,12 @@ body {
 .amount-field input::-webkit-inner-spin-button {
     -webkit-appearance: none;
 }
+
+@media screen and (max-width: 599px) {
+  /* On xs screens, force dialogs to full width. */
+  .cdk-overlay-pane {
+    max-width: none !important;
+    width: 100%;
+    margin: 0 10px;
+  }
+}
