@@ -1,7 +1,7 @@
 <mat-toolbar color="primary" class="primary-toolbar">
   <img src="assets/app_icon_white.png" height="24" alt="" class="app-icon">
-  <span fxFlex>Finance Tracker</span>
-  <span class="status">{{appMoney.status}}</span>
+  <span fxHide.xs>Finance Tracker</span>
+  <span fxFlex class="status">{{appMoney.status}}</span>
   <button mat-icon-button (click)="appMoney.refreshData()" matTooltip="Refresh">
     <mat-icon>refresh</mat-icon>
   </button>
