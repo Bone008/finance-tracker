@@ -42,7 +42,7 @@
             mat-icon-button
             color="primary"
             matTooltip="Edit selected ..."
-            [disabled]="selection.selected.length !== 1"
+            [disabled]="selection.selected.length !== 1 || isTransactionGroup(selection.selected[0])"
             (click)="startEditTransaction(selection.selected[0])">
           <mat-icon>edit</mat-icon>
         </button>
