@@ -316,6 +316,8 @@ export class TransactionListComponent implements AfterViewInit {
     }
   }
 
+  isTransactionGroup = isGroup;
+
   getTransactionDate(transaction: Transaction): Date {
     // TODO properly create aggregate date of groups.
     return timestampToDate(extractTransactionData(transaction)[0].date);

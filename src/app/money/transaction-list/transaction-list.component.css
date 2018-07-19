@@ -48,6 +48,12 @@
 
 .transactions-container .cell-date {
   flex: 0 0 90px;
+  display: flex;
+  flex-direction: column;
+}
+.transactions-container .cell-date .grouped-comment {
+  color: rgba(0,0,0, 0.54);
+  font-size: 90%;
 }
 
 .transactions-container .cell-amount {
@@ -126,17 +132,26 @@
     position: absolute;
     left: 0;
   }
+
   .transactions-container .cell-date {
     flex-grow: 1;
+    display: block;
   }
+
+  .transactions-container .cell-date .grouped-comment {
+    margin-left: 15px;
+  }
+
   .transactions-container .cell-amount {
     page-break-after: always;
   }
+
   .transactions-container .cell-notes {
     flex-basis: 100%;
     padding-bottom: 4px;
     padding-top: 4px;
   }
+
   .transactions-container .cell-labels {
     flex-basis: 100%;
   }

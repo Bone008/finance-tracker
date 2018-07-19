@@ -84,8 +84,13 @@
             [checked]="selection.isSelected(transaction)">
         </mat-checkbox>
 
-        <div class="cell-date" [matTooltip]="getTransactionDate(transaction) | date:'medium'">
+        <div class="cell-date">
+          <span [matTooltip]="getTransactionDate(transaction) | date:'medium'">
             {{getTransactionDate(transaction) | date}}
+          </span>
+          <span *ngIf="isTransactionGroup(transaction)" class="grouped-comment">
+            {{transaction.group.children.length}}&nbsp;grouped
+          </span>
         </div>
 
         <div class="cell-amount" [class.negative]="getTransactionAmount(transaction) < 0">
