@@ -57,9 +57,11 @@
 }
 
 .transactions-container .cell-amount {
-  flex: 0 0 100px;
+  flex: 0 0 110px;
+  min-width: 0;
   text-align: right;
   font-size: 120%;
+  white-space: nowrap;
 }
 .transactions-container .cell-amount.negative {
   color: #e74c3c;
@@ -85,6 +87,8 @@
   flex: 0 1 40%;
 }
 .transactions-container .cell-labels .label-container {
+  display: flex;
+  flex-direction: row;
   margin-right: 4px;
   margin-top: 2px;
   margin-bottom: 2px;
@@ -154,5 +158,10 @@
 
   .transactions-container .cell-labels {
     flex-basis: 100%;
+  }
+  .transactions-container .cell-labels .label-filter-button,
+  .transactions-container .cell-labels .label-delete-button {
+    padding-top: 1px;
+    padding-bottom: 1px;
   }
 }
