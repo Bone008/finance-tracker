@@ -85,3 +85,120 @@
   color: rgba(0,0,0, 0.54);
   font-size: 90%;
 }
+
+
+
+
+
+
+
+
+.transactions-container .data-row {
+  display: flex;
+  flex-direction: row;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0,0,0,.12);
+  cursor: pointer;
+}
+.transactions-container .data-row.selected {
+  background: #eee;
+}
+
+.transactions-container .data-row > * {
+  /* Note: Don't use combined notation, we override top and bottom later. */
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+
+
+.transactions-container .cell-date {
+  flex: 0 0 90px;
+}
+
+.transactions-container .cell-amount {
+  flex: 0 0 100px;
+  text-align: right;
+  font-size: 120%;
+}
+.transactions-container .cell-amount.negative {
+  color: #e74c3c;
+}
+.transactions-container .cell-amount .mat-icon {
+  font-size: 18px;
+  vertical-align: middle;
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.transactions-container .cell-notes {
+  flex: 1 1 60%;
+  min-width: 0;
+  word-wrap: break-word;
+}
+.transactions-container .cell-notes .notes-comment {
+  color: rgba(0,0,0, 0.54);
+  font-size: 90%;
+}
+
+
+.transactions-container .cell-labels {
+  flex: 0 1 40%;
+}
+.transactions-container .cell-labels .label-container {
+  margin-right: 4px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  background: #eef;
+  border: 1px solid #999;
+  border-radius: 5px;
+}
+.transactions-container .cell-labels .label-filter-button,
+.transactions-container .cell-labels .label-delete-button {
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+.transactions-container .cell-labels .label-delete-button {
+  border-left: 1px solid #999;
+}
+.transactions-container .cell-labels .label-delete-button .mat-icon {
+  width: 1em;
+  height: 1em;
+  font-size: inherit;
+  transform: translateY(0.15em);
+}
+
+@media screen and (max-width: 959px) {
+  .transactions-container {
+    margin-left: -10px;
+    margin-right: -10px;
+  }
+
+  .transactions-container .data-row {
+    position: relative;
+    flex-wrap: wrap;
+    padding-left: 32px; /* leave space for absolutely positioned select */
+    padding-right: 0;
+  }
+
+  .transactions-container .cell-select {
+    position: absolute;
+    left: 0;
+  }
+  .transactions-container .cell-date {
+    flex-grow: 1;
+  }
+  .transactions-container .cell-amount {
+    page-break-after: always;
+  }
+  .transactions-container .cell-notes {
+    flex-basis: 100%;
+    padding-bottom: 4px;
+    padding-top: 4px;
+  }
+  .transactions-container .cell-labels {
+    flex-basis: 100%;
+  }
+}

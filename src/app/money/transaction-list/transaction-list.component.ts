@@ -1,7 +1,7 @@
 import { SelectionModel } from '@angular/cdk/collections';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource } from '@angular/material';
-import { Subject } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
 import { GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
@@ -19,8 +19,9 @@ const FILTER_DEBOUNCE_TIME = 500;
   templateUrl: './transaction-list.component.html',
   styleUrls: ['./transaction-list.component.css'],
 })
-export class TransactionListComponent implements OnInit {
-  transactionsDataSource = new MatTableDataSource<Transaction>();
+export class TransactionListComponent implements AfterViewInit {
+  readonly transactionsDataSource = new MatTableDataSource<Transaction>();
+  transactionsSubject = of<Transaction[]>([]);
   selection = new SelectionModel<Transaction>(true);
 
   @ViewChild(MatPaginator)
@@ -38,11 +39,14 @@ export class TransactionListComponent implements OnInit {
   constructor(
     private readonly dataService: DataService,
     private readonly loggerService: LoggerService,
-    private readonly dialogService: DialogService) { }
+    private readonly dialogService: DialogService,
+    private readonly changeDetector: ChangeDetectorRef) {
+  }
 
-  ngOnInit() {
+  ngAfterViewInit() {
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsDataSource.filterPredicate = (transaction, filter) => this.matchesFilter(transaction, filter);
+    this.transactionsSubject = this.transactionsDataSource.connect();
 
     this.dataService.transactions$
       .pipe(map(transactions => transactions.slice().sort(
@@ -52,6 +56,8 @@ export class TransactionListComponent implements OnInit {
     this.filterSubject
       .pipe(debounceTime(FILTER_DEBOUNCE_TIME))
       .subscribe(() => this.updateFilterNow());
+
+    this.changeDetector.detectChanges();
   }
 
   ngOnDestroy() {

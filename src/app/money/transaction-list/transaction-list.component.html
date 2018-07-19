@@ -64,6 +64,68 @@
       </button>
     </div>
 
+    <div class="transactions-container">
+      <div
+          class="data-row"
+          *ngFor="let transaction of (transactionsSubject | async)"
+          (click)="$event.stopPropagation(); selection.toggle(transaction)"
+          [class.selected]="selection.isSelected(transaction)">
+        <mat-checkbox
+            class="cell-select"
+            (click)="$event.stopPropagation()"
+            (change)="$event ? selection.toggle(transaction) : null"
+            [checked]="selection.isSelected(transaction)">
+        </mat-checkbox>
+
+        <div class="cell-date" [matTooltip]="getTransactionDate(transaction) | date:'medium'">
+            {{getTransactionDate(transaction) | date}}
+        </div>
+
+        <div class="cell-amount" [class.negative]="getTransactionAmount(transaction) < 0">
+          <span>{{getTransactionAmount(transaction) | number:'1.2-2'}}&nbsp;€</span>
+          <ng-container [ngSwitch]="isTransactionCash(transaction)">
+            <mat-icon *ngSwitchCase="true">money</mat-icon>
+            <mat-icon *ngSwitchCase="false">assignment</mat-icon>
+            <mat-icon *ngSwitchCase="null">list</mat-icon>
+          </ng-container>
+        </div>
+
+        <div class="cell-notes">
+          <div *ngFor="let line of formatTransactionNotes(transaction)">
+            <span>{{line[0]}}</span>
+            <br *ngIf="line[0] && line[1]">
+            <span *ngIf="line[1]" class="notes-comment">{{line[1]}}</span>
+          </div>
+        </div>
+
+        <div class="cell-labels" fxLayout="row wrap" fxLayoutAlign="start center">
+          <div
+              *ngFor="let label of transaction.labels"
+              class="label-container">
+            <button
+                (click)="$event.stopPropagation(); filterByLabel(label, $event.shiftKey)"
+                title="Click to filter by this label"
+                class="label-filter-button">
+              {{label}}
+            </button>
+            <button
+                (click)="$event.stopPropagation(); deleteLabelFromTransaction(transaction, label)"
+                title="Delete this label"
+                class="label-delete-button">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          <app-add-inline-label
+              #addInlineLabel
+              (addRequested)="addLabelToTransaction(transaction, $event)"
+              (deleteLastRequested)="deleteLastLabelFromTransaction(transaction)"
+              class="add-inline-label"
+              [class.open]="addInlineLabel.isOpen">
+          </app-add-inline-label>
+        </div>
+      </div>
+    </div>
+
     <table mat-table [dataSource]="transactionsDataSource">
       <ng-container matColumnDef="select">
           <th mat-header-cell *matHeaderCellDef fxHide.xs>
