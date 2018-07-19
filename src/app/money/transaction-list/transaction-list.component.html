@@ -28,43 +28,50 @@
       </button>
     </mat-form-field>
     
-    <div fxLayout="row" fxLayoutAlign="end center" fxLayoutGap="5px">
-      <span class="mat-caption">{{selection.selected.length}} selected</span>
-      <button
-          mat-icon-button
-          color="primary"
-          matTooltip="Edit selected ..."
-          [disabled]="selection.selected.length !== 1"
-          (click)="startEditTransaction(selection.selected[0])">
-        <mat-icon>edit</mat-icon>
-      </button>
-      <button
-          mat-icon-button
-          color="primary"
-          matTooltip="Split selected ..."
-          [disabled]="selection.selected.length !== 1 || !selection.selected[0].single"
-          (click)="startSplitTransaction(selection.selected[0])">
-        <mat-icon>call_split</mat-icon>
-      </button>
-      <button
-          mat-icon-button
-          color="primary"
-          [matTooltip]="getGroupTooltip(selection.selected)"
-          [disabled]="!canGroup(selection.selected) && !canUngroup(selection.selected)"
-          (click)="groupOrUngroupTransactions(selection.selected)">
-        <mat-icon>ballot</mat-icon>
-      </button>
-      <button
-          mat-icon-button
-          color="primary"
-          matTooltip="Delete selected"
-          [disabled]="selection.selected.length === 0"
-          (click)="deleteTransactions(selection.selected)">
-        <mat-icon>delete</mat-icon>
-      </button>
-    </div>
-
     <div class="transactions-container">
+      <div class="header-row" fxLayout="row" fxLayoutGap="5px">
+        <mat-checkbox
+            (change)="$event ? masterToggle() : null"
+            [checked]="selection.hasValue() && isAllSelected()"
+            [indeterminate]="selection.hasValue() && !isAllSelected()">
+        </mat-checkbox>
+        <span fxFlex></span>
+        <span class="mat-caption">{{selection.selected.length}} selected</span>
+
+        <button
+            mat-icon-button
+            color="primary"
+            matTooltip="Edit selected ..."
+            [disabled]="selection.selected.length !== 1"
+            (click)="startEditTransaction(selection.selected[0])">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            color="primary"
+            matTooltip="Split selected ..."
+            [disabled]="selection.selected.length !== 1 || !selection.selected[0].single"
+            (click)="startSplitTransaction(selection.selected[0])">
+          <mat-icon>call_split</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            color="primary"
+            [matTooltip]="getGroupTooltip(selection.selected)"
+            [disabled]="!canGroup(selection.selected) && !canUngroup(selection.selected)"
+            (click)="groupOrUngroupTransactions(selection.selected)">
+          <mat-icon>ballot</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            color="primary"
+            matTooltip="Delete selected"
+            [disabled]="selection.selected.length === 0"
+            (click)="deleteTransactions(selection.selected)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+
       <div
           class="data-row"
           *ngFor="let transaction of (transactionsSubject | async)"
@@ -126,92 +133,6 @@
       </div>
     </div>
 
-    <table mat-table [dataSource]="transactionsDataSource">
-      <ng-container matColumnDef="select">
-          <th mat-header-cell *matHeaderCellDef fxHide.xs>
-            <mat-checkbox (change)="$event ? masterToggle() : null"
-                          [checked]="selection.hasValue() && isAllSelected()"
-                          [indeterminate]="selection.hasValue() && !isAllSelected()">
-            </mat-checkbox>
-          </th>
-          <td mat-cell *matCellDef="let row" fxHide.xs>
-            <mat-checkbox (click)="$event.stopPropagation()"
-                          (change)="$event ? selection.toggle(row) : null"
-                          [checked]="selection.isSelected(row)">
-            </mat-checkbox>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Date</th>
-          <td mat-cell *matCellDef="let transaction" [matTooltip]="getTransactionDate(transaction) | date:'medium'">
-              <span fxHide.lt-md>{{getTransactionDate(transaction) | date}}</span>
-              <span fxHide.gt-sm>{{getTransactionDate(transaction) | date:'MMM d'}}</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="amount">
-          <th mat-header-cell *matHeaderCellDef>Amount</th>
-          <td mat-cell
-              *matCellDef="let transaction"
-              [class.negative]="getTransactionAmount(transaction) < 0">
-            <span>{{getTransactionAmount(transaction) | number:'1.2-2'}}&nbsp;€</span>
-            <ng-container [ngSwitch]="isTransactionCash(transaction)">
-              <mat-icon *ngSwitchCase="true">money</mat-icon>
-              <mat-icon *ngSwitchCase="false">assignment</mat-icon>
-              <mat-icon *ngSwitchCase="null">list</mat-icon>
-            </ng-container>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="labels">
-          <th mat-header-cell *matHeaderCellDef>Labels</th>
-          <td mat-cell *matCellDef="let transaction">
-            <div fxLayout="row wrap" fxLayoutAlign="start center">
-              <div
-                  *ngFor="let label of transaction.labels"
-                  class="label-container">
-                <button
-                    (click)="$event.stopPropagation(); filterByLabel(label, $event.shiftKey)"
-                    title="Click to filter by this label"
-                    class="label-filter-button">
-                  {{label}}
-                </button>
-                <button
-                    (click)="$event.stopPropagation(); deleteLabelFromTransaction(transaction, label)"
-                    title="Delete this label"
-                    class="label-delete-button">
-                  <mat-icon>close</mat-icon>
-                </button>
-              </div>
-              <app-add-inline-label
-                  #addInlineLabel
-                  (addRequested)="addLabelToTransaction(transaction, $event)"
-                  (deleteLastRequested)="deleteLastLabelFromTransaction(transaction)"
-                  class="add-inline-label"
-                  [class.open]="addInlineLabel.isOpen">
-              </app-add-inline-label>
-            </div>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="notes">
-          <th mat-header-cell *matHeaderCellDef>Notes</th>
-          <td mat-cell *matCellDef="let transaction">
-            <div *ngFor="let line of formatTransactionNotes(transaction)">
-              <span>{{line[0]}}</span>
-              <br *ngIf="line[1]">
-              <span *ngIf="line[1]" class="notes-comment">{{line[1]}}</span>
-            </div>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="['select', 'date', 'amount', 'notes', 'labels']; sticky: true"></tr>
-        <tr
-            mat-row
-            *matRowDef="let row; columns: ['select', 'date', 'amount', 'notes', 'labels']"
-            (click)="$event.stopPropagation(); selection.toggle(row)"
-            [class.selected]="selection.isSelected(row)">
-        </tr>
-    </table>
-    
     <mat-paginator [pageSizeOptions]="[20, 50, 100]" showFirstLastButtons></mat-paginator>
   </mat-card-content>
 </mat-card>
