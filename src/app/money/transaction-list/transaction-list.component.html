@@ -129,6 +129,7 @@
           </div>
           <app-add-inline-label
               #addInlineLabel
+              [excludedLabels]="transaction.labels"
               (addRequested)="addLabelToTransaction(transaction, $event)"
               (deleteLastRequested)="deleteLastLabelFromTransaction(transaction)"
               class="add-inline-label"

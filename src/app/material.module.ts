@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 
 import {
+  MatAutocompleteModule,
   MatButtonModule,
   MatCardModule,
   MatCheckboxModule,
@@ -18,10 +19,11 @@ import {
   MatTooltipModule,
 } from '@angular/material';
 
-import {FlexLayoutModule} from '@angular/flex-layout';
+import { FlexLayoutModule } from '@angular/flex-layout';
 
 @NgModule({
   imports: [
+    MatAutocompleteModule,
     MatButtonModule,
     MatCardModule,
     MatCheckboxModule,
@@ -40,6 +42,7 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     FlexLayoutModule,
   ],
   exports: [
+    MatAutocompleteModule,
     MatButtonModule,
     MatCardModule,
     MatCheckboxModule,

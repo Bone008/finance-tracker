@@ -8,9 +8,10 @@
       #labelInput
       (keyup.enter)="confirmAdd()"
       (keydown.backspace)="newLabel==='' ? requestDelete() : 0"
-      (keyup.escape)="labelInput.blur()"
+      (keydown.escape)="labelAutocomplete.isOpen ? 0 : labelInput.blur()"
       [(ngModel)]="newLabel"
       matInput
+      [matAutocomplete]="labelAutocomplete"
       placeholder="Add label">
   <button
       (click)="confirmAdd()"
@@ -27,4 +28,8 @@
       matSuffix>
     <mat-icon>add</mat-icon>
   </button>
+
+  <mat-autocomplete autoActiveFirstOption #labelAutocomplete="matAutocomplete">
+    <mat-option *ngFor="let label of allLabelsFiltered$ | async" [value]="label">{{label}}</mat-option>
+  </mat-autocomplete>
 </mat-form-field>
