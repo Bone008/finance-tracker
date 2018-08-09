@@ -52,7 +52,7 @@ export class FormatMappingBuilder<R> {
       // dynamic mapping that clients of this class perform.
       // The strong typing of R is only used for type-safe construction within
       // this builder.
-      mappings: <FormatMapping['mappings']>this.mappings,
+      mappings: <FormatMapping['mappings']><any>this.mappings,
     };
   }
 }
