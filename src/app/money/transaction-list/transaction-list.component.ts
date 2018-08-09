@@ -5,7 +5,7 @@ import { of, Subject } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
 import { GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
-import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToWholeSeconds } from '../../core/proto-util';
+import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { extractTransactionData, forEachTransactionData, isGroup, isSingle, mapTransactionData, mapTransactionDataField } from '../model-util';
@@ -389,8 +389,21 @@ export class TransactionListComponent implements AfterViewInit {
       : Math.max(...b.group!.children.map(
         child => timestampToWholeSeconds(child.date)));
 
-    // TODO: If equal, sort by dateCreated, once it exists.
-    return -(timeA - timeB);
+    if (timeA !== timeB) {
+      return -(timeA - timeB);
+    }
+
+    // Compare by date created if the other date is equal.
+    const createdA = isSingle(a)
+      ? timestampToMilliseconds(a.single.created)
+      : Math.max(...a.group!.children.map(
+        child => timestampToMilliseconds(child.created)));
+    const createdB = isSingle(b)
+      ? timestampToMilliseconds(b.single.created)
+      : Math.max(...b.group!.children.map(
+        child => timestampToMilliseconds(child.created)));
+
+    return -(createdA - createdB);
   }
 
   private matchesFilter(transaction: Transaction, filter: string): boolean {
