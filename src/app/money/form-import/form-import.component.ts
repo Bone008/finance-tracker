@@ -2,8 +2,10 @@ import { Component, EventEmitter, OnInit } from '@angular/core';
 import { PapaParseResult, PapaParseService } from 'ngx-papaparse';
 import { ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
-import { dateToTimestamp, numberToMoney, timestampToWholeSeconds } from '../../core/proto-util';
+import { timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
+import { FormatMapping } from './mapping-builder';
+import { MAPPINGS_BY_FORMAT } from './mappings';
 
 type FileFormat = 'ksk_camt' | 'ksk_creditcard';
 type FileEncoding = 'windows-1252' | 'utf-8';
@@ -96,7 +98,7 @@ export class FormImportComponent implements OnInit {
     this.resetPreview();
 
     const mappings = MAPPINGS_BY_FORMAT[fileFormat];
-    if(!mappings) {
+    if (!mappings) {
       this.reportError("Invalid file format.");
       return;
     }
@@ -109,7 +111,7 @@ export class FormImportComponent implements OnInit {
 
     // Process rows.
     for (let i = 0; i < csvData.data.length; i++) {
-      const row = csvData.data[i] as {[column: string]: string};
+      const row = csvData.data[i] as { [column: string]: string };
 
       if (this.isDuplicate(row, existingRows, mappings)) {
         this.duplicateCount++;
@@ -171,7 +173,7 @@ export class FormImportComponent implements OnInit {
     return true;
   }
 
-  private isDuplicate(row: {[column: string]: string}, existingRows: ImportedRow[], mappings: FormatMapping[]): boolean {
+  private isDuplicate(row: { [column: string]: string }, existingRows: ImportedRow[], mappings: FormatMapping[]): boolean {
     return existingRows.some(existing => {
       // Check if the set of all mapped columns is identical to
       // the new row. This is supposed to provide some robustness
@@ -191,99 +193,4 @@ export class FormImportComponent implements OnInit {
     this.loggerService.error(error);
   }
 
-}
-
-interface FormatMapping {
-  transactionKey: keyof ITransactionData;
-  column: string;
-  converterCallback?: (rawValue: string) => any;
-}
-
-const dateRegex = /^(\d\d)\.(\d\d)\.(\d\d)$/;
-function parseDate(rawValue: string) {
-  const match = dateRegex.exec(rawValue);
-  if (match === null) throw new Error("could not parse date: " + rawValue);
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  const year = 2000 + Number(match[3]);
-  return dateToTimestamp(new Date(year, month - 1, day));
-}
-
-function parseAmount(rawValue: string) {
-  // Assume German nubmer formatting.
-  const num = Number(rawValue.replace(/\./g, "").replace(/,/g, "."));
-  if (isNaN(num)) throw new Error("could not parse amount: " + rawValue);
-  return numberToMoney(num);
-}
-
-const KSK_CAMT_MAPPINGS: FormatMapping[] = [
-  createKskCamtMapping("date", "Valutadatum", parseDate),
-  createKskCamtMapping("amount", "Betrag", parseAmount),
-  createKskCamtMapping("reason", "Verwendungszweck", undefined),
-  createKskCamtMapping("who", "Beguenstigter/Zahlungspflichtiger", undefined),
-  createKskCamtMapping("whoIdentifier", "Kontonummer/IBAN", undefined),
-  createKskCamtMapping("bookingText", "Buchungstext", undefined),
-];
-const KSK_CREDITCARD_MAPPINGS: FormatMapping[] = [
-  createKskCreditcardMapping("date", "Belegdatum", parseDate),
-  createKskCreditcardMapping("amount", "Buchungsbetrag", parseAmount),
-  createKskCreditcardMapping("reason", "Transaktionsbeschreibung", undefined),
-  createKskCreditcardMapping("who", "Transaktionsbeschreibung Zusatz", undefined),
-];
-const MAPPINGS_BY_FORMAT: {[format: string]: FormatMapping[]} = {
-  'ksk_camt': KSK_CAMT_MAPPINGS,
-  'ksk_creditcard': KSK_CREDITCARD_MAPPINGS,
-};
-
-// Utility functions to provide type checking of column names.
-function createKskCamtMapping<K extends keyof ITransactionData>(
-  /**/ transactionKey: K,
-  /**/ column: keyof KskCamtRow,
-  /**/ converterCallback?: (rawValue: string) => ITransactionData[K]): FormatMapping {
-return { transactionKey, column, converterCallback };
-}
-function createKskCreditcardMapping<K extends keyof ITransactionData>(
-    /**/ transactionKey: K,
-    /**/ column: keyof KskCreditcardRow,
-    /**/ converterCallback?: (rawValue: string) => ITransactionData[K]): FormatMapping {
-  return { transactionKey, column, converterCallback };
-}
-
-interface KskCamtRow {
-  Auftragskonto: string;
-  "Auslagenersatz Ruecklastschrift": string;
-  "BIC (SWIFT-Code)": string;
-  "Beguenstigter/Zahlungspflichtiger": string;
-  Betrag: string;
-  Buchungstag: string;
-  Buchungstext: string;
-  "Glaeubiger ID": string;
-  Info: string;
-  "Kontonummer/IBAN": string;
-  "Kundenreferenz (End-to-End)": string;
-  "Lastschrift Ursprungsbetrag": string;
-  Mandatsreferenz: string;
-  Sammlerreferenz: string;
-  Valutadatum: string;
-  Verwendungszweck: string;
-  Waehrung: string;
-}
-
-interface KskCreditcardRow {
-  "Umsatz getätigt von": string;
-  "Belegdatum": string;
-  "Buchungsdatum": string;
-  "Originalbetrag": string;
-  "Originalwährung": string;
-  "Umrechnungskurs": string;
-  "Buchungsbetrag": string;
-  "Buchungswährung": string;
-  "Transaktionsbeschreibung": string;
-  "Transaktionsbeschreibung Zusatz": string;
-  "Buchungsreferenz": string;
-  "Gebührenschlüssel": string;
-  "Länderkennzeichen": string;
-  "BAR-Entgelt+Buchungsreferenz": string;
-  "AEE+Buchungsreferenz": string;
-  "Abrechnungskennzeichen": string;
 }
