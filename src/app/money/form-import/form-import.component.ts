@@ -4,7 +4,7 @@ import { ImportedRow, ITransactionData, Transaction, TransactionData } from '../
 import { LoggerService } from '../../core/logger.service';
 import { timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
-import { FormatMapping } from './mapping-builder';
+import { FormatMapping } from './format-mapping';
 import { MAPPINGS_BY_FORMAT } from './mappings';
 
 type FileFormat = 'ksk_camt' | 'ksk_creditcard';
@@ -97,13 +97,13 @@ export class FormImportComponent implements OnInit {
     console.log(csvData);
     this.resetPreview();
 
-    const mappings = MAPPINGS_BY_FORMAT[fileFormat];
-    if (!mappings) {
+    const mapping = MAPPINGS_BY_FORMAT[fileFormat];
+    if (!mapping) {
       this.reportError("Invalid file format.");
       return;
     }
 
-    if (!this.validateRequiredColumns(csvData.meta.fields, mappings)) {
+    if (!this.validateRequiredColumns(csvData.meta.fields, mapping)) {
       return;
     }
 
@@ -113,7 +113,7 @@ export class FormImportComponent implements OnInit {
     for (let i = 0; i < csvData.data.length; i++) {
       const row = csvData.data[i] as { [column: string]: string };
 
-      if (this.isDuplicate(row, existingRows, mappings)) {
+      if (this.isDuplicate(row, existingRows, mapping)) {
         this.duplicateCount++;
         continue;
       }
@@ -129,23 +129,18 @@ export class FormImportComponent implements OnInit {
       }
 
       const transactionProperties: ITransactionData = {};
-      transactionProperties.isCash = false;
 
       let hasErrors = false;
-      for (let mapping of mappings) {
-        const rawValue = row[mapping.column];
+      for (let [key, mapperCallback] of Object.entries(mapping.mappings)) {
         let value: any;
-        if (mapping.converterCallback) {
-          try { value = mapping.converterCallback(rawValue); }
-          catch (e) {
-            this.reportError(`Import error in row ${i}: ${e}`);
-            hasErrors = true;
-          }
-        } else {
-          value = rawValue;
+        try { value = mapperCallback!(row); }
+        catch (e) {
+          this.reportError(`Import error in row ${i}: ${e}`);
+          hasErrors = true;
+          continue;
         }
 
-        transactionProperties[mapping.transactionKey] = value;
+        transactionProperties[key] = value;
       }
       if (hasErrors) {
         continue;
@@ -162,9 +157,8 @@ export class FormImportComponent implements OnInit {
     console.log(this.entriesToImport);
   }
 
-  private validateRequiredColumns(presentColumns: string[], mappings: FormatMapping[]): boolean {
-    const missingColumns = mappings
-      .map(mapping => mapping.column)
+  private validateRequiredColumns(presentColumns: string[], mapping: FormatMapping): boolean {
+    const missingColumns = mapping.requiredColumns
       .filter(column => presentColumns.indexOf(column) === -1);
     if (missingColumns.length > 0) {
       this.reportError("Import failed: Required columns are missing from data: " + missingColumns.join(", "));
@@ -173,14 +167,14 @@ export class FormImportComponent implements OnInit {
     return true;
   }
 
-  private isDuplicate(row: { [column: string]: string }, existingRows: ImportedRow[], mappings: FormatMapping[]): boolean {
+  private isDuplicate(row: { [column: string]: string }, existingRows: ImportedRow[], mapping: FormatMapping): boolean {
     return existingRows.some(existing => {
       // Check if the set of all mapped columns is identical to
       // the new row. This is supposed to provide some robustness
       // against small file format changes by only checking the fields
       // that are relevant to the app instead of all of them.
-      for (let mapping of mappings) {
-        if (row[mapping.column] !== existing.values[mapping.column]) {
+      for (let column of mapping.requiredColumns) {
+        if (row[column] !== existing.values[column]) {
           return false;
         }
       }
