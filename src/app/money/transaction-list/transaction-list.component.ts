@@ -94,6 +94,8 @@ export class TransactionListComponent implements AfterViewInit {
   startImportCsv() {
     const dialogRef = this.dialogService.openFormImport();
     dialogRef.afterConfirmed().subscribe(() => {
+      this.selection.clear();
+
       const entries = dialogRef.componentInstance.entriesToImport;
       // Store rows, which generates their ids.
       this.dataService.addImportedRows(entries.map(e => e.row));
@@ -103,6 +105,8 @@ export class TransactionListComponent implements AfterViewInit {
           "import should only generate single transactions");
         entry.transaction.single!.importedRowId = entry.row.id;
         this.dataService.addTransactions(entry.transaction);
+
+        this.selection.select(entry.transaction);
       }
 
       this.loggerService.log(`Imported ${dialogRef.componentInstance.entriesToImport.length} transactions.`);
