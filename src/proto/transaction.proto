@@ -49,6 +49,13 @@ message TransactionData {
   // Whether the transaction happened through cash or a bank statement (or equivalent).
   bool is_cash = 9;
 
+  // Automatic, readonly value that keeps track of when this entry was first recorded.
+  Timestamp created = 20;
+
+  // Automatic, mutable, optional value that is updated whenever this entry is changed.
+  // Initially unset when the transaction is first recorded.
+  Timestamp modified = 21;
+
   // The id of the ImportedRow entry, if this transaction was imported.
   // A value of 0 means that the transaction is not linked to an ImportedRow.
   // Multiple transactions may be linked to the same row.

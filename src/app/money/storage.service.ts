@@ -215,6 +215,7 @@ export function createDummyTransactions(num: number): Transaction[] {
     transactions[i] = new Transaction({
       labels,
       single: new TransactionData({
+        created: timestampNow(),
         date: dateToTimestamp(date),
         amount: numberToMoney(amount),
         who: getRandomElement(MOCK_WHOS),

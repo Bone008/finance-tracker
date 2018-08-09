@@ -123,6 +123,7 @@ export class TransactionListComponent implements AfterViewInit {
 
     this.dialogService.openTransactionEdit(transaction, MODE_ADD)
       .afterConfirmed().subscribe(() => {
+        transaction.single!.created = timestampNow();
         this.dataService.addTransactions(transaction);
       });
   }
@@ -132,6 +133,7 @@ export class TransactionListComponent implements AfterViewInit {
     this.dialogService.openTransactionEdit(tempTransaction, MODE_EDIT)
       .afterConfirmed().subscribe(() => {
         Object.assign(transaction, tempTransaction);
+        transaction.single!.modified = timestampNow();
         console.log("Edited", transaction);
       });
   }
@@ -150,6 +152,10 @@ export class TransactionListComponent implements AfterViewInit {
       const newTransaction = cloneMessage(Transaction, <Transaction>transaction);
       newTransaction.single!.amount = numberToMoney(newAmount);
       data.amount = numberToMoney(remainingAmount);
+
+      const now = timestampNow();
+      newTransaction.single!.modified = now;
+      data.modified = now;
 
       this.dataService.addTransactions(newTransaction);
 

@@ -2,7 +2,7 @@ import { Component, EventEmitter, OnInit } from '@angular/core';
 import { PapaParseResult, PapaParseService } from 'ngx-papaparse';
 import { ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
-import { timestampToWholeSeconds } from '../../core/proto-util';
+import { timestampNow, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { FormatMapping } from './format-mapping';
 import { MAPPINGS_BY_FORMAT } from './mappings';
@@ -129,6 +129,7 @@ export class FormImportComponent implements OnInit {
       }
 
       const transactionProperties: ITransactionData = {};
+      transactionProperties.created = timestampNow();
 
       let hasErrors = false;
       for (let [key, mapperCallback] of Object.entries(mapping.mappings)) {

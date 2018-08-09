@@ -105,7 +105,9 @@
     </div>
     
     <p *ngIf="editMode==='edit'">
-      This transaction is {{singleData.importedRowId > 0 ? 'linked to CSV row #' + singleData.importedRowId : 'not linked to a CSV row'}}.
+      This transaction is {{singleData.importedRowId > 0 ? 'linked to CSV row #' + singleData.importedRowId : 'not linked to a CSV row'}}.<br>
+      It was created on {{getDateCreated() | date:'medium'}} and
+      {{getDateModified() ? 'modified on ' + (getDateModified() | date:'medium') : 'never modified'}}.
     </p>
   </mat-dialog-content>
   
