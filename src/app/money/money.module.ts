@@ -20,6 +20,7 @@ const appRoutes: Routes = [
   { path: 'transactions', component: TransactionListComponent },
   { path: 'labels', component: LabelsComponent },
   { path: 'analytics', component: AnalyticsComponent },
+  { path: '', pathMatch: 'full', redirectTo: 'transactions' }
 ];
 
 @NgModule({
