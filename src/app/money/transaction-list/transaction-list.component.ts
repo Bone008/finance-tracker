@@ -5,7 +5,7 @@ import { of, Subject } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
 import { GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
-import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToWholeSeconds } from '../../core/proto-util';
+import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { extractTransactionData, forEachTransactionData, isGroup, isSingle, mapTransactionData, mapTransactionDataField } from '../model-util';
@@ -94,6 +94,8 @@ export class TransactionListComponent implements AfterViewInit {
   startImportCsv() {
     const dialogRef = this.dialogService.openFormImport();
     dialogRef.afterConfirmed().subscribe(() => {
+      this.selection.clear();
+
       const entries = dialogRef.componentInstance.entriesToImport;
       // Store rows, which generates their ids.
       this.dataService.addImportedRows(entries.map(e => e.row));
@@ -103,6 +105,8 @@ export class TransactionListComponent implements AfterViewInit {
           "import should only generate single transactions");
         entry.transaction.single!.importedRowId = entry.row.id;
         this.dataService.addTransactions(entry.transaction);
+
+        this.selection.select(entry.transaction);
       }
 
       this.loggerService.log(`Imported ${dialogRef.componentInstance.entriesToImport.length} transactions.`);
@@ -119,6 +123,7 @@ export class TransactionListComponent implements AfterViewInit {
 
     this.dialogService.openTransactionEdit(transaction, MODE_ADD)
       .afterConfirmed().subscribe(() => {
+        transaction.single!.created = timestampNow();
         this.dataService.addTransactions(transaction);
       });
   }
@@ -128,6 +133,7 @@ export class TransactionListComponent implements AfterViewInit {
     this.dialogService.openTransactionEdit(tempTransaction, MODE_EDIT)
       .afterConfirmed().subscribe(() => {
         Object.assign(transaction, tempTransaction);
+        transaction.single!.modified = timestampNow();
         console.log("Edited", transaction);
       });
   }
@@ -146,6 +152,10 @@ export class TransactionListComponent implements AfterViewInit {
       const newTransaction = cloneMessage(Transaction, <Transaction>transaction);
       newTransaction.single!.amount = numberToMoney(newAmount);
       data.amount = numberToMoney(remainingAmount);
+
+      const now = timestampNow();
+      newTransaction.single!.modified = now;
+      data.modified = now;
 
       this.dataService.addTransactions(newTransaction);
 
@@ -379,8 +389,21 @@ export class TransactionListComponent implements AfterViewInit {
       : Math.max(...b.group!.children.map(
         child => timestampToWholeSeconds(child.date)));
 
-    // TODO: If equal, sort by dateCreated, once it exists.
-    return -(timeA - timeB);
+    if (timeA !== timeB) {
+      return -(timeA - timeB);
+    }
+
+    // Compare by date created if the other date is equal.
+    const createdA = isSingle(a)
+      ? timestampToMilliseconds(a.single.created)
+      : Math.max(...a.group!.children.map(
+        child => timestampToMilliseconds(child.created)));
+    const createdB = isSingle(b)
+      ? timestampToMilliseconds(b.single.created)
+      : Math.max(...b.group!.children.map(
+        child => timestampToMilliseconds(child.created)));
+
+    return -(createdA - createdB);
   }
 
   private matchesFilter(transaction: Transaction, filter: string): boolean {

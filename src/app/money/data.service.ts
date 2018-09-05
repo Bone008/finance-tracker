@@ -72,6 +72,18 @@ export class DataService {
     }
   }
 
+  getAllLabels(): string[] {
+    const labels: string[] = [];
+    for (let transaction of this.data.transactions) {
+      for (let label of transaction.labels) {
+        if (labels.indexOf(label) === -1) {
+          labels.push(label);
+        }
+      }
+    }
+    return labels;
+  }
+
   getImportedRowById(id: number): ImportedRow | null {
     return this.data.importedRows.find(row => row.id === id) || null;
   }

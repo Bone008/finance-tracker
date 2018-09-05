@@ -1,7 +1,7 @@
-import { Component, OnInit, Input, Inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
-import { Transaction, Money, TransactionData } from '../../../proto/model';
-import { moneyToNumber, numberToMoney, dateToTimestamp, timestampToDate } from '../../core/proto-util';
+import { Component, Inject, OnInit } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { Money, Transaction, TransactionData } from '../../../proto/model';
+import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../core/proto-util';
 
 export const MODE_ADD = 'add';
 export const MODE_EDIT = 'edit';
@@ -37,7 +37,7 @@ export class TransactionEditComponent implements OnInit {
     this.singleData = data.transaction.single!;
     this.editMode = data.editMode;
 
-    if(!this.singleData.amount) {
+    if (!this.singleData.amount) {
       this.singleData.amount = new Money();
     }
 
@@ -73,6 +73,14 @@ export class TransactionEditComponent implements OnInit {
 
   getAbsoluteAmount(): number {
     return Math.abs(moneyToNumber(this.singleData.amount));
+  }
+
+  getDateCreated(): Date {
+    return timestampToDate(this.singleData.created);
+  }
+
+  getDateModified(): Date | null {
+    return this.singleData.modified ? timestampToDate(this.singleData.modified) : null;
   }
 
   onSubmit() {
