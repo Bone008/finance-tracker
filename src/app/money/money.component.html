@@ -1,2 +1,20 @@
-<app-transaction-list *ngIf="hasData">
-</app-transaction-list>
+<mat-sidenav-container style="background:none;">
+  <mat-sidenav mode="side" fixedInViewport fixedTopGap="64" opened>
+    <mat-nav-list>
+      <a mat-list-item routerLink="/transactions" routerLinkActive="active">
+        <mat-icon>list</mat-icon>&nbsp;Transactions
+      </a>
+      <a mat-list-item routerLink="/labels" routerLinkActive="active">
+        <mat-icon>label</mat-icon>&nbsp;Labels
+      </a>
+      <a mat-list-item routerLink="/analytics" routerLinkActive="active">
+        <mat-icon>bar_chart</mat-icon>&nbsp;Analytics
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <section class="main-app">
+    <router-outlet></router-outlet>
+  </section>
+</mat-sidenav-container>
+

@@ -12,10 +12,20 @@ import { MoneyComponent } from './money.component';
 import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
 import { AddInlineLabelComponent } from './transaction-list/add-inline-label.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
+import { RouterModule, Routes } from '@angular/router';
+import { AnalyticsComponent } from './analytics/analytics.component';
+import { LabelsComponent } from './labels/labels.component';
+
+const appRoutes: Routes = [
+  { path: 'transactions', component: TransactionListComponent },
+  { path: 'labels', component: LabelsComponent },
+  { path: 'analytics', component: AnalyticsComponent },
+];
 
 @NgModule({
   imports: [
     CommonModule,
+    RouterModule.forRoot(appRoutes),
     FormsModule,
     HttpClientModule,
     MaterialModule,
@@ -23,6 +33,7 @@ import { TransactionListComponent } from './transaction-list/transaction-list.co
   ],
   declarations: [
     MoneyComponent,
+    AnalyticsComponent,
     FormImportComponent,
     TransactionEditComponent,
     TransactionListComponent,
@@ -30,6 +41,7 @@ import { TransactionListComponent } from './transaction-list/transaction-list.co
     DialogDeleteWithOrphansComponent,
     DialogSplitTransactionComponent,
     DialogSettingsComponent,
+    LabelsComponent,
   ],
   entryComponents: [
     FormImportComponent,

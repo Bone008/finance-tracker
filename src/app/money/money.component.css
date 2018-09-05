@@ -1,0 +1,11 @@
+.main-app {
+  margin: auto;
+  max-width: 1300px;
+}
+
+.mat-sidenav .mat-list-item {
+  transition: background 400ms ease;
+}
+.mat-sidenav .mat-list-item.active {
+  background: #eef;
+}
