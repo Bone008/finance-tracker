@@ -13,6 +13,11 @@
   background: white;
 }
 
+.transactions-container .header-row .selection-summary {
+  flex-grow: 1;
+  text-align: center;
+}
+
 .transactions-container .data-row {
   display: flex;
   flex-direction: row;
@@ -50,7 +55,7 @@
   font-size: 120%;
   white-space: nowrap;
 }
-.transactions-container .cell-amount.negative {
+.negative {
   color: #e74c3c;
 }
 .transactions-container .cell-amount .mat-icon {

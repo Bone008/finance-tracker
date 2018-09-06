@@ -36,7 +36,22 @@
             [indeterminate]="selection.hasValue() && !isAllSelected()">
         </mat-checkbox>
         <span fxFlex></span>
-        <span class="mat-caption">{{selection.selected.length}} selected</span>
+        <div
+            *ngIf="getSelectionSummary() as summary"
+            fxLayout="row wrap" fxLayoutAlign="center" fxLayoutGap="12px"
+            class="mat-caption selection-summary">
+          <span *ngIf="!summary.datesAreSame">{{summary.dateFirst | date}} - {{summary.dateLast | date}}</span>
+          <span>{{summary.diffDays}} days</span>
+          <span *ngIf="summary.diffMonths >= 3">{{summary.diffMonths}} months</span>
+          <span>
+            <span [class.negative]="summary.sum < 0">{{summary.sum | number:'1.2-2'}}&nbsp;€</span>
+            <span *ngIf="summary.sumPositive && summary.sumNegative">
+              (+{{summary.sumPositive | number:'1.2-2'}}&nbsp;€,
+              <span class="negative">{{summary.sumNegative | number:'1.2-2'}}&nbsp;€</span>)
+            </span>
+          </span>
+        </div>
+        <span class="mat-caption">{{selection.selected.length}}&nbsp;selected</span>
 
         <button
             mat-icon-button

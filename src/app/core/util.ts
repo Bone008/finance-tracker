@@ -14,6 +14,15 @@ export function pluralizeArgument<T>(arg: T | T[]): T[] {
   }
 }
 
+/** Grammar is hard. */
+export function pluralize(amount: number, thing: string, things?: string): string {
+  if (amount === 1) {
+    return amount + ' ' + thing;
+  } else {
+    return amount + ' ' + (things || (thing + 's'));
+  }
+}
+
 export function getRandomElement<T>(arr: T[]): T {
   return arr[getRandomInt(0, arr.length)];
 }
