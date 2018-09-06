@@ -1,4 +1,14 @@
 import { Component, OnInit } from '@angular/core';
+import { DataService } from '../data.service';
+import { Observable } from '../../../../node_modules/rxjs';
+import { map } from '../../../../node_modules/rxjs/operators';
+
+interface LabelInfo {
+  name: string;
+  numTransactions: number;
+  firstTransactionTime?: Date;
+  lastTransactionTime?: Date;
+}
 
 @Component({
   selector: 'app-labels',
@@ -6,10 +16,18 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./labels.component.css']
 })
 export class LabelsComponent implements OnInit {
+  allLabels$: Observable<LabelInfo[]>;
 
-  constructor() { }
+  constructor(private readonly dataService: DataService) { }
 
   ngOnInit() {
+    this.allLabels$ = this.dataService.transactions$
+      .pipe(map(() => this.dataService.getAllLabels()
+        .sort()
+        .map(labelName => <LabelInfo>{
+          name: labelName,
+          numTransactions: this.dataService.getCurrentTransactionList().filter(t => t.labels.includes(labelName)).length,
+        })));
   }
 
 }

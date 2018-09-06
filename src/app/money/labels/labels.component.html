@@ -1,3 +1,15 @@
-<p>
-  labels works!
-</p>
+<mat-card class="main-card">
+    <mat-card-title fxLayout="row" fxLayoutGap="10px">
+      Labels
+    </mat-card-title>
+  
+    <mat-card-content>
+      <div fxLayout="column" fxLayoutGap="24px">
+        <div *ngFor="let label of allLabels$ | async" fxLayout="row">
+          <span fxFlex="33">{{label.name}}</span>
+          <span class="status">{{label.numTransactions}} transactions</span>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  
