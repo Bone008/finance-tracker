@@ -4,7 +4,7 @@
     </mat-card-title>
   
     <mat-card-content>
-      <div fxLayout="column" fxLayoutGap="24px">
+      <div fxLayout="column" fxLayoutGap="16px">
         <div *ngFor="let label of allLabels$ | async" fxLayout="row">
           <span fxFlex="33">{{label.name}}</span>
           <span class="status">{{label.numTransactions}} transactions</span>

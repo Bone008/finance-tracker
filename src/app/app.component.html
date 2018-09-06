@@ -1,16 +1,1 @@
-<mat-toolbar color="primary" class="primary-toolbar">
-  <img src="assets/app_icon_white.png" height="24" alt="" class="app-icon">
-  <span fxHide.xs>Finance Tracker</span>
-  <span fxFlex class="status">{{appMoney.status}}</span>
-  <button mat-icon-button (click)="appMoney.refreshData()" matTooltip="Refresh">
-    <mat-icon>refresh</mat-icon>
-  </button>
-  <button mat-icon-button (click)="appMoney.syncData()" matTooltip="Save">
-    <mat-icon>save</mat-icon>
-  </button>
-  <button mat-icon-button (click)="appMoney.openSettings()" matTooltip="Settings">
-    <mat-icon>settings</mat-icon>
-  </button>
-</mat-toolbar>
-
-<app-money #appMoney></app-money>
+<app-money></app-money>

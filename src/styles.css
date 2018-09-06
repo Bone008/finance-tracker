@@ -10,8 +10,16 @@ body {
   font-family: Roboto, sans-serif;
 }
 
+.mat-sidenav-container {
+  overflow: visible !important;
+}
+.mat-sidenav-content {
+  height: auto !important;
+  overflow: visible !important;
+}
+
 .main-card {
-  margin-top: 20px;
+  margin: 20px;
 }
 
 .amount-field input {
@@ -28,6 +36,10 @@ body {
 }
 
 @media screen and (max-width: 599px) {
+  .main-card {
+    margin: 0;
+  }
+  
   /* On xs screens, force dialogs to full width. */
   .cdk-overlay-pane {
     max-width: none !important;

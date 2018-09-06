@@ -1,13 +1,41 @@
+<mat-toolbar color="primary" class="primary-toolbar">
+  <button type="button"
+      fxHide.gt-sm
+      mat-icon-button
+      (click)="sidenav.toggle()">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <img fxHide.lt-md src="assets/app_icon_white.png" height="24" alt="" class="app-icon">
+  <span fxHide.xs>Finance Tracker</span>
+  <span fxFlex class="status">{{status}}</span>
+  <button mat-icon-button (click)="refreshData()" matTooltip="Refresh">
+    <mat-icon>refresh</mat-icon>
+  </button>
+  <button mat-icon-button (click)="syncData()" matTooltip="Save">
+    <mat-icon>save</mat-icon>
+  </button>
+  <button mat-icon-button (click)="openSettings()" matTooltip="Settings">
+    <mat-icon>settings</mat-icon>
+  </button>
+</mat-toolbar>
+
 <mat-sidenav-container style="background:none;">
-  <mat-sidenav mode="side" fixedInViewport fixedTopGap="64" opened>
+  <mat-sidenav #sidenav
+      [mode]="mobileQuery.matches ? 'over' : 'side'"
+      [opened]="!mobileQuery.matches"
+      [disableClose]="!mobileQuery.matches">
+    <div fxHide.gt-sm fxLayout="row" fxLayoutAlign="start center" class="sidenav-title">
+      <img src="assets/app_icon.png" height="24" alt="" class="app-icon">
+      <h1>Finance Tracker</h1>
+    </div>
     <mat-nav-list>
-      <a mat-list-item routerLink="/transactions" routerLinkActive="active">
+      <a mat-list-item routerLink="/transactions" routerLinkActive="active" (click)="mobileQuery.matches && sidenav.close()">
         <mat-icon>list</mat-icon>&nbsp;Transactions
       </a>
-      <a mat-list-item routerLink="/labels" routerLinkActive="active">
+      <a mat-list-item routerLink="/labels" routerLinkActive="active" (click)="mobileQuery.matches && sidenav.close()">
         <mat-icon>label</mat-icon>&nbsp;Labels
       </a>
-      <a mat-list-item routerLink="/analytics" routerLinkActive="active">
+      <a mat-list-item routerLink="/analytics" routerLinkActive="active" (click)="mobileQuery.matches && sidenav.close()">
         <mat-icon>bar_chart</mat-icon>&nbsp;Analytics
       </a>
     </mat-nav-list>

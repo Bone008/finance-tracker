@@ -1,4 +1,5 @@
-import { Component, OnInit, Output } from '@angular/core';
+import { MediaMatcher } from '@angular/cdk/layout';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { DataContainer } from '../../proto/model';
 import { timestampToDate } from '../core/proto-util';
 import { DataService } from './data.service';
@@ -11,19 +12,31 @@ import { createDummyTransactions, StorageService } from './storage.service';
   templateUrl: './money.component.html',
   styleUrls: ['./money.component.css']
 })
-export class MoneyComponent implements OnInit {
+export class MoneyComponent implements OnInit, OnDestroy {
   hasData = false;
+  status: string | null = null;
 
-  @Output() status: string | null = null;
+  mobileQuery: MediaQueryList;
+  private _mobileQueryListener: () => void;
 
   constructor(
     private readonly dataService: DataService,
     private readonly storageService: StorageService,
     private readonly storageSettingsService: StorageSettingsService,
-    private readonly dialogService: DialogService, ) { }
+    private readonly dialogService: DialogService,
+    changeDetectorRef: ChangeDetectorRef, media: MediaMatcher
+  ) {
+    this.mobileQuery = media.matchMedia('screen and (max-width: 959px)');
+    this._mobileQueryListener = () => changeDetectorRef.detectChanges();
+    this.mobileQuery.addListener(this._mobileQueryListener);
+  }
 
   ngOnInit() {
     this.refreshData();
+  }
+
+  ngOnDestroy(): void {
+    this.mobileQuery.removeListener(this._mobileQueryListener);
   }
 
   openSettings() {

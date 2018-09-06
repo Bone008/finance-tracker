@@ -1,11 +1,63 @@
+.primary-toolbar {
+  /* Constant height of 56px to make it easier. The default value switches from
+     64px at desktop to 56px at mobile. */
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+
+.primary-toolbar .status {
+  margin-right: 10px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  font-size: 75%;
+}
+
+.app-icon {
+  margin-right: 8px;
+}
+
+.mat-sidenav {
+  position: fixed;
+  top: 56px;
+  bottom: 0;
+}
+
+.sidenav-title {
+  margin-left: 16px;
+  height: 56px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+.sidenav-title h1 {
+  margin: 0;
+  font-weight: 300;
+  font-size: 120%;
+  line-height: 56px;
+}
+
+.mat-sidenav .mat-list-item {
+  transition: background-color 400ms ease;
+
+}
+.mat-sidenav .mat-list-item.active {
+  background: #eef;
+}
+
 .main-app {
   margin: auto;
   max-width: 1300px;
 }
 
-.mat-sidenav .mat-list-item {
-  transition: background 400ms ease;
-}
-.mat-sidenav .mat-list-item.active {
-  background: #eef;
+@media screen and (max-width: 959px) {
+  .primary-toolbar {
+    position: static;
+  }
+  
+  .mat-sidenav {
+    top: 0;
+    width: 230px;
+  }
 }
