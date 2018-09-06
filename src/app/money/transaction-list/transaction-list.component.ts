@@ -3,7 +3,7 @@ import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular
 import { MatPaginator, MatTableDataSource } from '@angular/material';
 import { of, Subject } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
-import { GroupData, Transaction, TransactionData } from '../../../proto/model';
+import { GroupData, Transaction, TransactionData, google } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
@@ -20,6 +20,9 @@ const FILTER_DEBOUNCE_TIME = 500;
   styleUrls: ['./transaction-list.component.css'],
 })
 export class TransactionListComponent implements AfterViewInit {
+  /** Keeps track of the last submitted transaction date, so it can be reused. */
+  private static lastAddedDate: google.protobuf.Timestamp|null = null
+  
   readonly transactionsDataSource = new MatTableDataSource<Transaction>();
   transactionsSubject = of<Transaction[]>([]);
   selection = new SelectionModel<Transaction>(true);
@@ -116,7 +119,7 @@ export class TransactionListComponent implements AfterViewInit {
   startAddTransaction() {
     const transaction = new Transaction({
       single: new TransactionData({
-        date: timestampNow(),
+        date: TransactionListComponent.lastAddedDate || timestampNow(),
         isCash: true,
       }),
     });
@@ -125,6 +128,12 @@ export class TransactionListComponent implements AfterViewInit {
       .afterConfirmed().subscribe(() => {
         transaction.single!.created = timestampNow();
         this.dataService.addTransactions(transaction);
+
+        if(timestampToDate(transaction.single!.date).toDateString() === new Date().toDateString()) {
+          TransactionListComponent.lastAddedDate = null;
+        } else {
+          TransactionListComponent.lastAddedDate = transaction.single!.date!;
+        }
       });
   }
 
