@@ -1,6 +1,10 @@
-<h2 mat-dialog-title>{{editMode==='edit' ? 'Edit' : 'Add'}} transaction</h2>
-
 <form #editForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
+  <div class="title-container" fxLayout="row" fxLayoutAlign="stretch start">
+    <h2 mat-dialog-title fxFlex>{{editMode==='edit' ? 'Edit' : 'Add'}} transaction</h2>
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
+  </div>
+
   <mat-dialog-content fxLayout="column">
     <mat-tab-group
         fxFlex="none"
