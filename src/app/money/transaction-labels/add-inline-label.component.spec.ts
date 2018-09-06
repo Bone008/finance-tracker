@@ -1,6 +1,5 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { AddInlineLabelComponent } from '../transaction-labels/add-inline-label.component';
+import { AddInlineLabelComponent } from './add-inline-label.component';
 
 describe('AddInlineLabelComponent', () => {
   let component: AddInlineLabelComponent;
