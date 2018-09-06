@@ -10,11 +10,12 @@ import { DialogSplitTransactionComponent } from './dialog-split-transaction/dial
 import { FormImportComponent } from './form-import/form-import.component';
 import { MoneyComponent } from './money.component';
 import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
-import { AddInlineLabelComponent } from './transaction-list/add-inline-label.component';
+import { AddInlineLabelComponent } from './transaction-labels/add-inline-label.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
 import { RouterModule, Routes } from '@angular/router';
 import { AnalyticsComponent } from './analytics/analytics.component';
 import { LabelsComponent } from './labels/labels.component';
+import { TransactionLabelsComponent } from './transaction-labels/transaction-labels.component';
 
 const appRoutes: Routes = [
   { path: 'transactions', component: TransactionListComponent },
@@ -38,6 +39,7 @@ const appRoutes: Routes = [
     FormImportComponent,
     TransactionEditComponent,
     TransactionListComponent,
+    TransactionLabelsComponent,
     AddInlineLabelComponent,
     DialogDeleteWithOrphansComponent,
     DialogSplitTransactionComponent,

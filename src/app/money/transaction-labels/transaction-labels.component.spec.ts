@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AddInlineLabelComponent } from '../transaction-labels/add-inline-label.component';
+import { TransactionLabelsComponent } from './transaction-labels.component';
 
-describe('AddInlineLabelComponent', () => {
-  let component: AddInlineLabelComponent;
-  let fixture: ComponentFixture<AddInlineLabelComponent>;
+describe('TransactionLabelsComponent', () => {
+  let component: TransactionLabelsComponent;
+  let fixture: ComponentFixture<TransactionLabelsComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ AddInlineLabelComponent ]
+      declarations: [ TransactionLabelsComponent ]
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(AddInlineLabelComponent);
+    fixture = TestBed.createComponent(TransactionLabelsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

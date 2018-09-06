@@ -75,6 +75,19 @@ export class TransactionEditComponent implements OnInit {
     return Math.abs(moneyToNumber(this.singleData.amount));
   }
 
+  addLabel(newLabel: string) {
+    if (this.transaction.labels.indexOf(newLabel) === -1) {
+      this.transaction.labels.push(newLabel);
+    }
+  }
+
+  deleteLabel(label: string) {
+    const index = this.transaction.labels.indexOf(label);
+    if (index !== -1) {
+      this.transaction.labels.splice(index, 1);
+    }
+  }
+
   getDateCreated(): Date {
     return timestampToDate(this.singleData.created);
   }

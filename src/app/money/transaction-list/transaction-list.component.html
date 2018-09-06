@@ -110,31 +110,15 @@
           </div>
         </div>
 
-        <div class="cell-labels" fxLayout="row wrap" fxLayoutAlign="start center">
-          <div
-              *ngFor="let label of transaction.labels"
-              class="label-container">
-            <button
-                (click)="$event.stopPropagation(); filterByLabel(label, $event.shiftKey)"
-                title="Click to filter by this label"
-                class="label-filter-button">
-              {{label}}
-            </button>
-            <button
-                (click)="$event.stopPropagation(); deleteLabelFromTransaction(transaction, label)"
-                title="Delete this label"
-                class="label-delete-button">
-              <mat-icon>close</mat-icon>
-            </button>
-          </div>
-          <app-add-inline-label
-              #addInlineLabel
-              [excludedLabels]="transaction.labels"
-              (addRequested)="addLabelToTransaction(transaction, $event)"
-              (deleteLastRequested)="deleteLastLabelFromTransaction(transaction)"
-              class="add-inline-label"
-              [class.open]="addInlineLabel.isOpen">
-          </app-add-inline-label>
+        <div class="cell-labels">
+          <app-transaction-labels
+              [labels]="transaction.labels"
+              (labelClick)="filterByLabel($event.label, $event.shiftKey)"
+              (labelAdd)="addLabelToTransaction(transaction, $event)"
+              (labelDelete)="deleteLabelFromTransaction(transaction, $event)"
+              (labelDeleteLast)="deleteLastLabelFromTransaction(transaction)"
+              labelTitle="Click to filter by this label">
+          </app-transaction-labels>
         </div>
       </div>
     </div>

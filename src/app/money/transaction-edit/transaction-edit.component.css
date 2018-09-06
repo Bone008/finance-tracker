@@ -15,3 +15,8 @@
 .mat-tab-group {
   padding-bottom: 1.25em;
 }
+
+app-transaction-labels {
+  padding-top: 11px;
+  padding-bottom: 1.25em;
+}

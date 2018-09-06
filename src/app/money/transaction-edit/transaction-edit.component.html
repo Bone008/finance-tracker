@@ -78,7 +78,14 @@
       </div>
 
       <div fxFlex="none" fxFlex.gt-sm="40" fxLayout="column">
-        <p>TODO: labels</p>
+        <app-transaction-labels
+            alwaysOpen="true"
+            [labels]="transaction.labels"
+            (labelAdd)="addLabel($event)"
+            (labelDelete)="deleteLabel($event)"
+            (labelDeleteLast)="deleteLabel(transaction.labels[transaction.labels.length-1])">
+        </app-transaction-labels>
+
         <mat-form-field>
           <textarea
               matInput

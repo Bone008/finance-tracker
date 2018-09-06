@@ -41,9 +41,11 @@ export class AddInlineLabelComponent implements OnInit {
       .pipe(debounceTime(50))
       .subscribe(value => {
         this.isOpen = value;
-        // Update set of available labels whenever the control is opened,
-        // because it can change long after ngOnInit.
-        this.allLabels = this.dataService.getAllLabels().sort();
+        if (value) {
+          // Update set of available labels whenever the control is opened,
+          // because it can change long after ngOnInit.
+          this.allLabels = this.dataService.getAllLabels().sort();
+        }
       });
 
     this.allLabelsFiltered$ = this.newLabelSubject

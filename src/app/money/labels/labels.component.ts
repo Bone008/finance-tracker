@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { DataService } from '../data.service';
-import { Observable } from '../../../../node_modules/rxjs';
-import { map } from '../../../../node_modules/rxjs/operators';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 interface LabelInfo {
   name: string;

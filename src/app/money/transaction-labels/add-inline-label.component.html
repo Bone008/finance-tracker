@@ -6,6 +6,7 @@
     fxFill>
   <input
       #labelInput
+      (keydown.enter)="newLabel==='' ? 0 : $event.preventDefault()"
       (keyup.enter)="confirmAdd()"
       (keydown.backspace)="newLabel==='' ? requestDelete() : 0"
       (keydown.escape)="labelAutocomplete.isOpen ? 0 : labelInput.blur()"
@@ -14,6 +15,7 @@
       [matAutocomplete]="labelAutocomplete"
       placeholder="Add label">
   <button
+  type="button"
       (click)="confirmAdd()"
       [hidden]="!isOpen"
       mat-icon-button
@@ -21,6 +23,7 @@
     <mat-icon>check</mat-icon>
   </button>
   <button
+      type="button"
       (focus)="labelInput.focus()"
       [hidden]="isOpen"
       tabindex="-1"
