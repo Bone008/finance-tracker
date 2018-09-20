@@ -61,23 +61,6 @@
               [(ngModel)]="singleData.who"
               placeholder="Who">
         </mat-form-field>
-        <mat-form-field>
-          <input
-              matInput
-              name="whoIdentifier"
-              [(ngModel)]="singleData.whoIdentifier"
-              placeholder="Who (identifier)">
-        </mat-form-field>
-        <mat-form-field>
-          <input
-              matInput
-              name="bookingText"
-              [(ngModel)]="singleData.bookingText"
-              placeholder="Booking text">
-        </mat-form-field>
-      </div>
-
-      <div fxFlex="none" fxFlex.gt-sm="40" fxLayout="column">
         <app-transaction-labels
             alwaysOpen="true"
             [labels]="transaction.labels"
@@ -85,7 +68,9 @@
             (labelDelete)="deleteLabel($event)"
             (labelDeleteLast)="deleteLabel(transaction.labels[transaction.labels.length-1])">
         </app-transaction-labels>
+      </div>
 
+      <div fxFlex="none" fxFlex.gt-sm="40" fxLayout="column">
         <mat-form-field>
           <textarea
               matInput
@@ -94,6 +79,20 @@
               placeholder="Comment"
               rows="3">
           </textarea>
+        </mat-form-field>
+        <mat-form-field>
+          <input
+              matInput
+              name="whoIdentifier"
+              [(ngModel)]="singleData.whoIdentifier"
+              placeholder="Account number">
+        </mat-form-field>
+        <mat-form-field>
+          <input
+              matInput
+              name="bookingText"
+              [(ngModel)]="singleData.bookingText"
+              placeholder="Booking text">
         </mat-form-field>
         <div fxLayout="row" fxLayout.xs="column" fxLayoutGap="1em">
             <mat-checkbox
