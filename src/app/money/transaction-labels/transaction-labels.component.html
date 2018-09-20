@@ -1,15 +1,15 @@
 <div fxLayout="row wrap" fxLayoutAlign="start center">
-  <div class="label-container" *ngFor="let label of labels">
+  <div *ngFor="let label of labels" class="label-container">
     <button
         type="button"
         [title]="labelTitle"
-        (click)="emitLabelClick(label, $event)"
+        (click)="$event.stopPropagation(); emitLabelClick(label, $event)"
         class="label-button">
       {{label}}
     </button>
     <button
         type="button"
-        (click)="labelDelete.emit(label)"
+        (click)="$event.stopPropagation(); labelDelete.emit(label)"
         title="Delete this label"
         class="label-delete-button">
       <mat-icon>close</mat-icon>
