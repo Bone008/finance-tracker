@@ -21,9 +21,6 @@ const FILTER_DEBOUNCE_TIME = 500;
   styleUrls: ['./transaction-list.component.css'],
 })
 export class TransactionListComponent implements AfterViewInit {
-  /** Keeps track of the last submitted transaction date, so it can be reused. */
-  private static lastAddedDate: google.protobuf.Timestamp | null = null;
-
   readonly transactionsDataSource = new MatTableDataSource<Transaction>();
   transactionsSubject = of<Transaction[]>([]);
   selection = new SelectionModel<Transaction>(true);
@@ -120,7 +117,7 @@ export class TransactionListComponent implements AfterViewInit {
   startAddTransaction() {
     const transaction = new Transaction({
       single: new TransactionData({
-        date: TransactionListComponent.lastAddedDate || timestampNow(),
+        date: timestampNow(),
         isCash: true,
       }),
     });
@@ -129,12 +126,6 @@ export class TransactionListComponent implements AfterViewInit {
       .afterConfirmed().subscribe(() => {
         transaction.single!.created = timestampNow();
         this.dataService.addTransactions(transaction);
-
-        if (timestampToDate(transaction.single!.date).toDateString() === new Date().toDateString()) {
-          TransactionListComponent.lastAddedDate = null;
-        } else {
-          TransactionListComponent.lastAddedDate = transaction.single!.date!;
-        }
       });
   }
 
