@@ -67,6 +67,7 @@ export class TransactionListComponent implements AfterViewInit {
   updateFilterNow() {
     if (this.transactionsDataSource.filter !== this.filterInput) {
       this.transactionsDataSource.filter = this.filterInput;
+      this.transactionsDataSource.paginator!.firstPage();
 
       // Deselect all transactions that are no longer visible.
       this.selection.deselect(...this.selection.selected.filter(
