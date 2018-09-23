@@ -2,19 +2,17 @@ import { SelectionModel } from '@angular/cdk/collections';
 import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource } from '@angular/material';
 import * as moment from 'moment';
-import { combineLatest, merge, of, Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, map, startWith, tap } from 'rxjs/operators';
+import { combineLatest, of } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
+import { FilterState } from '../filter-input/filter-state';
 import { extractTransactionData, forEachTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionDataField } from '../model-util';
 import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 import { TransactionFilterService } from '../transaction-filter.service';
-
-/** Time in ms to wait after input before applying the filter. */
-const FILTER_DEBOUNCE_TIME = 500;
 
 @Component({
   selector: 'app-transaction-list',
@@ -22,24 +20,13 @@ const FILTER_DEBOUNCE_TIME = 500;
   styleUrls: ['./transaction-list.component.css'],
 })
 export class TransactionListComponent implements AfterViewInit {
+  readonly filterState = new FilterState();
   readonly transactionsDataSource = new MatTableDataSource<Transaction>();
   transactionsSubject = of<Transaction[]>([]);
   selection = new SelectionModel<Transaction>(true);
 
   @ViewChild(MatPaginator)
   private paginator: MatPaginator;
-  /** Current value of the filter textbox (not debounced). */
-  private _filterInput = "";
-  /** Emits events whenever the filter input value changes. */
-  private readonly filterInputSubject = new Subject<string>();
-  /** Emits events when the filter should be updated immediately. */
-  private readonly filterImmediateSubject = new Subject<string>();
-
-  get filterInput() { return this._filterInput; }
-  set filterInput(value: string) {
-    this._filterInput = value;
-    this.filterInputSubject.next(value);
-  }
 
   constructor(
     private readonly dataService: DataService,
@@ -53,21 +40,16 @@ export class TransactionListComponent implements AfterViewInit {
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsSubject = this.transactionsDataSource.connect();
 
-    const debouncedFilter$ = this.filterInputSubject.pipe(
-      debounceTime(FILTER_DEBOUNCE_TIME));
-    const mergedFilter$ = merge(debouncedFilter$, this.filterImmediateSubject).pipe(
-      // Make it initially emit an event, so combineLatest starts working.
-      startWith(""),
-      distinctUntilChanged(),
+    const filterValue$ = this.filterState.value$.pipe(
       // Reset to first page whenever filter is changed.
       tap(() => this.transactionsDataSource.paginator!.firstPage())
     );
 
     // Listen to updates of both the data source and the filter.
-    combineLatest(this.dataService.transactions$, mergedFilter$)
+    combineLatest(this.dataService.transactions$, filterValue$)
       .pipe(
-        map(([transactions]) =>
-          this.filterService.applyFilter(transactions, this.filterInput)),
+        map(([transactions, filterValue]) =>
+          this.filterService.applyFilter(transactions, filterValue)),
         map(transactions => transactions.sort(
           (a, b) => this.compareTransactions(a, b)))
       )
@@ -86,21 +68,15 @@ export class TransactionListComponent implements AfterViewInit {
   ngOnDestroy() {
   }
 
-  clearFilter() {
-    this.filterInput = "";
-    this.filterImmediateSubject.next("");
-  }
-
   filterByLabel(label: string, additive: boolean) {
-    let newFilter = this.filterInput;
+    let newFilter = this.filterState.getCurrentValue();
     if (additive && newFilter.length > 0) {
       newFilter += " " + label;
     } else {
       newFilter = label;
     }
 
-    this.filterInput = newFilter;
-    this.filterImmediateSubject.next(newFilter);
+    this.filterState.setValueNow(newFilter);
   }
 
   startImportCsv() {

@@ -16,17 +16,7 @@
   </mat-card-title>
 
   <mat-card-content>
-    <mat-form-field class="filter-input">
-      <input matInput type="search" [(ngModel)]="filterInput" placeholder="Filter">
-      <button
-          mat-icon-button
-          matSuffix
-          title="Clear filter"
-          *ngIf="filterInput!==''"
-          (click)="clearFilter()">
-        <mat-icon>close</mat-icon>
-      </button>
-    </mat-form-field>
+    <app-filter-input [state]="filterState"></app-filter-input>
     
     <div class="transactions-container">
       <div class="header-row" fxLayout="row" fxLayoutGap="5px">

@@ -1,0 +1,11 @@
+<mat-form-field class="filter-input">
+  <input matInput type="search" [(ngModel)]="filterInput" placeholder="Filter">
+  <button
+      mat-icon-button
+      matSuffix
+      title="Clear filter"
+      *ngIf="filterInput!==''"
+      (click)="clearFilter()">
+    <mat-icon>close</mat-icon>
+  </button>
+</mat-form-field>
