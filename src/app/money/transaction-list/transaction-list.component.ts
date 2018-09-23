@@ -2,7 +2,7 @@ import { SelectionModel } from '@angular/cdk/collections';
 import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource } from '@angular/material';
 import * as moment from 'moment';
-import { combineLatest, of } from 'rxjs';
+import { combineLatest, of, Subscription } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
@@ -27,6 +27,7 @@ export class TransactionListComponent implements AfterViewInit {
 
   @ViewChild(MatPaginator)
   private paginator: MatPaginator;
+  private txSubscription: Subscription;
 
   constructor(
     private readonly dataService: DataService,
@@ -46,7 +47,7 @@ export class TransactionListComponent implements AfterViewInit {
     );
 
     // Listen to updates of both the data source and the filter.
-    combineLatest(this.dataService.transactions$, filterValue$)
+    this.txSubscription = combineLatest(this.dataService.transactions$, filterValue$)
       .pipe(
         map(([transactions, filterValue]) =>
           this.filterService.applyFilter(transactions, filterValue)),
@@ -66,6 +67,7 @@ export class TransactionListComponent implements AfterViewInit {
   }
 
   ngOnDestroy() {
+    this.txSubscription.unsubscribe();
   }
 
   filterByLabel(label: string, additive: boolean) {
