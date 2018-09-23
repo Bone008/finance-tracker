@@ -1,5 +1,8 @@
 import { MediaMatcher } from '@angular/cdk/layout';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import * as moment from 'moment';
+import { timer } from 'rxjs';
+import { takeWhile } from 'rxjs/operators';
 import { DataContainer } from '../../proto/model';
 import { timestampToDate } from '../core/proto-util';
 import { DataService } from './data.service';
@@ -18,6 +21,7 @@ export class MoneyComponent implements OnInit, OnDestroy {
 
   mobileQuery: MediaQueryList;
   private _mobileQueryListener: () => void;
+  private alive = true;
 
   constructor(
     private readonly dataService: DataService,
@@ -33,10 +37,18 @@ export class MoneyComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.refreshData();
+
+    timer(60000).pipe(takeWhile(() => this.alive)).subscribe(() => {
+      if (this.status && this.status.indexOf("Last saved") === 0) {
+        this.status = "Last saved " + this.formatDate(
+          timestampToDate(this.dataService.getDataContainer().lastModified));
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this.mobileQuery.removeListener(this._mobileQueryListener);
+    this.alive = false;
   }
 
   openSettings() {
@@ -97,12 +109,8 @@ export class MoneyComponent implements OnInit, OnDestroy {
     }
   }
 
-  private formatDate(date: Date) {
-    if (date.toDateString() === (new Date()).toDateString()) {
-      return date.toLocaleTimeString();
-    } else {
-      return date.toLocaleString();
-    }
+  private formatDate(date: Date): string {
+    return moment(date).fromNow();
   }
 
 }
