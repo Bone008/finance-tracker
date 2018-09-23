@@ -2,8 +2,8 @@ import { SelectionModel } from '@angular/cdk/collections';
 import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource } from '@angular/material';
 import * as moment from 'moment';
-import { of, Subject } from 'rxjs';
-import { debounceTime, map } from 'rxjs/operators';
+import { combineLatest, merge, of, Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, startWith, tap } from 'rxjs/operators';
 import { google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
@@ -11,6 +11,7 @@ import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { extractTransactionData, forEachTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionDataField } from '../model-util';
 import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
+import { TransactionFilterService } from '../transaction-filter.service';
 
 /** Time in ms to wait after input before applying the filter. */
 const FILTER_DEBOUNCE_TIME = 500;
@@ -29,16 +30,20 @@ export class TransactionListComponent implements AfterViewInit {
   private paginator: MatPaginator;
   /** Current value of the filter textbox (not debounced). */
   private _filterInput = "";
-  private readonly filterSubject = new Subject<string>();
+  /** Emits events whenever the filter input value changes. */
+  private readonly filterInputSubject = new Subject<string>();
+  /** Emits events when the filter should be updated immediately. */
+  private readonly filterImmediateSubject = new Subject<string>();
 
   get filterInput() { return this._filterInput; }
   set filterInput(value: string) {
     this._filterInput = value;
-    this.filterSubject.next(value);
+    this.filterInputSubject.next(value);
   }
 
   constructor(
     private readonly dataService: DataService,
+    private readonly filterService: TransactionFilterService,
     private readonly loggerService: LoggerService,
     private readonly dialogService: DialogService,
     private readonly changeDetector: ChangeDetectorRef) {
@@ -46,17 +51,34 @@ export class TransactionListComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     this.transactionsDataSource.paginator = this.paginator;
-    this.transactionsDataSource.filterPredicate = (transaction, filter) => this.matchesFilter(transaction, filter);
     this.transactionsSubject = this.transactionsDataSource.connect();
 
-    this.dataService.transactions$
-      .pipe(map(transactions => transactions.slice().sort(
-        (a, b) => this.compareTransactions(a, b))))
-      .subscribe(value => this.transactionsDataSource.data = value);
+    const debouncedFilter$ = this.filterInputSubject.pipe(
+      debounceTime(FILTER_DEBOUNCE_TIME));
+    const mergedFilter$ = merge(debouncedFilter$, this.filterImmediateSubject).pipe(
+      // Make it initially emit an event, so combineLatest starts working.
+      startWith(""),
+      distinctUntilChanged(),
+      // Reset to first page whenever filter is changed.
+      tap(() => this.transactionsDataSource.paginator!.firstPage())
+    );
 
-    this.filterSubject
-      .pipe(debounceTime(FILTER_DEBOUNCE_TIME))
-      .subscribe(() => this.updateFilterNow());
+    // Listen to updates of both the data source and the filter.
+    combineLatest(this.dataService.transactions$, mergedFilter$)
+      .pipe(
+        map(([transactions]) =>
+          this.filterService.applyFilter(transactions, this.filterInput)),
+        map(transactions => transactions.sort(
+          (a, b) => this.compareTransactions(a, b)))
+      )
+      .subscribe(value => {
+        this.transactionsDataSource.data = value;
+
+        // Deselect all transactions that are no longer part of the filtered data.
+        this.selection.deselect(...this.selection.selected.filter(
+          t => value.indexOf(t) === -1)
+        );
+      });
 
     this.changeDetector.detectChanges();
   }
@@ -64,21 +86,9 @@ export class TransactionListComponent implements AfterViewInit {
   ngOnDestroy() {
   }
 
-  updateFilterNow() {
-    if (this.transactionsDataSource.filter !== this.filterInput) {
-      this.transactionsDataSource.filter = this.filterInput;
-      this.transactionsDataSource.paginator!.firstPage();
-
-      // Deselect all transactions that are no longer visible.
-      this.selection.deselect(...this.selection.selected.filter(
-        t => this.transactionsDataSource.filteredData.indexOf(t) === -1)
-      );
-    }
-  }
-
   clearFilter() {
     this.filterInput = "";
-    this.updateFilterNow();
+    this.filterImmediateSubject.next("");
   }
 
   filterByLabel(label: string, additive: boolean) {
@@ -90,7 +100,7 @@ export class TransactionListComponent implements AfterViewInit {
     }
 
     this.filterInput = newFilter;
-    this.updateFilterNow();
+    this.filterImmediateSubject.next(newFilter);
   }
 
   startImportCsv() {
@@ -442,32 +452,6 @@ export class TransactionListComponent implements AfterViewInit {
         child => timestampToMilliseconds(child.created)));
 
     return -(createdA - createdB);
-  }
-
-  private matchesFilter(transaction: Transaction, filter: string): boolean {
-    if (!filter) return true;
-
-    const dataList = extractTransactionData(transaction);
-
-    return filter.split(/\s+/).every(filterPart => {
-      const inverted = filterPart.startsWith("-");
-      if (inverted) filterPart = filterPart.substr(1);
-
-      let filterRegex;
-      try { filterRegex = new RegExp(filterPart, 'i'); }
-      catch (e) { return true; } // Assume user is still typing, always pass.
-
-      const match = dataList.some(data =>
-        filterRegex.test(data.who)
-        || filterRegex.test(data.whoIdentifier)
-        || filterRegex.test(data.reason)
-        || filterRegex.test(data.bookingText)
-        || filterRegex.test(data.comment)
-        || transaction.labels.some(label => filterRegex.test(label))
-      );
-
-      return match !== inverted;
-    });
   }
 
 }
