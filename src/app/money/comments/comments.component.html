@@ -1,0 +1,45 @@
+<mat-card class="main-card">
+  <mat-card-title fxLayout="row">
+    Comments
+  </mat-card-title>
+  <mat-card-content fxLayout="row" fxLayoutAlign="stretch center">
+    <mat-form-field fxFlex>
+      <textarea
+          placeholder="New comment"
+          matInput
+          [rows]="newCommentText.indexOf('\n') === -1 ? 1 : 5"
+          [(ngModel)]="newCommentText">
+      </textarea>
+    </mat-form-field>
+    <button
+        type="button"
+        mat-raised-button
+        color="primary"
+        (click)="addNewComment()"
+        class="add-button">
+      Add
+    </button>
+  </mat-card-content>
+</mat-card>
+
+<mat-card
+    *ngFor="let comment of comments$ | async"
+    class="main-card comment-card"
+    [ngClass]="{'archived': comment.isArchived}"
+    fxLayout="column">
+  <mat-form-field>
+    <textarea
+        matInput
+        [rows]="comment.comment.indexOf('\n') === -1 ? 1 : 5"
+        [readonly]="comment.isArchived"
+        [(ngModel)]="comment.comment">
+    </textarea>
+  </mat-form-field>
+  <mat-card-actions fxLayoutAlign="end center">
+      <div class="comment-date">{{timestampToDate(comment.created) | date:'medium'}}</div>
+      <button mat-button (click)="comment.isArchived = !comment.isArchived">
+        {{comment.isArchived ? 'Unarchive' : 'Archive'}}
+      </button>
+      <button mat-button (click)="deleteComment(comment)">Delete</button>
+  </mat-card-actions>
+</mat-card>

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
-import { DataContainer, ImportedRow, Transaction, TransactionData } from "../../proto/model";
+import { DataContainer, GlobalComment, ImportedRow, Transaction, TransactionData } from "../../proto/model";
 import { pluralizeArgument } from "../core/util";
 import { extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
@@ -11,13 +11,16 @@ export class DataService {
   private data = new DataContainer();
   private highestImportedRowId = 0;
   private readonly transactionsSubject = new BehaviorSubject<Transaction[]>([]);
+  private readonly globalCommentsSubject = new BehaviorSubject<GlobalComment[]>([]);
 
   readonly transactions$ = this.transactionsSubject.asObservable();
+  readonly globalComments$ = this.globalCommentsSubject.asObservable();
 
   setDataContainer(data: DataContainer) {
     this.data = data;
     this.updateHighestImportedRowId();
     this.notifyTransactions();
+    this.notifyGlobalComments();
   }
 
   getDataContainer(): DataContainer {
@@ -107,8 +110,26 @@ export class DataService {
     return extractTransactionData(this.data.transactions).filter(data => data.importedRowId === importedRowId);
   }
 
+  addGlobalComment(comment: GlobalComment) {
+    this.data.globalComments.push(comment);
+    this.notifyGlobalComments();
+  }
+
+  removeGlobalComment(comment: GlobalComment) {
+    const index = this.data.globalComments.indexOf(comment);
+    if (index === -1) {
+      throw new Error(`cannot delete comment because it was not found`);
+    }
+    this.data.globalComments.splice(index, 1);
+    this.notifyGlobalComments();
+  }
+
   private notifyTransactions() {
     this.transactionsSubject.next(this.data.transactions);
+  }
+
+  private notifyGlobalComments() {
+    this.globalCommentsSubject.next(this.data.globalComments);
   }
 
   private updateHighestImportedRowId() {

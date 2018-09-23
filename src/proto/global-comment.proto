@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+message GlobalComment {
+  // Main content.
+  string comment = 1;
+
+  bool is_archived = 2;
+
+  // Automatic, readonly value that keeps track of when the comment was first created.
+  Timestamp created = 20;  
+}
