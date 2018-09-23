@@ -22,12 +22,13 @@ body {
   margin: 20px;
 }
 
+.negative {
+  color: #e74c3c;
+}
+
 .amount-field input {
   text-align: right;
   -moz-appearance: textfield; /* hide spinner in Firefox */
-}
-.amount-field.negative {
-  color: #e74c3c;
 }
 
 .amount-field input::-webkit-outer-spin-button,

@@ -1,4 +1,5 @@
 import { GroupData, Transaction, TransactionData } from "../../proto/model";
+import { moneyToNumber } from "../core/proto-util";
 
 /** Type guard to check if a transaction has dataType 'single'. */
 export function isSingle(transaction: Transaction)
@@ -82,4 +83,13 @@ export function mapTransactionDataField<K extends keyof TransactionData>(
   dataField: K
 ): TransactionData[K][] {
   return mapTransactionData(subject, data => data[dataField]);
+}
+
+
+/**
+ * Returns the combined amount of a transaction (the sum of its children).
+ */
+export function getTransactionAmount(transaction: Transaction): number {
+  return mapTransactionData(transaction, data => moneyToNumber(data.amount))
+    .reduce((a, b) => a + b, 0);
 }

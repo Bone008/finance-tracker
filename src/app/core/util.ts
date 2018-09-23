@@ -35,3 +35,66 @@ export function getRandomInt(min: number, max: number): number {
 export function getRandomBoolean(): boolean {
   return Math.random() < 0.5;
 }
+
+/**
+ * Returns the maximum of a collection by comparing some numeric key.
+ * Returns null if the collection is empty.
+ */
+export function maxBy<T>(objects: T[], keySelector: (object: T) => number): T | null {
+  let current: T | null = null;
+  let currentKey = -Infinity;
+  for (const obj of objects) {
+    const key = keySelector(obj);
+    if (key > currentKey) {
+      current = obj;
+      currentKey = key;
+    }
+  }
+  return current;
+}
+
+/**
+ * Returns the minimum of a collection by comparing some numeric key.
+ * Returns null if the collection is empty.
+ */
+export function minBy<T>(objects: T[], keySelector: (object: T) => number): T | null {
+  let current: T | null = null;
+  let currentKey = -Infinity;
+  for (const obj of objects) {
+    const key = keySelector(obj);
+    if (key < currentKey) {
+      current = obj;
+      currentKey = key;
+    }
+  }
+  return current;
+}
+
+
+/**
+ * Returns the maximum of a collection using the provided comparator function.
+ * Returns null if the collection is empty.
+ */
+export function maxByComparator<T>(objects: T[], comparator: (a: T, b: T) => number): T | null {
+  let current: T | null = null;
+  for (const obj of objects) {
+    if (current === null || comparator(obj, current) > 0) {
+      current = obj;
+    }
+  }
+  return current;
+}
+
+/**
+ * Returns the minimum of a collection using the provided comparator function.
+ * Returns null if the collection is empty.
+ */
+export function minByComparator<T>(objects: T[], comparator: (a: T, b: T) => number): T | null {
+  let current: T | null = null;
+  for (const obj of objects) {
+    if (current === null || comparator(obj, current) < 0) {
+      current = obj;
+    }
+  }
+  return current;
+}

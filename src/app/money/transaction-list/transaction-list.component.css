@@ -55,9 +55,6 @@
   font-size: 120%;
   white-space: nowrap;
 }
-.negative {
-  color: #e74c3c;
-}
 .transactions-container .cell-amount .mat-icon {
   font-size: 18px;
   vertical-align: middle;

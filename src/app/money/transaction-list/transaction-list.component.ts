@@ -9,7 +9,7 @@ import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
-import { extractTransactionData, forEachTransactionData, isGroup, isSingle, mapTransactionData, mapTransactionDataField } from '../model-util';
+import { extractTransactionData, forEachTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionDataField } from '../model-util';
 import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 
 /** Time in ms to wait after input before applying the filter. */
@@ -328,15 +328,11 @@ export class TransactionListComponent implements AfterViewInit {
   }
 
   isTransactionGroup = isGroup;
+  getTransactionAmount = getTransactionAmount;
 
   getTransactionDate(transaction: Transaction): Date {
     // TODO properly create aggregate date of groups.
     return timestampToDate(extractTransactionData(transaction)[0].date);
-  }
-
-  getTransactionAmount(transaction: Transaction): number {
-    return mapTransactionData(transaction, data => moneyToNumber(data.amount))
-      .reduce((a, b) => a + b, 0);
   }
 
   isTransactionCash(transaction: Transaction): boolean | null {
@@ -403,7 +399,7 @@ export class TransactionListComponent implements AfterViewInit {
     let sumPositive = 0;
     let sumNegative = 0;
     for (const transaction of selected) {
-      const amount = this.getTransactionAmount(transaction);
+      const amount = getTransactionAmount(transaction);
       sum += amount;
       if (amount < 0) sumNegative += amount;
       else sumPositive += amount;

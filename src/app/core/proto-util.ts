@@ -1,4 +1,5 @@
 import * as Long from "long";
+import * as moment from 'moment';
 import * as $protobuf from "protobufjs";
 import { google, Money } from "../../proto/model";
 
@@ -21,6 +22,11 @@ export function dateToTimestamp(date: Date | number): google.protobuf.Timestamp 
     seconds: Math.trunc(time / 1000),
     nanos: (time % 1000) * 1e6,
   });
+}
+
+export function timestampToMoment(timestamp: google.protobuf.Timestamp | null | undefined): moment.Moment {
+  if (!timestamp) return moment(0);
+  return moment(longToNumber(timestamp.seconds) * 1000 + timestamp.nanos / 1e6);
 }
 
 export function timestampToDate(timestamp: google.protobuf.Timestamp | null | undefined): Date {

@@ -25,7 +25,7 @@
 <mat-card
     *ngFor="let comment of comments$ | async"
     class="main-card comment-card"
-    [ngClass]="{'archived': comment.isArchived}"
+    [class.archived]="comment.isArchived"
     fxLayout="column">
   <mat-form-field>
     <textarea
