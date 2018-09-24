@@ -4,6 +4,27 @@
   </mat-card-title>
 
   <mat-card-content>
+    <div fxLayout="row">
+      <app-filter-input fxFlex [state]="filterState"></app-filter-input>
+      <mat-checkbox
+          (change)="averageOver3MonthsSubject.next($event.checked)"
+          [checked]="averageOver3MonthsSubject | async">
+        Average over 3 months
+      </mat-checkbox>
+    </div>
+
+    <p>Analyzed {{matchingTransactionCount}} out of {{totalTransactionCount}} transactions.</p>
+
+    <div fxLayout="row-reverse" fxLayoutAlign="end end" style="height: 300px; overflow-y: hidden; margin-bottom: 24px;">
+      <div *ngFor="let bucket of buckets" fxLayout="column">
+        <div
+            style="background: blue; width: 30px; margin-left: 5px;"
+            [style.height.px]="300 * -bucket.totalNegative / (maxBucketExpense || 1)">
+        </div>
+        <div style="width: 30px; transform: rotate(-90deg) translate(0, 28px); transform-origin: bottom left; margin-top: 50px;">{{bucket.name}}</div>
+      </div>
+    </div>
+
     <table width="100%">
       <tr>
         <th align="left">Month</th>

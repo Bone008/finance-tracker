@@ -1,11 +1,13 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import * as moment from 'moment';
-import { Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { Transaction } from '../../../proto/model';
 import { timestampToMoment, timestampToWholeSeconds } from '../../core/proto-util';
 import { maxBy } from '../../core/util';
 import { DataService } from '../data.service';
+import { FilterState } from '../filter-input/filter-state';
 import { getTransactionAmount, isSingle } from '../model-util';
+import { TransactionFilterService } from '../transaction-filter.service';
 
 @Component({
   selector: 'app-analytics',
@@ -13,24 +15,34 @@ import { getTransactionAmount, isSingle } from '../model-util';
   styleUrls: ['./analytics.component.css']
 })
 export class AnalyticsComponent implements OnInit, OnDestroy {
+  readonly filterState = new FilterState();
+  readonly averageOver3MonthsSubject = new BehaviorSubject<boolean>(false);
+  totalTransactionCount = 0;
+  matchingTransactionCount = 0;
   buckets: BucketInfo[] = [];
+  maxBucketExpense = 0;
 
-  private txSubscriptions: Subscription;
+  private txSubscription: Subscription;
 
-  constructor(private readonly dataService: DataService) { }
+  constructor(
+    private readonly dataService: DataService,
+    private readonly filterService: TransactionFilterService) { }
 
   ngOnInit() {
-    this.txSubscriptions =
-      this.dataService.transactions$.subscribe(() => this.analyzeTransactions());
+    this.txSubscription =
+      combineLatest(this.dataService.transactions$, this.filterState.value$, this.averageOver3MonthsSubject)
+        .subscribe(([_, filterValue, useAverage]) => this.analyzeTransactions(filterValue, useAverage));
   }
 
   ngOnDestroy() {
-    this.txSubscriptions.unsubscribe();
+    this.txSubscription.unsubscribe();
   }
 
-  analyzeTransactions() {
-    const transactions = this.dataService.getCurrentTransactionList()
-      .filter(t => !t.labels.includes('internal'));
+  analyzeTransactions(filterValue: string, useAverage: boolean) {
+    const allTransactions = this.dataService.getCurrentTransactionList();
+    const transactions = this.filterService.applyFilter(allTransactions, filterValue);
+    this.totalTransactionCount = allTransactions.length;
+    this.matchingTransactionCount = transactions.length;
 
     const transactionBuckets: { [key: string]: BilledTransaction[] } = {};
     const keyFormat = 'YYYY-MM';
@@ -51,11 +63,29 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
       const key = dateMoment.format(keyFormat);
       if (key in transactionBuckets) {
-        transactionBuckets[key].push({
-          source: transaction,
-          relevantLabels: transaction.labels,
-          amount: getTransactionAmount(transaction),
-        });
+        if (!useAverage) {
+          transactionBuckets[key].push({
+            source: transaction,
+            relevantLabels: transaction.labels,
+            amount: getTransactionAmount(transaction),
+          });
+        } else {
+          const contribBuckets = [key];
+          // TODO: figure out which direction makes sense to shift the moving average
+          const otherKey1 = dateMoment.clone().add(1, 'months').format(keyFormat);
+          const otherKey2 = dateMoment.clone().subtract(1, 'months').format(keyFormat);
+          if (otherKey1 in transactionBuckets) contribBuckets.push(otherKey1);
+          if (otherKey2 in transactionBuckets) contribBuckets.push(otherKey2);
+
+          const amountPerBucket = getTransactionAmount(transaction) / contribBuckets.length;
+          for (let buck of contribBuckets) {
+            transactionBuckets[buck].push({
+              source: transaction,
+              relevantLabels: transaction.labels,
+              amount: amountPerBucket,
+            });
+          }
+        }
       }
     }
 
@@ -64,6 +94,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       const positive = transactionBuckets[key].filter(t => t.amount > 0);
       const negative = transactionBuckets[key].filter(t => t.amount < 0);
 
+      // Aggregate labels by their contributing total amount.
       const labelBuckets = {};
       for (const tx of transactionBuckets[key]) {
         const lbl = tx.relevantLabels.join(',') || '<none>';
@@ -86,6 +117,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         totalNegative: negative.map(t => t.amount).reduce((a, b) => a + b, 0),
         topLabels,
       });
+    }
+
+    if (!useAverage) {
+      this.maxBucketExpense = -Math.min(...this.buckets.map(b => b.totalNegative));
     }
   }
 
