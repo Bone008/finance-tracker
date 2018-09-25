@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChartData, ChartDataSets } from 'chart.js';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { Transaction } from '../../../proto/model';
@@ -21,6 +22,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   matchingTransactionCount = 0;
   buckets: BucketInfo[] = [];
   maxBucketExpense = 0;
+  monthlyChartData: ChartData = {};
 
   private txSubscription: Subscription;
 
@@ -51,7 +53,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
     const numMonths = 24;
     for (let i = 0; i < numMonths; i++) {
-      const month = now.clone().subtract(i, 'months').format(keyFormat);
+      const month = now.clone().subtract(numMonths - i - 1, 'months').format(keyFormat);
       transactionBuckets[month] = [];
     }
 
@@ -122,6 +124,17 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     if (!useAverage) {
       this.maxBucketExpense = -Math.min(...this.buckets.map(b => b.totalNegative));
     }
+
+    const datasets: ChartDataSets[] = [];
+    if (this.buckets.some(b => b.totalNegative !== 0))
+      datasets.push({ data: this.buckets.map(b => -b.totalNegative), label: 'Expenses', backgroundColor: 'red' });
+    if (this.buckets.some(b => b.totalPositive !== 0))
+      datasets.push({ data: this.buckets.map(b => b.totalPositive), label: 'Income', backgroundColor: 'blue' });
+
+    this.monthlyChartData = {
+      labels: this.buckets.map(b => b.name),
+      datasets,
+    };
   }
 
 }

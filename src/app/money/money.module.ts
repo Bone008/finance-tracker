@@ -6,10 +6,12 @@ import { RouterModule, Routes } from '@angular/router';
 import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
 import { AnalyticsComponent } from './analytics/analytics.component';
+import { ChartComponent } from './analytics/chart.component';
 import { CommentsComponent } from './comments/comments.component';
 import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogSplitTransactionComponent } from './dialog-split-transaction/dialog-split-transaction.component';
+import { FilterInputComponent } from './filter-input/filter-input.component';
 import { FormImportComponent } from './form-import/form-import.component';
 import { LabelsComponent } from './labels/labels.component';
 import { MoneyComponent } from './money.component';
@@ -17,7 +19,6 @@ import { TransactionEditComponent } from './transaction-edit/transaction-edit.co
 import { AddInlineLabelComponent } from './transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transaction-labels/transaction-labels.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
-import { FilterInputComponent } from './filter-input/filter-input.component';
 
 const appRoutes: Routes = [
   { path: 'transactions', component: TransactionListComponent },
@@ -50,6 +51,7 @@ const appRoutes: Routes = [
     LabelsComponent,
     CommentsComponent,
     FilterInputComponent,
+    ChartComponent,
   ],
   entryComponents: [
     FormImportComponent,
