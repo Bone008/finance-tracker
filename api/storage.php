@@ -31,7 +31,7 @@ Flight::route('POST /storage/@id:[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}
 	$binFile = getFileFromId($id);
 	
 	if(file_exists($binFile)) {
-		$oldVersion = date('Y-m-d-H-i-s', fileatime($binFile));
+		$oldVersion = date('Y-m-d-H-i-s', filemtime($binFile));
 		if(!rename($binFile, getVersionedFileFromId($id, $oldVersion))) {
 			Flight::json(['error' => 'Could not back up existing file.']);
 			return;
