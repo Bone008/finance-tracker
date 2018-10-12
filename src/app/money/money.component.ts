@@ -38,7 +38,7 @@ export class MoneyComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.refreshData();
 
-    timer(60000).pipe(takeWhile(() => this.alive)).subscribe(() => {
+    timer(0, 60000).pipe(takeWhile(() => this.alive)).subscribe(() => {
       if (this.status && this.status.indexOf("Last saved") === 0) {
         this.status = "Last saved " + this.formatDate(
           timestampToDate(this.dataService.getDataContainer().lastModified));
