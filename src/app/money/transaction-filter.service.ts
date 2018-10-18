@@ -1,8 +1,9 @@
 import { Injectable } from "@angular/core";
 import * as moment from 'moment';
-import { Transaction, TransactionData } from "../../proto/model";
-import { moneyToNumber, timestampToMoment } from '../core/proto-util';
-import { extractTransactionData } from "./model-util";
+import { ITransactionData, Transaction, TransactionData } from "../../proto/model";
+import { timestampToMoment } from '../core/proto-util';
+import { splitQuotedString } from "../core/util";
+import { extractTransactionData, getTransactionAmount, isGroup, isSingle } from "./model-util";
 
 /**
  * Business logic for filtering of transaction.
@@ -14,8 +15,16 @@ export class TransactionFilterService {
 
   /** Applies a raw filter to a collection of transactions. */
   applyFilter(transactions: Transaction[], filter: string): Transaction[] {
-    const [parsedFilter, errors] = this.tokenizeFilter(filter);
-    return transactions.filter(t => this.matchesFilter(t, parsedFilter));
+    const rawTokens = splitQuotedString(filter);
+    const [parsedFilter, errorIndices] = this.parseTokens(rawTokens);
+    if (errorIndices.length > 0) {
+      // Empty results on error
+      // TODO somehow allow highlighting errors
+      console.warn('There are errors in the filter!', errorIndices);
+      return [];
+    } else {
+      return transactions.filter(t => this.matchesFilter(t, parsedFilter));
+    }
   }
 
   /** Tests if a single transaction passes a parsed filter. */
@@ -30,10 +39,16 @@ export class TransactionFilterService {
     return match;
   }
 
-  private tokenizeFilter(filter: string): [FilterToken[], number[]] {
+  /**
+   * Parses each token string into a token ready for matching.
+   * Returns the list of successful
+   */
+  private parseTokens(rawTokens: string[]): [FilterToken[], number[]] {
     const parsedTokens: FilterToken[] = [];
+    const errorIndices: number[] = [];
 
-    for (let token of filter.split(/\s+/)) {
+    for (let i = 0; i < rawTokens.length; i++) {
+      let token = rawTokens[i];
       const inverted = token.startsWith("-");
       if (inverted) token = token.substr(1);
 
@@ -52,29 +67,49 @@ export class TransactionFilterService {
       if (matcher) {
         parsedTokens.push({ matcher, inverted });
       } else {
-        // TODO error handling of invalid matchers
+        errorIndices.push(i);
       }
     }
 
-    return [parsedTokens, []];
+    return [parsedTokens, errorIndices];
   }
 
   /** Processes a single 'key:value' component of the filter string. Returns null on error. */
   private parseMatcher(key: string | null, value: string): FilterMatcher | null {
     switch (key) {
+      case 'is':
+        if (value === 'cash') {
+          return (_, dataList) => dataList.some(data => data.isCash);
+        } else if (value === 'bank') {
+          return (_, dataList) => dataList.some(data => !data.isCash);
+        } else if (value === 'mixed') {
+          return (_, dataList) => dataList.some(data => data.isCash) && dataList.some(data => !data.isCash);
+        } else if (value === 'single') {
+          return isSingle;
+        } else if (value === 'group') {
+          return isGroup;
+        } else {
+          // invalid 'is' keyword
+          return null;
+        }
       case 'date':
-        // TODO support > and < operators
-        const searchMoment = moment(value);
-        if (!searchMoment.isValid()) { return null; }
-        return (_, dataList) =>
-          dataList.some(data => timestampToMoment(data.date).isSame(searchMoment, 'day'));
+        return this.makeDateMatcher(value, 'date');
+      case 'created':
+        return this.makeDateMatcher(value, 'created');
+      case 'modified':
+        return this.makeDateMatcher(value, 'modified');
 
       case 'amount':
-        // TODO support < and > operators, and maybe ~
+        // TODO support < and > operators, and maybe ~, and maybe = for non-abs
         const searchAmount = parseFloat(value);
-        return this.makeRegexMatcher(value, (regex, _, dataList) =>
-          dataList.some(data => Math.abs(moneyToNumber(data.amount) - searchAmount) < 0.01)
-        );
+        const allowNegative = true;
+        const allowNonNegative = (searchAmount >= 0);
+        const searchAbsoluteAmount = Math.abs(searchAmount);
+        return transaction => {
+          const amount = getTransactionAmount(transaction);
+          return ((allowNegative && amount < 0) || (allowNonNegative && amount >= 0))
+            && Math.abs(Math.abs(amount) - searchAbsoluteAmount) < 0.005;
+        };
 
       case 'reason':
         return this.makeRegexMatcher(value, (regex, _, dataList) =>
@@ -83,12 +118,12 @@ export class TransactionFilterService {
 
       case 'who':
         return this.makeRegexMatcher(value, (regex, _, dataList) =>
-          dataList.some(data => regex.test(data.reason))
+          dataList.some(data => regex.test(data.who))
         );
 
       case 'whoidentifier':
         return this.makeRegexMatcher(value, (regex, _, dataList) =>
-          dataList.some(data => regex.test(data.reason))
+          dataList.some(data => regex.test(data.whoIdentifier))
         );
 
       case 'bookingtext':
@@ -115,6 +150,8 @@ export class TransactionFilterService {
             || regex.test(data.reason)
             || regex.test(data.bookingText)
             || regex.test(data.comment)
+            || regex.test(getTransactionAmount(transaction).toFixed(2))
+            || regex.test(timestampToMoment(data.date).format('YYYY-MM-DD'))
             || transaction.labels.some(label => regex.test(label))));
 
       default:
@@ -133,7 +170,21 @@ export class TransactionFilterService {
     if (regex) {
       return (transaction, dataList) => matcher(regex, transaction, dataList);
     } else {
+      // invalid regex
       return null;
+    }
+  }
+
+  private makeDateMatcher(value: string, fieldName: keyof ITransactionData & ('date' | 'created' | 'modified'))
+    : FilterMatcher | null {
+    if (value === 'empty' || value === 'never') {
+      return (_, dataList) => dataList.some(data => !data[fieldName]);
+    } else {
+      // TODO support > and < operators
+      const searchMoment = moment(value);
+      if (!searchMoment.isValid()) { return null; }
+      return (_, dataList) =>
+        dataList.some(data => timestampToMoment(data[fieldName]).isSame(searchMoment, 'day'));
     }
   }
 

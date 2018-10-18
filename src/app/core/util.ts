@@ -1,4 +1,20 @@
 
+export function splitQuotedString(input: string): string[] {
+  // TODO detect unterminated quotes
+
+  // Adapted from: https://stackoverflow.com/a/18647776
+  // The g flag turns on the mode where each call to exec
+  // will search starting from the last result.
+  const regex = /[^\s"]+|"([^"]*)"/g;
+  const tokens: string[] = [];
+
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(input)) !== null) {
+    tokens.push(match[1] !== undefined ? match[1] : match[0]);
+  }
+  return tokens;
+}
+
 /** Adapter between setTimeout and Promises. */
 export function delay<T = void>(delay: number, value?: T): Promise<T> {
   return new Promise(resolve => {
