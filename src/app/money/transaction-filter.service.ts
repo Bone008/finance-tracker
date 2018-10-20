@@ -5,6 +5,13 @@ import { timestampToMoment } from '../core/proto-util';
 import { splitQuotedString } from "../core/util";
 import { extractTransactionData, getTransactionAmount, isGroup, isSingle } from "./model-util";
 
+type MatcherOperator = ':' | '=' | '~' | '<' | '>' | '<=' | '>=';
+type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
+interface FilterToken {
+  matcher: FilterMatcher;
+  inverted: boolean;
+}
+
 /**
  * Business logic for filtering of transaction.
  */
@@ -47,23 +54,32 @@ export class TransactionFilterService {
     const parsedTokens: FilterToken[] = [];
     const errorIndices: number[] = [];
 
+    const tokenRegex = /^(\w+)(:|=|~|<|>|<=|>=)(.*)$/;
+
     for (let i = 0; i < rawTokens.length; i++) {
       let token = rawTokens[i];
-      const inverted = token.startsWith("-");
+      const inverted = token.startsWith('-');
       if (inverted) token = token.substr(1);
 
       let tokenKey: string | null;
+      let tokenOperator: MatcherOperator;
       let tokenValue: string;
-      const sepIndex = token.indexOf(':');
-      if (sepIndex > 0) {
-        tokenKey = token.substr(0, sepIndex);
-        tokenValue = token.substr(sepIndex + 1);
+      const match = tokenRegex.exec(token);
+      if (match !== null) {
+        tokenKey = match[1];
+        tokenOperator = match[2] as MatcherOperator;
+        tokenValue = match[3];
+      } else if (token.startsWith('=')) {
+        tokenKey = null;
+        tokenOperator = '=';
+        tokenValue = token.substr(1);
       } else {
         tokenKey = null;
+        tokenOperator = ':';
         tokenValue = token;
       }
 
-      const matcher = this.parseMatcher(tokenKey, tokenValue);
+      const matcher = this.parseMatcher(tokenKey, tokenOperator, tokenValue);
       if (matcher) {
         parsedTokens.push({ matcher, inverted });
       } else {
@@ -75,9 +91,10 @@ export class TransactionFilterService {
   }
 
   /** Processes a single 'key:value' component of the filter string. Returns null on error. */
-  private parseMatcher(key: string | null, value: string): FilterMatcher | null {
+  private parseMatcher(key: string | null, operator: MatcherOperator, value: string): FilterMatcher | null {
     switch (key) {
       case 'is':
+        if (operator !== ':') return null;
         if (value === 'cash') {
           return (_, dataList) => dataList.some(data => data.isCash);
         } else if (value === 'bank') {
@@ -93,11 +110,11 @@ export class TransactionFilterService {
           return null;
         }
       case 'date':
-        return this.makeDateMatcher(value, 'date');
+        return this.makeDateMatcher(value, operator, 'date');
       case 'created':
-        return this.makeDateMatcher(value, 'created');
+        return this.makeDateMatcher(value, operator, 'created');
       case 'modified':
-        return this.makeDateMatcher(value, 'modified');
+        return this.makeDateMatcher(value, operator, 'modified');
 
       case 'amount':
         // TODO support < and > operators, and maybe ~, and maybe = for non-abs
@@ -112,47 +129,47 @@ export class TransactionFilterService {
         };
 
       case 'reason':
-        return this.makeRegexMatcher(value, (regex, _, dataList) =>
-          dataList.some(data => regex.test(data.reason))
+        return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
+          dataList.some(data => test(data.reason))
         );
 
       case 'who':
-        return this.makeRegexMatcher(value, (regex, _, dataList) =>
-          dataList.some(data => regex.test(data.who))
+        return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
+          dataList.some(data => test(data.who))
         );
 
       case 'whoidentifier':
-        return this.makeRegexMatcher(value, (regex, _, dataList) =>
-          dataList.some(data => regex.test(data.whoIdentifier))
+        return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
+          dataList.some(data => test(data.whoIdentifier))
         );
 
       case 'bookingtext':
-        return this.makeRegexMatcher(value, (regex, _, dataList) =>
-          dataList.some(data => regex.test(data.reason))
+        return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
+          dataList.some(data => test(data.reason))
         );
 
       case 'comment':
-        return this.makeRegexMatcher(value, (regex, _, dataList) =>
-          dataList.some(data => regex.test(data.comment))
+        return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
+          dataList.some(data => test(data.comment))
         );
 
       case 'label':
-        return this.makeRegexMatcher(value, (regex, transaction) =>
-          transaction.labels.some(label => regex.test(label))
+        return this.makeRegexMatcher(value, operator, (test, transaction) =>
+          transaction.labels.some(label => test(label))
         );
 
       case null:
         // Generic matcher that searches all relevant fields.
-        return this.makeRegexMatcher(value, (regex, transaction, dataList) =>
+        return this.makeRegexMatcher(value, operator, (test, transaction, dataList) =>
           dataList.some(data =>
-            regex.test(data.who)
-            || regex.test(data.whoIdentifier)
-            || regex.test(data.reason)
-            || regex.test(data.bookingText)
-            || regex.test(data.comment)
-            || regex.test(getTransactionAmount(transaction).toFixed(2))
-            || regex.test(timestampToMoment(data.date).format('YYYY-MM-DD'))
-            || transaction.labels.some(label => regex.test(label))));
+            test(data.who)
+            || test(data.whoIdentifier)
+            || test(data.reason)
+            || test(data.bookingText)
+            || test(data.comment)
+            || test(getTransactionAmount(transaction).toFixed(2))
+            || test(timestampToMoment(data.date).format('YYYY-MM-DD'))
+            || transaction.labels.some(label => test(label))));
 
       default:
         // invalid keyword
@@ -164,23 +181,32 @@ export class TransactionFilterService {
    * Parses the given value as a regular expression and returns a FilterMatcher
    * that applies that expression to the data, or returns null if the regex could not be parsed.
    */
-  private makeRegexMatcher(value: string, matcher: (regex: RegExp, transaction: Transaction, dataList: TransactionData[]) => boolean)
+  private makeRegexMatcher(value: string, operator: MatcherOperator,
+    matcher: (test: ((input: string) => boolean), transaction: Transaction, dataList: TransactionData[]) => boolean)
     : FilterMatcher | null {
+    if (operator === '=') {
+      return (transaction, dataList) => matcher(input => input.toLowerCase() === value, transaction, dataList);
+    } else if (operator !== ':') {
+      // invalid operator
+      return null;
+    }
     const regex = this.parseRegex(value);
     if (regex) {
-      return (transaction, dataList) => matcher(regex, transaction, dataList);
+      return (transaction, dataList) => matcher(input => regex.test(input), transaction, dataList);
     } else {
       // invalid regex
       return null;
     }
   }
 
-  private makeDateMatcher(value: string, fieldName: keyof ITransactionData & ('date' | 'created' | 'modified'))
+  private makeDateMatcher(value: string, operator: MatcherOperator,
+    fieldName: keyof ITransactionData & ('date' | 'created' | 'modified'))
     : FilterMatcher | null {
+    // TODO handle operator param
     if (value === 'empty' || value === 'never') {
       return (_, dataList) => dataList.some(data => !data[fieldName]);
     } else {
-      // TODO support > and < operators
+      // TODO handle month and year granularity
       const searchMoment = moment(value);
       if (!searchMoment.isValid()) { return null; }
       return (_, dataList) =>
@@ -192,23 +218,4 @@ export class TransactionFilterService {
     try { return new RegExp(value, 'i'); }
     catch (e) { return null; }
   }
-}
-
-// TODO remove
-const fieldIdentifiers = [
-  'date',
-  'amount',
-  'reason',
-  'who',
-  'whoIdentifier',
-  'bookingText',
-  'comment',
-  'is', // cash, bank, single, group
-  'label',
-]
-
-type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
-interface FilterToken {
-  matcher: FilterMatcher;
-  inverted: boolean;
 }
