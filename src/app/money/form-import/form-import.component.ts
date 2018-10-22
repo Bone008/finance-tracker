@@ -1,13 +1,12 @@
 import { Component, EventEmitter, OnInit } from '@angular/core';
-import { PapaParseResult, PapaParseService } from 'ngx-papaparse';
+import { PapaParseService } from 'ngx-papaparse';
 import { ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { timestampNow, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
-import { FormatMapping } from './format-mapping';
 import { MAPPINGS_BY_FORMAT } from './mappings';
 
-type FileFormat = 'ksk_camt' | 'ksk_creditcard';
+type FileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp';
 type FileEncoding = 'windows-1252' | 'utf-8';
 
 @Component({
@@ -83,6 +82,11 @@ export class FormImportComponent implements OnInit {
       const file = this.file;
       const fileFormat = this.fileFormat;
       this.papaService.parse(file, {
+        beforeFirstChunk: firstChunk =>
+          // Special case for MLP format: Strip preamble before header row.
+          (fileFormat === 'mlp' && firstChunk.includes('"Buchungstag";"Valuta";"Auftraggeber')
+            ? firstChunk.substr(firstChunk.indexOf('"Buchungstag";"Valuta";"Auftraggeber'))
+            : firstChunk),
         header: true,
         skipEmptyLines: true,
         encoding: this.fileEncoding,

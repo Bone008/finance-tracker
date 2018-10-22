@@ -34,15 +34,36 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
       return components.filter(comp => comp).join("; ");
     })
     .build(),
+  'mlp': new FormatMappingBuilder<MlpRow>()
+    .addConstantMapping("isCash", false)
+    .addMapping("date", "Valuta", parseDate)
+    .addMapping("reason", "Vorgang/Verwendungszweck", input => input.replace('\n', ''))
+    .addMapping("who", "Empfänger/Zahlungspflichtiger")
+    .addMapping("whoIdentifier", "IBAN")
+    .addRawMapping("amount", ["Umsatz", " "], row => {
+      const absAmount = parseAmount(row["Umsatz"]);
+      const type = row[" "];
+      if (type === 'S') {
+        absAmount.units *= -1;
+        absAmount.subunits *= -1;
+      } else if (type !== 'H') {
+        throw new Error('Unknown amount type value, expected H or S: ' + type);
+      }
+      return absAmount;
+    })
+    .build(),
 };
 
-const dateRegex = /^(\d\d)\.(\d\d)\.(\d\d)$/;
+const dateRegex = /^(\d\d)\.(\d\d)\.(\d\d\d{2}?)$/;
 function parseDate(rawValue: string) {
   const match = dateRegex.exec(rawValue);
   if (match === null) throw new Error("could not parse date: " + rawValue);
   const day = Number(match[1]);
   const month = Number(match[2]);
-  const year = 2000 + Number(match[3]);
+  let year = Number(match[3]);
+  if (year < 1000) {
+    year += 2000;
+  }
   return dateToTimestamp(new Date(year, month - 1, day));
 }
 
@@ -90,4 +111,20 @@ interface KskCreditcardRow {
   "BAR-Entgelt+Buchungsreferenz": string;
   "AEE+Buchungsreferenz": string;
   "Abrechnungskennzeichen": string;
+}
+
+interface MlpRow {
+  "Buchungstag": string;
+  "Valuta": string;
+  "Auftraggeber/Zahlungsempfänger": string;
+  "Empfänger/Zahlungspflichtiger": string;
+  "Konto-Nr.": string;
+  "IBAN": string;
+  "BLZ": string;
+  "BIC": string;
+  "Vorgang/Verwendungszweck": string;
+  "Kundenreferenz": string;
+  "Währung": string;
+  "Umsatz": string;
+  " ": string;
 }
