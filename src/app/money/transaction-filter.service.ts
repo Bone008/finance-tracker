@@ -5,7 +5,25 @@ import { timestampToMoment } from '../core/proto-util';
 import { splitQuotedString } from "../core/util";
 import { extractTransactionData, getTransactionAmount, isGroup, isSingle } from "./model-util";
 
-type MatcherOperator = ':' | '=' | '~' | '<' | '>' | '<=' | '>=';
+const MOMENT_YEAR_REGEX = /^\d{4}$/;
+const MOMENT_MONTH_REGEX = /^(\d{4}-\d{1,2}|\w{3}(\d{2}){0,2})$/;
+const MOMENT_DATE_FORMATS = [
+  // day granularity
+  'YYYY-MM-DD',
+  'YYYY-M-DD',
+  'YYYY-MM-D',
+  'YYYY-M-D',
+  // month granularity
+  'YYYY-MM',
+  'YYYY-M',
+  'MMMYYYY',
+  'MMMYY',
+  'MMM',
+  // year granularity
+  'YYYY',
+];
+
+type MatcherOperator = ':' | '=' | '<' | '>' | '<=' | '>=';
 type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
 interface FilterToken {
   matcher: FilterMatcher;
@@ -22,6 +40,7 @@ export class TransactionFilterService {
 
   /** Applies a raw filter to a collection of transactions. */
   applyFilter(transactions: Transaction[], filter: string): Transaction[] {
+    // TODO handle partially quoted tokens, such as: ="foobar" who:"Hans Wurst"
     const rawTokens = splitQuotedString(filter);
     const [parsedFilter, errorIndices] = this.parseTokens(rawTokens);
     if (errorIndices.length > 0) {
@@ -54,7 +73,7 @@ export class TransactionFilterService {
     const parsedTokens: FilterToken[] = [];
     const errorIndices: number[] = [];
 
-    const tokenRegex = /^(\w+)(:|=|~|<|>|<=|>=)(.*)$/;
+    const tokenRegex = /^(\w+)(:|=|<=?|>=?)(.*)$/;
 
     for (let i = 0; i < rawTokens.length; i++) {
       let token = rawTokens[i];
@@ -95,19 +114,17 @@ export class TransactionFilterService {
     switch (key) {
       case 'is':
         if (operator !== ':') return null;
-        if (value === 'cash') {
-          return (_, dataList) => dataList.some(data => data.isCash);
-        } else if (value === 'bank') {
-          return (_, dataList) => dataList.some(data => !data.isCash);
-        } else if (value === 'mixed') {
-          return (_, dataList) => dataList.some(data => data.isCash) && dataList.some(data => !data.isCash);
-        } else if (value === 'single') {
-          return isSingle;
-        } else if (value === 'group') {
-          return isGroup;
-        } else {
-          // invalid 'is' keyword
-          return null;
+        switch (value.toLowerCase()) {
+          case 'cash': return (_, dataList) => dataList.some(data => data.isCash);
+          case 'bank': return (_, dataList) => dataList.some(data => !data.isCash);
+          case 'mixed': return (_, dataList) => dataList.some(data => data.isCash) && dataList.some(data => !data.isCash);
+          case 'single': return isSingle;
+          case 'group': return isGroup;
+          case 'expense': return transaction => getTransactionAmount(transaction) < -0.005;
+          case 'income': return transaction => getTransactionAmount(transaction) > 0.005;
+          default:
+            // invalid 'is' keyword
+            return null;
         }
       case 'date':
         return this.makeDateMatcher(value, operator, 'date');
@@ -117,16 +134,7 @@ export class TransactionFilterService {
         return this.makeDateMatcher(value, operator, 'modified');
 
       case 'amount':
-        // TODO support < and > operators, and maybe ~, and maybe = for non-abs
-        const searchAmount = parseFloat(value);
-        const allowNegative = true;
-        const allowNonNegative = (searchAmount >= 0);
-        const searchAbsoluteAmount = Math.abs(searchAmount);
-        return transaction => {
-          const amount = getTransactionAmount(transaction);
-          return ((allowNegative && amount < 0) || (allowNonNegative && amount >= 0))
-            && Math.abs(Math.abs(amount) - searchAbsoluteAmount) < 0.005;
-        };
+        return this.makeNumericMatcher(value, operator, getTransactionAmount);
 
       case 'reason':
         return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
@@ -202,15 +210,81 @@ export class TransactionFilterService {
   private makeDateMatcher(value: string, operator: MatcherOperator,
     fieldName: keyof ITransactionData & ('date' | 'created' | 'modified'))
     : FilterMatcher | null {
-    // TODO handle operator param
+    // TODO support relative date input
     if (value === 'empty' || value === 'never') {
+      if (operator !== ':') return null; // invalid operator
       return (_, dataList) => dataList.some(data => !data[fieldName]);
     } else {
-      // TODO handle month and year granularity
-      const searchMoment = moment(value);
-      if (!searchMoment.isValid()) { return null; }
+      let granularity: 'year' | 'month' | 'day';
+      if (MOMENT_YEAR_REGEX.test(value)) {
+        granularity = 'year';
+      } else if (MOMENT_MONTH_REGEX.test(value)) {
+        granularity = 'month';
+      } else {
+        granularity = 'day';
+      }
+      const searchMoment = moment(value, MOMENT_DATE_FORMATS, true);
+
+      console.log('granularity ' + granularity, searchMoment.format('YYYY-MM-DD'));
+      if (!searchMoment.isValid()) {
+        // invalid date format
+        return null;
+      }
+
+      let predicate: (date: moment.Moment, granularity: 'year' | 'month' | 'day') => boolean;
+      switch (operator) {
+        case '<': predicate = searchMoment.isAfter; break;
+        case '<=': predicate = searchMoment.isSameOrAfter; break;
+        case '>': predicate = searchMoment.isBefore; break;
+        case '>=': predicate = searchMoment.isSameOrBefore; break;
+        case ':':
+        case '=': predicate = searchMoment.isSame; break;
+      }
       return (_, dataList) =>
-        dataList.some(data => timestampToMoment(data[fieldName]).isSame(searchMoment, 'day'));
+        dataList.some(data => predicate.call(searchMoment, timestampToMoment(data[fieldName]), granularity));
+    }
+  }
+
+  private makeNumericMatcher(value: string, operator: MatcherOperator,
+    accessor: (transaction: Transaction, dataList: TransactionData[]) => number)
+    : FilterMatcher | null {
+    const searchAmount = Number(value);
+    if (isNaN(searchAmount)) {
+      // invalid amount
+      return null;
+    }
+
+    const subPrecision = (value.indexOf('.') !== -1);
+    // If the value is negative or 0, do a strict match considering the sign.
+    if (searchAmount <= 0 || operator === '=') {
+      return (transaction, dataList) => {
+        let amount = accessor(transaction, dataList);
+        if (!subPrecision) amount = Math.floor(amount);
+        switch (operator) {
+          case '<': return amount < (searchAmount - 0.005);
+          case '<=': return amount < (searchAmount + 0.005);
+          case '>': return amount > (searchAmount + 0.005);
+          case '>=': return amount > (searchAmount - 0.005);
+          case ':':
+          case '=': return Math.abs(amount - searchAmount) < 0.005;
+        }
+      };
+    }
+    else {
+      console.assert(searchAmount > 0);
+      // Sign-agnostic matching.
+      return (transaction, dataList) => {
+        let absAmount = Math.abs(accessor(transaction, dataList));
+        if (!subPrecision) absAmount = Math.floor(absAmount);
+        switch (operator) {
+          case '<': return absAmount < (searchAmount - 0.005);
+          case '<=': return absAmount < (searchAmount + 0.005);
+          case '>': return absAmount > (searchAmount + 0.005);
+          case '>=': return absAmount > (searchAmount - 0.005);
+          case ':': return Math.abs(absAmount - searchAmount) < 0.005;
+          // '=' is handled above.
+        }
+      };
     }
   }
 
