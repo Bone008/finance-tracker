@@ -1,5 +1,11 @@
 <mat-form-field class="filter-input">
-  <input matInput type="search" [(ngModel)]="filterInput" placeholder="Filter">
+  <input matInput type="search"
+      #searchField="ngModel"
+      name="search"
+      [(ngModel)]="filterInput"
+      placeholder="Filter"
+      filterFormatValidator
+      [matAutocomplete]="filterAutocomplete">
   <button
       mat-icon-button
       matSuffix
@@ -8,4 +14,12 @@
       (click)="clearFilter()">
     <mat-icon>close</mat-icon>
   </button>
+  <!-- TODO: make the error update whenever the filter is applied and not while typing -->
+  <mat-error>The filter is not valid: {{searchField?.errors?.filterFormat}}</mat-error>
+  
+  <mat-autocomplete
+      #filterAutocomplete="matAutocomplete"
+      autoActiveFirstOption>
+    <mat-option *ngFor="let suggestion of filterSuggestions$ | async" [value]="suggestion">{{suggestion}}</mat-option>
+  </mat-autocomplete>
 </mat-form-field>

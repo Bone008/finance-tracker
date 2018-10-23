@@ -11,6 +11,7 @@ import { CommentsComponent } from './comments/comments.component';
 import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogSplitTransactionComponent } from './dialog-split-transaction/dialog-split-transaction.component';
+import { FilterFormatValidatorDirective } from './filter-input/filter-format-validator.directive';
 import { FilterInputComponent } from './filter-input/filter-input.component';
 import { FormImportComponent } from './form-import/form-import.component';
 import { LabelsComponent } from './labels/labels.component';
@@ -52,6 +53,7 @@ const appRoutes: Routes = [
     CommentsComponent,
     FilterInputComponent,
     ChartComponent,
+    FilterFormatValidatorDirective,
   ],
   entryComponents: [
     FormImportComponent,

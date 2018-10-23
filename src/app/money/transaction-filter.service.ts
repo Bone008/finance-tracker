@@ -23,6 +23,8 @@ const MOMENT_DATE_FORMATS = [
   'YYYY',
 ];
 
+const TOKEN_REGEX = /^(\w+)(:|=|<=?|>=?)(.*)$/;
+
 type MatcherOperator = ':' | '=' | '<' | '>' | '<=' | '>=';
 type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
 interface FilterToken {
@@ -37,6 +39,21 @@ interface FilterToken {
   providedIn: 'root'
 })
 export class TransactionFilterService {
+
+  suggestFilterContinuations(filter: string): string[] {
+    const rawTokens = splitQuotedString(filter);
+    if (rawTokens.length === 0) return [];
+    const lastToken = rawTokens[rawTokens.length - 1];
+
+    // TODO complete
+    return [];
+  }
+
+  validateFilter(filter: string): string[] {
+    const rawTokens = splitQuotedString(filter);
+    const [_, errorIndices] = this.parseTokens(rawTokens);
+    return errorIndices.map(i => rawTokens[i]);
+  }
 
   /** Applies a raw filter to a collection of transactions. */
   applyFilter(transactions: Transaction[], filter: string): Transaction[] {
@@ -67,13 +84,11 @@ export class TransactionFilterService {
 
   /**
    * Parses each token string into a token ready for matching.
-   * Returns the list of successful
+   * Returns the list of successfully parsed tokens and the input indices of the unsuccessful tokens.
    */
   private parseTokens(rawTokens: string[]): [FilterToken[], number[]] {
     const parsedTokens: FilterToken[] = [];
     const errorIndices: number[] = [];
-
-    const tokenRegex = /^(\w+)(:|=|<=?|>=?)(.*)$/;
 
     for (let i = 0; i < rawTokens.length; i++) {
       let token = rawTokens[i];
@@ -83,7 +98,7 @@ export class TransactionFilterService {
       let tokenKey: string | null;
       let tokenOperator: MatcherOperator;
       let tokenValue: string;
-      const match = tokenRegex.exec(token);
+      const match = TOKEN_REGEX.exec(token);
       if (match !== null) {
         tokenKey = match[1];
         tokenOperator = match[2] as MatcherOperator;
