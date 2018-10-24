@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
+import { filterFuzzyOptions } from '../../core/util';
 import { DataService } from '../data.service';
 
 @Component({
@@ -70,25 +71,11 @@ export class AddInlineLabelComponent implements OnInit {
 
   private filterLabelsByInput(input: string): string[] {
     const cleanInput = this.newLabel.trim().toLowerCase();
-    if (input) {
-      const matches = this.allLabels.filter(label =>
-        label.includes(cleanInput)
-        && (!this.excludedLabels || this.excludedLabels.indexOf(label) === -1)
-      );
-
-      // Partition the results into two groups: Matches actually starting with
-      // the input vs ones just matching somewhere else. Always sort stronger
-      // matches before weaker ones.
-      const [strongMatches, weakMatches] = matches.reduce((result, label) => {
-        const isStrong = label.startsWith(cleanInput);
-        result[isStrong ? 0 : 1].push(label);
-        return result;
-      }, [<string[]>[], <string[]>[]]);
-
-      return [...strongMatches, ...weakMatches];
-    } else {
-      return [];
+    let matches = filterFuzzyOptions(this.allLabels, cleanInput);
+    if (this.excludedLabels) {
+      matches = matches.filter(label => this.excludedLabels!.indexOf(label) === -1);
     }
+    return matches;
   }
 
 }

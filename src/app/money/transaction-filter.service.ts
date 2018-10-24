@@ -2,8 +2,39 @@ import { Injectable } from "@angular/core";
 import * as moment from 'moment';
 import { ITransactionData, Transaction, TransactionData } from "../../proto/model";
 import { timestampToMoment } from '../core/proto-util';
-import { splitQuotedString } from "../core/util";
+import { filterFuzzyOptions, splitQuotedString } from "../core/util";
+import { DataService } from "./data.service";
 import { extractTransactionData, getTransactionAmount, isGroup, isSingle } from "./model-util";
+
+type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
+interface FilterToken {
+  matcher: FilterMatcher;
+  inverted: boolean;
+}
+type MatcherOperator = ':' | '=' | '<' | '>' | '<=' | '>=';
+const TOKEN_REGEX = /^(\w+)(:|=|<=?|>=?)(.*)$/;
+
+// List of valid filter keywords used for autocomplete.
+// Note: Should be alphabetically sorted.
+const TOKEN_KEYWORDS = [
+  'is', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'whoidentifier', 'bookingtext', 'comment', 'label'
+].sort();
+const TOKEN_IS_KEYWORDS = [
+  'cash', 'bank', 'mixed', 'single', 'group', 'expense', 'income'
+].sort();
+const TOKEN_OPERATORS_BY_KEYWORD: { [keyword: string]: MatcherOperator[] } = {
+  'is': [':'],
+  'date': [':', '=', '<', '>', '<=', '>='],
+  'created': [':', '=', '<', '>', '<=', '>='],
+  'modified': [':', '=', '<', '>', '<=', '>='],
+  'amount': [':', '=', '<', '>', '<=', '>='],
+  'reason': [':', '='],
+  'who': [':', '='],
+  'whoidentifier': [':', '='],
+  'bookingtext': [':', '='],
+  'comment': [':', '='],
+  'label': [':', '='],
+};
 
 const MOMENT_YEAR_REGEX = /^\d{4}$/;
 const MOMENT_MONTH_REGEX = /^(\d{4}-\d{1,2}|\w{3}(\d{2}){0,2})$/;
@@ -23,14 +54,6 @@ const MOMENT_DATE_FORMATS = [
   'YYYY',
 ];
 
-const TOKEN_REGEX = /^(\w+)(:|=|<=?|>=?)(.*)$/;
-
-type MatcherOperator = ':' | '=' | '<' | '>' | '<=' | '>=';
-type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
-interface FilterToken {
-  matcher: FilterMatcher;
-  inverted: boolean;
-}
 
 /**
  * Business logic for filtering of transaction.
@@ -40,15 +63,50 @@ interface FilterToken {
 })
 export class TransactionFilterService {
 
+  constructor(private readonly dataService: DataService) { }
+
   suggestFilterContinuations(filter: string): string[] {
+    // Do not suggest anything when at start of new token.
+    if (filter.endsWith(' ')) {
+      return [];
+    }
+
     const rawTokens = splitQuotedString(filter);
     if (rawTokens.length === 0) return [];
-    const lastToken = rawTokens[rawTokens.length - 1];
+    let lastToken = rawTokens.pop()!.toLowerCase();
+    let continuationPrefix = rawTokens.join(' ') + (rawTokens.length > 0 ? ' ' : '');
+    if (lastToken.startsWith('-')) {
+      lastToken = lastToken.substr(1);
+      continuationPrefix += '-';
+    }
 
-    // TODO complete
-    return [];
+    // Suggest special "is:" filters.
+    if (lastToken.startsWith('is:')) {
+      continuationPrefix += 'is:';
+      return filterFuzzyOptions(TOKEN_IS_KEYWORDS, lastToken.substr(3), true)
+        .map(keyword => continuationPrefix + keyword + ' ');
+    }
+    // Suggest labels.
+    else if (lastToken.startsWith('label:') || lastToken.startsWith('label=')) {
+      continuationPrefix += lastToken.substr(0, 6);
+      return filterFuzzyOptions(this.dataService.getAllLabels().sort(), lastToken.substr(6), true)
+        .map(keyword => continuationPrefix + keyword + ' ');
+    }
+    else {
+      const keywordMatches = filterFuzzyOptions(TOKEN_KEYWORDS, lastToken);
+      if (keywordMatches.length === 1) {
+        // Suggest operators supported by keyword.
+        continuationPrefix += keywordMatches[0];
+        const supportedOperators = TOKEN_OPERATORS_BY_KEYWORD[keywordMatches[0]] || [];
+        return supportedOperators.map(operator => continuationPrefix + operator);
+      } else {
+        // Suggest keywords.
+        return keywordMatches.map(keyword => continuationPrefix + keyword);
+      }
+    }
   }
 
+  /** Returns list of invalid tokens in the raw filter. */
   validateFilter(filter: string): string[] {
     const rawTokens = splitQuotedString(filter);
     const [_, errorIndices] = this.parseTokens(rawTokens);
@@ -62,8 +120,6 @@ export class TransactionFilterService {
     const [parsedFilter, errorIndices] = this.parseTokens(rawTokens);
     if (errorIndices.length > 0) {
       // Empty results on error
-      // TODO somehow allow highlighting errors
-      console.warn('There are errors in the filter!', errorIndices);
       return [];
     } else {
       return transactions.filter(t => this.matchesFilter(t, parsedFilter));
@@ -126,6 +182,10 @@ export class TransactionFilterService {
 
   /** Processes a single 'key:value' component of the filter string. Returns null on error. */
   private parseMatcher(key: string | null, operator: MatcherOperator, value: string): FilterMatcher | null {
+    // !!!!!!!!!!
+    // Note: When changing the set of these keywords, make sure to also
+    // update the arrays for autocompletion at the top of this file!
+    // !!!!!!!!!!
     switch (key) {
       case 'is':
         if (operator !== ':') return null;
@@ -168,7 +228,7 @@ export class TransactionFilterService {
 
       case 'bookingtext':
         return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
-          dataList.some(data => test(data.reason))
+          dataList.some(data => test(data.bookingText))
         );
 
       case 'comment':

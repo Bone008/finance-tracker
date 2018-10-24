@@ -19,7 +19,8 @@
   
   <mat-autocomplete
       #filterAutocomplete="matAutocomplete"
-      autoActiveFirstOption>
+      autoActiveFirstOption
+      (optionSelected)="reopenPanel()">
     <mat-option *ngFor="let suggestion of filterSuggestions$ | async" [value]="suggestion">{{suggestion}}</mat-option>
   </mat-autocomplete>
 </mat-form-field>

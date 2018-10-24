@@ -71,11 +71,12 @@ export class TransactionListComponent implements AfterViewInit {
   }
 
   filterByLabel(label: string, additive: boolean) {
+    const addedToken = 'label=' + label;
     let newFilter = this.filterState.getCurrentValue();
     if (additive && newFilter.length > 0) {
-      newFilter += " " + label;
+      newFilter += " " + addedToken;
     } else {
-      newFilter = label;
+      newFilter = addedToken;
     }
 
     this.filterState.setValueNow(newFilter);

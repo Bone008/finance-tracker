@@ -1,4 +1,5 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { MatAutocompleteTrigger } from '@angular/material';
 import { Observable, Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { TransactionFilterService } from '../transaction-filter.service';
@@ -12,6 +13,9 @@ import { FilterState } from './filter-state';
 export class FilterInputComponent implements OnInit {
   @Input()
   state: FilterState;
+
+  @ViewChild(MatAutocompleteTrigger)
+  private filterAutocompleteTrigger: MatAutocompleteTrigger;
 
   get filterInput() { return this.state.getCurrentValue(); }
   set filterInput(value: string) { this.state.setValue(value); this.inputLiveChangeSubject.next(value); }
@@ -33,5 +37,11 @@ export class FilterInputComponent implements OnInit {
 
   clearFilter() {
     this.state.setValueNow("");
+  }
+
+  reopenPanel() {
+    // Used to keep the autocomplete window open after selecting
+    // an intermediate completion (e.g. "label:").
+    setTimeout(() => this.filterAutocompleteTrigger.openPanel(), 50);
   }
 }

@@ -15,6 +15,30 @@ export function splitQuotedString(input: string): string[] {
   return tokens;
 }
 
+/**
+ * Filters the set of options by the given input string and returns all options
+ * that somehow match the input. Case sensitive!
+ * If the options should be alphabetically sorted, they already need to be so.
+ */
+export function filterFuzzyOptions(options: string[], input: string, allowEmptyInput?: boolean): string[] {
+  if (input) {
+    const matches = options.filter(option => option.includes(input));
+
+    // Partition the results into two groups: Matches actually starting with
+    // the input vs ones just matching somewhere else. Always sort stronger
+    // matches before weaker ones.
+    const [strongMatches, weakMatches] = matches.reduce((result, option) => {
+      const isStrong = option.startsWith(input);
+      result[isStrong ? 0 : 1].push(option);
+      return result;
+    }, [<string[]>[], <string[]>[]]);
+
+    return [...strongMatches, ...weakMatches];
+  } else {
+    return allowEmptyInput ? options.slice(0) : [];
+  }
+}
+
 /** Adapter between setTimeout and Promises. */
 export function delay<T = void>(delay: number, value?: T): Promise<T> {
   return new Promise(resolve => {
