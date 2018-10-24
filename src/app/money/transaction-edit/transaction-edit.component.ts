@@ -97,7 +97,7 @@ export class TransactionEditComponent implements OnInit {
   }
 
   onSubmit() {
-    console.log(this.transaction);
+    //console.log(this.transaction);
     this.matDialogRef.close(true);
   }
 

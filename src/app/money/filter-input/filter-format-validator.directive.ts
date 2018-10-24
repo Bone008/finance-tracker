@@ -7,9 +7,7 @@ import { TransactionFilterService } from "../transaction-filter.service";
   providers: [{ provide: NG_VALIDATORS, useExisting: FilterFormatValidatorDirective, multi: true }]
 })
 export class FilterFormatValidatorDirective implements Validator {
-  constructor(private readonly filterService: TransactionFilterService) {
-    console.log('constructing');
-  }
+  constructor(private readonly filterService: TransactionFilterService) { }
 
   validate(control: AbstractControl): ValidationErrors | null {
     const errors = this.filterService.validateFilter(control.value);

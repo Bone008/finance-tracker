@@ -300,7 +300,6 @@ export class TransactionFilterService {
       }
       const searchMoment = moment(value, MOMENT_DATE_FORMATS, true);
 
-      console.log('granularity ' + granularity, searchMoment.format('YYYY-MM-DD'));
       if (!searchMoment.isValid()) {
         // invalid date format
         return null;
