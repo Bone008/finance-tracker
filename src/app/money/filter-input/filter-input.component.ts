@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, ViewChild } from '@angular/core';
-import { MatAutocompleteTrigger } from '@angular/material';
+import { ErrorStateMatcher, MatAutocompleteTrigger, ShowOnDirtyErrorStateMatcher } from '@angular/material';
 import { Observable, Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { TransactionFilterService } from '../transaction-filter.service';
@@ -8,7 +8,10 @@ import { FilterState } from './filter-state';
 @Component({
   selector: 'app-filter-input',
   templateUrl: './filter-input.component.html',
-  styleUrls: ['./filter-input.component.css']
+  styleUrls: ['./filter-input.component.css'],
+  providers: [
+    { provide: ErrorStateMatcher, useClass: ShowOnDirtyErrorStateMatcher },
+  ],
 })
 export class FilterInputComponent implements OnInit {
   @Input()
