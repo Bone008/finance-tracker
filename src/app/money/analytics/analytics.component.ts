@@ -46,16 +46,26 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.totalTransactionCount = allTransactions.length;
     this.matchingTransactionCount = transactions.length;
 
+    let bucketRangeMin: moment.Moment | null = null;
+    let bucketRangeMax: moment.Moment | null = null;
     const transactionBuckets: { [key: string]: BilledTransaction[] } = {};
     const keyFormat = 'YYYY-MM';
 
-    const now = moment();
+    const getOrCreateTransactionBucket = (key: string) => {
+      if (!transactionBuckets.hasOwnProperty(key)) {
+        transactionBuckets[key] = [];
+        const mom = moment(key);
+        if (!bucketRangeMin || mom.isBefore(bucketRangeMin)) {
+          bucketRangeMin = mom;
+        }
+        if (!bucketRangeMax || mom.isAfter(bucketRangeMax)) {
+          bucketRangeMax = mom;
+        }
+      }
+      return transactionBuckets[key];
+    };
 
-    const numMonths = 24;
-    for (let i = 0; i < numMonths; i++) {
-      const month = now.clone().subtract(numMonths - i - 1, 'months').format(keyFormat);
-      transactionBuckets[month] = [];
-    }
+    const now = moment();
 
     for (const transaction of transactions) {
       const dateMoment = timestampToMoment(isSingle(transaction)
@@ -64,35 +74,44 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       );
 
       const key = dateMoment.format(keyFormat);
-      if (key in transactionBuckets) {
-        if (!useAverage) {
-          transactionBuckets[key].push({
+
+      if (!useAverage) {
+        getOrCreateTransactionBucket(key).push({
+          source: transaction,
+          relevantLabels: transaction.labels,
+          amount: getTransactionAmount(transaction),
+        });
+      } else {
+        //const contribBuckets = [key];
+        // TODO: figure out which direction makes sense to shift the moving average
+        const otherKey1 = dateMoment.clone().add(1, 'month').format(keyFormat);
+        const otherKey2 = dateMoment.clone().subtract(1, 'month').format(keyFormat);
+        //if (otherKey1 in transactionBuckets) contribBuckets.push(otherKey1);
+        //if (otherKey2 in transactionBuckets) contribBuckets.push(otherKey2);
+
+        const contribBuckets = [key, otherKey1, otherKey2];
+
+        const amountPerBucket = getTransactionAmount(transaction) / contribBuckets.length;
+        for (let buck of contribBuckets) {
+          getOrCreateTransactionBucket(buck).push({
             source: transaction,
             relevantLabels: transaction.labels,
-            amount: getTransactionAmount(transaction),
+            amount: amountPerBucket,
           });
-        } else {
-          const contribBuckets = [key];
-          // TODO: figure out which direction makes sense to shift the moving average
-          const otherKey1 = dateMoment.clone().add(1, 'months').format(keyFormat);
-          const otherKey2 = dateMoment.clone().subtract(1, 'months').format(keyFormat);
-          if (otherKey1 in transactionBuckets) contribBuckets.push(otherKey1);
-          if (otherKey2 in transactionBuckets) contribBuckets.push(otherKey2);
-
-          const amountPerBucket = getTransactionAmount(transaction) / contribBuckets.length;
-          for (let buck of contribBuckets) {
-            transactionBuckets[buck].push({
-              source: transaction,
-              relevantLabels: transaction.labels,
-              amount: amountPerBucket,
-            });
-          }
         }
+
+      }
+    }
+
+    // Fix holes in transactionBuckets
+    if (bucketRangeMin && bucketRangeMax) {
+      for (let currentMoment = bucketRangeMin!; currentMoment.isBefore(bucketRangeMax, 'month'); currentMoment.add(1, 'month')) {
+        getOrCreateTransactionBucket(currentMoment.format(keyFormat));
       }
     }
 
     this.buckets = [];
-    for (const key of Object.keys(transactionBuckets)) {
+    for (const key of Object.keys(transactionBuckets).sort()) {
       const positive = transactionBuckets[key].filter(t => t.amount > 0);
       const negative = transactionBuckets[key].filter(t => t.amount < 0);
 
