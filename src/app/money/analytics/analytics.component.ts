@@ -23,6 +23,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   buckets: BucketInfo[] = [];
   maxBucketExpense = 0;
   monthlyChartData: ChartData = {};
+  monthlyMeanBucket: Partial<BucketInfo> = {};
+  monthlyMedianBucket: Partial<BucketInfo> = {};
 
   private txSubscription: Subscription;
 
@@ -154,6 +156,31 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       labels: this.buckets.map(b => b.name),
       datasets,
     };
+
+    // Calculate mean and median.
+    const [meanPositive, medianPositive] = this.calculateMeanAndMedian(this.buckets.map(b => b.totalPositive));
+    const [meanNegative, medianNegative] = this.calculateMeanAndMedian(this.buckets.map(b => b.totalNegative));
+    const [meanNum, medianNum] = this.calculateMeanAndMedian(this.buckets.map(b => b.numTransactions));
+    this.monthlyMeanBucket.totalPositive = meanPositive;
+    this.monthlyMeanBucket.totalNegative = meanNegative;
+    this.monthlyMeanBucket.numTransactions = meanNum;
+    this.monthlyMedianBucket.totalPositive = medianPositive;
+    this.monthlyMedianBucket.totalNegative = medianNegative;
+    this.monthlyMedianBucket.numTransactions = medianNum;
+  }
+
+  private calculateMeanAndMedian(numbers: number[]): [number, number] {
+    if (numbers.length === 0) return [NaN, NaN];
+    const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+
+    let median: number;
+    const sorted = numbers.slice(0).sort((a, b) => a - b);
+    if (sorted.length % 2 === 0) {
+      median = (sorted[(sorted.length >> 1) - 1] + sorted[sorted.length >> 1]) / 2;
+    } else {
+      median = sorted[sorted.length >> 1];
+    }
+    return [mean, median];
   }
 
 }

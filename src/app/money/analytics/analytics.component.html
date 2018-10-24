@@ -16,6 +16,30 @@
     <p>Analyzed {{matchingTransactionCount}} out of {{totalTransactionCount}} transactions.</p>
 
     <app-chart type="bar" [data]="monthlyChartData"></app-chart>
+    <hr>
+
+    <h3>Monthly averages:</h3>
+    <table>
+      <tr>
+        <th></th>
+        <th align="right">Expenses</th>
+        <th align="right">Income</th>
+        <th align="right">#</th>
+      </tr>
+      <tr>
+        <th align="left">Mean</th>
+        <td align="right" class="negative">{{monthlyMeanBucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
+        <td align="right">{{monthlyMeanBucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
+        <td align="right">{{monthlyMeanBucket.numTransactions | number:'1.0-1'}}</td>
+      </tr>
+      <tr>
+        <th align="left">Median</th>
+        <td align="right" class="negative">{{monthlyMedianBucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
+        <td align="right">{{monthlyMedianBucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
+        <td align="right">{{monthlyMedianBucket.numTransactions | number:'1.0-1'}}</td>
+      </tr>
+    </table>
+    <hr>
 
     <table width="100%">
       <tr>
