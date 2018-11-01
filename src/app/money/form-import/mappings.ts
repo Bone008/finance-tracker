@@ -54,7 +54,7 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     .build(),
 };
 
-const dateRegex = /^(\d\d)\.(\d\d)\.(\d\d\d{2}?)$/;
+const dateRegex = /^(\d\d)\.(\d\d)\.(\d\d(?:\d\d)?)$/;
 function parseDate(rawValue: string) {
   const match = dateRegex.exec(rawValue);
   if (match === null) throw new Error("could not parse date: " + rawValue);
