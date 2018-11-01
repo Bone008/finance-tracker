@@ -17,6 +17,11 @@
 
     <app-chart type="bar" [data]="monthlyChartData"></app-chart>
     <hr>
+    <div fxLayout="row">
+      <app-chart fxFlex="50" type="pie" [data]="labelBreakdownChartData[0]"></app-chart>
+      <app-chart fxFlex="50" type="pie" [data]="labelBreakdownChartData[1]"></app-chart>
+    </div>
+    <hr>
 
     <h3>Monthly averages:</h3>
     <table>

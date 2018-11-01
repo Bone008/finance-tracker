@@ -45,10 +45,15 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
           mode: 'index',
           callbacks: {
             label: (item, data) => {
-              let label = this.decimalPipe.transform(item.yLabel, '1.2-2') + ' €';
+              const rawValue = item.yLabel || (data.datasets && data.datasets[item.datasetIndex!].data![item.index!]);
+              let label = this.decimalPipe.transform(rawValue, '1.2-2') + ' €';
               let datasetName = data.datasets && data.datasets[item.datasetIndex!].label;
               if (datasetName) {
                 label += ` (${datasetName})`;
+              }
+              // Prepend name of data point for pie charts.
+              if (this.type === 'pie' && data.labels) {
+                label = data.labels[item.index!] + ': ' + label;
               }
               return label;
             },
@@ -65,23 +70,24 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
     }
   }
 
-  /** Makes sure obj contains the same values as newData without changing its identity. */
+  /** Makes sure obj contains the same values as newObj without changing its identity. */
   private patchObject(obj: any, newObj: any) {
     // Special case for arrays: also patch length
     if (Array.isArray(obj) && Array.isArray(newObj)) {
       obj.length = newObj.length;
     }
 
-    for (const key in newObj) {
+    for (const key of Object.getOwnPropertyNames(newObj)) {
       // Deep copy objects.
-      if (typeof obj[key] === 'object' && typeof newObj[key] === 'object') {
+      if (typeof obj[key] === 'object' && typeof newObj[key] === 'object'
+        && newObj[key] !== null) {
         this.patchObject(obj[key], newObj[key]);
       } else {
         obj[key] = newObj[key];
       }
     }
     // Remove properties no longer present in newData.
-    for (const key in obj) {
+    for (const key of Object.getOwnPropertyNames(obj)) {
       // Keep chart.js metadata (_meta) untouched.
       if (!(key in newObj) && key.indexOf('_') !== 0) {
         delete obj[key];
