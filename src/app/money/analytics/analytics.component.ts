@@ -50,6 +50,21 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.txSubscription.unsubscribe();
   }
 
+  onChartBucketClick(monthIndex: number) {
+    // e.g. '2018-01'
+    const bucketName = this.monthlyChartData.labels![monthIndex];
+
+    // TODO Refactor token operations into some utility method.
+    const addedToken = 'date:' + bucketName;
+    let newFilter = this.filterState.getCurrentValue();
+    if (newFilter.length > 0) {
+      newFilter += " " + addedToken;
+    } else {
+      newFilter = addedToken;
+    }
+    this.filterState.setValueNow(newFilter);
+  }
+
   analyzeTransactions(filterValue: string, useAverage: boolean) {
     const allTransactions = this.dataService.getCurrentTransactionList();
     const transactions = this.filterService.applyFilter(allTransactions, filterValue);

@@ -1,6 +1,19 @@
 import { DecimalPipe } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { Chart, ChartData, ChartType } from 'chart.js';
+
+export interface ChartElementClickEvent {
+  datasetIndex: number;
+  index: number;
+}
+
+// Set global defaults for chart.js.
+// See https://www.chartjs.org/docs/latest/axes/.
+(<any>Chart).scaleService.updateScaleDefaults('linear', {
+  ticks: {
+    suggestedMin: 0,
+  }
+});
 
 @Component({
   selector: 'app-chart',
@@ -12,6 +25,8 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   type: ChartType;
   @Input()
   data: ChartData;
+  @Output()
+  readonly elementClick = new EventEmitter<ChartElementClickEvent>();
 
   @ViewChild('chartCanvas')
   private chartCanvas: ElementRef;
@@ -58,6 +73,17 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
               return label;
             },
           },
+        },
+        onClick: (event: MouseEvent, elements: any[]) => {
+          if (elements.length > 0) {
+            const datasetIndex: any = elements[0]._datasetIndex;
+            const index: any = elements[0]._index;
+            if (typeof datasetIndex === 'number' && typeof index === 'number') {
+              this.elementClick.emit({ datasetIndex, index });
+            } else {
+              console.warn('Could not locate datasetIndex and index on clicked chart element!', elements[0]);
+            }
+          }
         },
       },
     });
