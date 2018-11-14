@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
 import { DataContainer, GlobalComment, ImportedRow, Transaction, TransactionData } from "../../proto/model";
 import { pluralizeArgument } from "../core/util";
-import { extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
+import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
 @Injectable({
   providedIn: 'root'
@@ -76,15 +76,7 @@ export class DataService {
   }
 
   getAllLabels(): string[] {
-    const labels: string[] = [];
-    for (let transaction of this.data.transactions) {
-      for (let label of transaction.labels) {
-        if (labels.indexOf(label) === -1) {
-          labels.push(label);
-        }
-      }
-    }
-    return labels;
+    return extractAllLabels(this.data.transactions);
   }
 
   getImportedRowById(id: number): ImportedRow | null {

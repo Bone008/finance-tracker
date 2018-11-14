@@ -1,4 +1,9 @@
 
+.shared-by-all-notice {
+  margin: 5px 0;
+  text-align: center;
+}
+
 .label-container {
   display: flex;
   flex-direction: row;

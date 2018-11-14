@@ -7,7 +7,7 @@ import { timestampToMoment, timestampToWholeSeconds } from '../../core/proto-uti
 import { getRandomInt, maxBy } from '../../core/util';
 import { DataService } from '../data.service';
 import { FilterState } from '../filter-input/filter-state';
-import { getTransactionAmount, isSingle } from '../model-util';
+import { extractAllLabels, getTransactionAmount, isSingle } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { KeyedAggregate } from './keyed-aggregate';
 
@@ -31,6 +31,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   monthlyMedianBucket: Partial<BucketInfo> = {};
   /** Data for pie charts showing expenses/income by label. */
   labelBreakdownChartData: [ChartData, ChartData] = [{}, {}];
+  /** List of labels that are shared by all matching transactions. */
+  labelsSharedByAll: string[] = [];
 
   private txSubscription: Subscription;
 
@@ -194,12 +196,18 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
   private analyzeLabelBreakdown(transactions: Transaction[], filterValue: string) {
     // TODO label hierarchy
-    // TODO exclude labels that are being filtered by
+
+    // Exclude labels from breakdown which every matched transaction is tagged with.
+    this.labelsSharedByAll = extractAllLabels(transactions)
+      .filter(label => transactions.every(transaction => transaction.labels.includes(label)));
+
     // Group by labels.
     const expensesGroups = new KeyedAggregate();
     const incomeGroups = new KeyedAggregate();
     for (const transaction of transactions) {
-      const label = transaction.labels.join(',') || '<none>';
+      const label = transaction.labels
+        .filter(label => this.labelsSharedByAll.indexOf(label) === -1)
+        .join(',') || '<none>';
       const amount = getTransactionAmount(transaction);
       if (amount > 0) {
         incomeGroups.add(label, amount);
