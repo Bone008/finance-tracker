@@ -15,7 +15,21 @@
 
     <p>Analyzed {{matchingTransactionCount}} out of {{totalTransactionCount}} transactions.</p>
 
-    <app-chart type="bar" [data]="monthlyChartData"></app-chart>
+    <app-chart type="bar" [data]="monthlyChartData" (elementClick)="onChartBucketClick($event.index)"></app-chart>
+    <hr>
+    <div *ngIf="labelsSharedByAll.length > 0" class="shared-by-all-notice">
+      <span>The label{{labelsSharedByAll.length === 1 ? '' : 's'}}&nbsp;</span>
+      <div *ngFor="let lbl of labelsSharedByAll" class="label-container" style="display: inline-block;">
+        <span class="label-name">{{lbl}}</span>
+      </div>
+      <span>{{labelsSharedByAll.length === 1 ? 'is' : 'are'}} not shown in the chart below, because
+        all analyzed transactions include {{labelsSharedByAll.length === 1 ? 'it' : 'them'}}.
+      </span>
+    </div>
+    <div fxLayout="row" fxLayout.xs="column">
+      <app-chart fxFlex="50" type="pie" [data]="labelBreakdownChartData[0]"></app-chart>
+      <app-chart fxFlex="50" type="pie" [data]="labelBreakdownChartData[1]"></app-chart>
+    </div>
     <hr>
 
     <h3>Monthly averages:</h3>

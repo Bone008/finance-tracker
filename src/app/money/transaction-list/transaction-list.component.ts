@@ -71,6 +71,7 @@ export class TransactionListComponent implements AfterViewInit {
   }
 
   filterByLabel(label: string, additive: boolean) {
+    // TODO Refactor token operations into some utility method.
     const addedToken = 'label=' + label;
     let newFilter = this.filterState.getCurrentValue();
     if (additive && newFilter.length > 0) {

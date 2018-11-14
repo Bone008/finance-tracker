@@ -4,11 +4,15 @@ import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { Transaction } from '../../../proto/model';
 import { timestampToMoment, timestampToWholeSeconds } from '../../core/proto-util';
-import { maxBy } from '../../core/util';
+import { getRandomInt, maxBy } from '../../core/util';
 import { DataService } from '../data.service';
 import { FilterState } from '../filter-input/filter-state';
-import { getTransactionAmount, isSingle } from '../model-util';
+import { extractAllLabels, getTransactionAmount, isSingle } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
+import { KeyedAggregate } from './keyed-aggregate';
+
+/** Maximum number of groups in label breakdown chart. */
+const LABEL_CHART_GROUP_LIMIT = 6;
 
 @Component({
   selector: 'app-analytics',
@@ -25,6 +29,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   monthlyChartData: ChartData = {};
   monthlyMeanBucket: Partial<BucketInfo> = {};
   monthlyMedianBucket: Partial<BucketInfo> = {};
+  /** Data for pie charts showing expenses/income by label. */
+  labelBreakdownChartData: [ChartData, ChartData] = [{}, {}];
+  /** List of labels that are shared by all matching transactions. */
+  labelsSharedByAll: string[] = [];
 
   private txSubscription: Subscription;
 
@@ -42,12 +50,32 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.txSubscription.unsubscribe();
   }
 
+  onChartBucketClick(monthIndex: number) {
+    // e.g. '2018-01'
+    const bucketName = this.monthlyChartData.labels![monthIndex];
+
+    // TODO Refactor token operations into some utility method.
+    const addedToken = 'date:' + bucketName;
+    let newFilter = this.filterState.getCurrentValue();
+    if (newFilter.length > 0) {
+      newFilter += " " + addedToken;
+    } else {
+      newFilter = addedToken;
+    }
+    this.filterState.setValueNow(newFilter);
+  }
+
   analyzeTransactions(filterValue: string, useAverage: boolean) {
     const allTransactions = this.dataService.getCurrentTransactionList();
     const transactions = this.filterService.applyFilter(allTransactions, filterValue);
     this.totalTransactionCount = allTransactions.length;
     this.matchingTransactionCount = transactions.length;
 
+    this.analyzeMonthlyBreakdown(transactions, useAverage);
+    this.analyzeLabelBreakdown(transactions, filterValue);
+  }
+
+  private analyzeMonthlyBreakdown(transactions: Transaction[], useAverage: boolean) {
     let bucketRangeMin: moment.Moment | null = null;
     let bucketRangeMax: moment.Moment | null = null;
     const transactionBuckets: { [key: string]: BilledTransaction[] } = {};
@@ -66,8 +94,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       }
       return transactionBuckets[key];
     };
-
-    const now = moment();
 
     for (const transaction of transactions) {
       const dateMoment = timestampToMoment(isSingle(transaction)
@@ -183,6 +209,63 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     return [mean, median];
   }
 
+  private analyzeLabelBreakdown(transactions: Transaction[], filterValue: string) {
+    // TODO label hierarchy
+
+    // Exclude labels from breakdown which every matched transaction is tagged with.
+    this.labelsSharedByAll = extractAllLabels(transactions)
+      .filter(label => transactions.every(transaction => transaction.labels.includes(label)));
+
+    // Group by labels.
+    const expensesGroups = new KeyedAggregate();
+    const incomeGroups = new KeyedAggregate();
+    for (const transaction of transactions) {
+      const label = transaction.labels
+        .filter(label => this.labelsSharedByAll.indexOf(label) === -1)
+        .join(',') || '<none>';
+      const amount = getTransactionAmount(transaction);
+      if (amount > 0) {
+        incomeGroups.add(label, amount);
+      } else {
+        expensesGroups.add(label, amount);
+      }
+    }
+
+    this.labelBreakdownChartData = [
+      this.generateLabelBreakdownChart(expensesGroups),
+      this.generateLabelBreakdownChart(incomeGroups),
+    ];
+  }
+
+  private generateLabelBreakdownChart(groups: KeyedAggregate): ChartData {
+    // Collapse smallest groups into "other".
+    if (groups.length > LABEL_CHART_GROUP_LIMIT) {
+      const sortedEntries = groups.getEntries().sort((a, b) => Math.abs(a[1]) - Math.abs(b[1]));
+      const otherCount = groups.length - LABEL_CHART_GROUP_LIMIT + 1;
+      let otherAmount = 0;
+      for (let i = 0; i < otherCount; i++) {
+        groups.delete(sortedEntries[i][0]);
+        otherAmount += sortedEntries[i][1];
+      }
+      groups.add('other', otherAmount);
+    }
+
+    return {
+      datasets: [{
+        data: groups.getValues(),
+        backgroundColor: groups.getKeys().map(generateColor),
+      }],
+      labels: groups.getKeys(),
+    };
+  }
+
+}
+
+function generateColor(): string {
+  return 'rgb('
+    + getRandomInt(0, 256) + ','
+    + getRandomInt(0, 256) + ','
+    + getRandomInt(0, 256) + ')';
 }
 
 interface BilledTransaction {

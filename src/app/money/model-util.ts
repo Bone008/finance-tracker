@@ -93,3 +93,16 @@ export function getTransactionAmount(transaction: Transaction): number {
   return mapTransactionData(transaction, data => moneyToNumber(data.amount))
     .reduce((a, b) => a + b, 0);
 }
+
+/** Returns an unordered list of all labels that occur in any of the given transactions. */
+export function extractAllLabels(transactions: Transaction[]): string[] {
+  const labels: string[] = [];
+  for (const transaction of transactions) {
+    for (const label of transaction.labels) {
+      if (labels.indexOf(label) === -1) {
+        labels.push(label);
+      }
+    }
+  }
+  return labels;
+}
