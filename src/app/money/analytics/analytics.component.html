@@ -4,15 +4,27 @@
   </mat-card-title>
 
   <mat-card-content>
-    <div fxLayout="row">
-      <app-filter-input fxFlex [state]="filterState"></app-filter-input>
-      <mat-checkbox
-          (change)="averageOver3MonthsSubject.next($event.checked)"
-          [checked]="averageOver3MonthsSubject | async">
-        Average over 3 months
-      </mat-checkbox>
-    </div>
+    <app-filter-input [state]="filterState"></app-filter-input>
+    
+    <mat-checkbox
+        (change)="averageOver3MonthsSubject.next($event.checked)"
+        [checked]="averageOver3MonthsSubject | async">
+      Average over 3 months
+    </mat-checkbox>
 
+    <p *ngIf="labelGroups.length > 0" fxLayout="row wrap" fxLayoutGap="10px" fxLayoutAlign="start center">
+      <span>Collapse child labels:</span>
+      <button mat-stroked-button (click)="collapseAllGroups()" class="collapse-button">All</button>
+      <button mat-stroked-button (click)="uncollapseAllGroups()" class="collapse-button">None</button>
+      <mat-checkbox
+          *ngFor="let group of labelGroups"
+          (change)="group.shouldCollapse = $event.checked; labelCollapseSubject.next()"
+          [checked]="group.shouldCollapse">
+        {{group.parentName}}&nbsp;({{group.children.length}})
+      </mat-checkbox>
+    </p>
+
+    <hr>
     <p>Analyzed {{matchingTransactionCount}} out of {{totalTransactionCount}} transactions.</p>
 
     <app-chart type="bar" [data]="monthlyChartData" (elementClick)="onChartBucketClick($event.index)"></app-chart>

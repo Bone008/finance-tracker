@@ -9,8 +9,10 @@ import { DataService } from '../data.service';
 import { FilterState } from '../filter-input/filter-state';
 import { extractAllLabels, getTransactionAmount, isSingle } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
-import { KeyedAggregate } from './keyed-aggregate';
+import { KeyedArrayAggregate, KeyedNumberAggregate } from './keyed-aggregate';
 
+/** The character that is used in label names to define a hierarchy. */
+const LABEL_HIERARCHY_SEPARATOR = '/';
 /** Maximum number of groups in label breakdown chart. */
 const LABEL_CHART_GROUP_LIMIT = 6;
 
@@ -20,8 +22,15 @@ const LABEL_CHART_GROUP_LIMIT = 6;
   styleUrls: ['./analytics.component.css']
 })
 export class AnalyticsComponent implements OnInit, OnDestroy {
+  // TODO Split this component into multiple parts, possibly add "AnalyticsService" for shared functionality.
+
   readonly filterState = new FilterState();
   readonly averageOver3MonthsSubject = new BehaviorSubject<boolean>(false);
+  readonly labelCollapseSubject = new BehaviorSubject<void>(void (0));
+
+  static readonly uncollapsedLabels = new Set<string>();
+  labelGroups: LabelGroup[] = [];
+
   totalTransactionCount = 0;
   matchingTransactionCount = 0;
   buckets: BucketInfo[] = [];
@@ -29,6 +38,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   monthlyChartData: ChartData = {};
   monthlyMeanBucket: Partial<BucketInfo> = {};
   monthlyMedianBucket: Partial<BucketInfo> = {};
+
   /** Data for pie charts showing expenses/income by label. */
   labelBreakdownChartData: [ChartData, ChartData] = [{}, {}];
   /** List of labels that are shared by all matching transactions. */
@@ -41,9 +51,15 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     private readonly filterService: TransactionFilterService) { }
 
   ngOnInit() {
+    this.labelCollapseSubject.subscribe(() => this.refreshUncollapsedLabels());
+
     this.txSubscription =
-      combineLatest(this.dataService.transactions$, this.filterState.value$, this.averageOver3MonthsSubject)
-        .subscribe(([_, filterValue, useAverage]) => this.analyzeTransactions(filterValue, useAverage));
+      combineLatest(
+        this.dataService.transactions$,
+        this.filterState.value$,
+        this.averageOver3MonthsSubject,
+        this.labelCollapseSubject)
+        .subscribe(([_, filterValue, useAverage, __]) => this.analyzeTransactions(filterValue, useAverage));
   }
 
   ngOnDestroy() {
@@ -65,14 +81,53 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.filterState.setValueNow(newFilter);
   }
 
-  analyzeTransactions(filterValue: string, useAverage: boolean) {
+  collapseAllGroups() {
+    AnalyticsComponent.uncollapsedLabels.clear();
+    this.labelGroups.forEach(group => group.shouldCollapse = true);
+    this.labelCollapseSubject.next(void (0));
+  }
+
+  uncollapseAllGroups() {
+    this.labelGroups.forEach(group => group.shouldCollapse = false);
+    this.labelCollapseSubject.next(void (0));
+  }
+
+  private analyzeTransactions(filterValue: string, useAverage: boolean) {
     const allTransactions = this.dataService.getCurrentTransactionList();
     const transactions = this.filterService.applyFilter(allTransactions, filterValue);
     this.totalTransactionCount = allTransactions.length;
     this.matchingTransactionCount = transactions.length;
 
+    this.analyzeLabelGroups(transactions);
     this.analyzeMonthlyBreakdown(transactions, useAverage);
     this.analyzeLabelBreakdown(transactions, filterValue);
+  }
+
+  private refreshUncollapsedLabels() {
+    for (const group of this.labelGroups) {
+      if (group.shouldCollapse) {
+        AnalyticsComponent.uncollapsedLabels.delete(group.parentName);
+      } else {
+        AnalyticsComponent.uncollapsedLabels.add(group.parentName);
+      }
+    }
+  }
+
+  private analyzeLabelGroups(transactions: Transaction[]) {
+    const labels = extractAllLabels(transactions);
+    const parentLabels = new KeyedArrayAggregate<string>();
+    for (const label of labels) {
+      const sepIndex = label.indexOf(LABEL_HIERARCHY_SEPARATOR);
+      if (sepIndex > 0) {
+        parentLabels.add(label.substr(0, sepIndex), label.substr(sepIndex + 1));
+      }
+    }
+
+    this.labelGroups = parentLabels.getEntries().map(entry => <LabelGroup>{
+      parentName: entry[0],
+      children: entry[1],
+      shouldCollapse: !AnalyticsComponent.uncollapsedLabels.has(entry[0]),
+    });
   }
 
   private analyzeMonthlyBreakdown(transactions: Transaction[], useAverage: boolean) {
@@ -210,18 +265,29 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   private analyzeLabelBreakdown(transactions: Transaction[], filterValue: string) {
-    // TODO label hierarchy
-
     // Exclude labels from breakdown which every matched transaction is tagged with.
     this.labelsSharedByAll = extractAllLabels(transactions)
       .filter(label => transactions.every(transaction => transaction.labels.includes(label)));
 
+    // Build index of label collapse for better complexity while grouping.
+    const collapsedNames: { [fullLabel: string]: string } = {};
+    for (const group of this.labelGroups) {
+      if (group.shouldCollapse) {
+        collapsedNames[group.parentName] = group.parentName + '+';
+        for (const child of group.children) {
+          collapsedNames[group.parentName + LABEL_HIERARCHY_SEPARATOR + child] = group.parentName + '+';
+        }
+      }
+    }
+
     // Group by labels.
-    const expensesGroups = new KeyedAggregate();
-    const incomeGroups = new KeyedAggregate();
+    const expensesGroups = new KeyedNumberAggregate();
+    const incomeGroups = new KeyedNumberAggregate();
     for (const transaction of transactions) {
       const label = transaction.labels
         .filter(label => this.labelsSharedByAll.indexOf(label) === -1)
+        // TODO This may potentially lead to duplicates, but I don't care right now because it is quite unlikely.
+        .map(label => collapsedNames[label] || label)
         .join(',') || '<none>';
       const amount = getTransactionAmount(transaction);
       if (amount > 0) {
@@ -237,7 +303,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     ];
   }
 
-  private generateLabelBreakdownChart(groups: KeyedAggregate): ChartData {
+  private generateLabelBreakdownChart(groups: KeyedNumberAggregate): ChartData {
     // Collapse smallest groups into "other".
     if (groups.length > LABEL_CHART_GROUP_LIMIT) {
       const sortedEntries = groups.getEntries().sort((a, b) => Math.abs(a[1]) - Math.abs(b[1]));
@@ -266,6 +332,13 @@ function generateColor(): string {
     + getRandomInt(0, 256) + ','
     + getRandomInt(0, 256) + ','
     + getRandomInt(0, 256) + ')';
+}
+
+/** Provides data about a label with sublabels (induced label hierarchy). */
+export interface LabelGroup {
+  parentName: string;
+  children: string[];
+  shouldCollapse: boolean;
 }
 
 interface BilledTransaction {

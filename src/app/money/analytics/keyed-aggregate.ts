@@ -1,30 +1,24 @@
-export class KeyedAggregate {
-  private data: { [key: string]: number } = {};
+class KeyedGenericAggregate<TAggregate, TValue = TAggregate> {
+  private data: { [key: string]: TAggregate } = {};
 
   get length(): number {
     return Object.getOwnPropertyNames(this.data).length;
   }
 
+  constructor(
+    private readonly seeder: () => TAggregate,
+    private readonly aggregator: (current: TAggregate, next: TValue) => TAggregate) { }
+
   reset() {
     this.data = {};
   }
 
-  /** Returns a new KeyedAggregate that contains only entries accepted by the given filter. */
-  filter(predicate: (key: string, value: number) => boolean): KeyedAggregate {
-    const newAggregate = new KeyedAggregate();
-    for (const key of this.getKeys()) {
-      if (predicate(key, this.data[key])) {
-        newAggregate.add(key, this.data[key]);
-      }
-    }
-    return newAggregate;
-  }
-
-  add(key: string, value: number) {
+  add(key: string, value: TValue) {
     if (this.data.hasOwnProperty(key)) {
-      this.data[key] += value;
+      this.data[key] = this.aggregator(this.data[key], value);
     } else {
-      this.data[key] = value;
+      const initialValue = this.seeder();
+      this.data[key] = this.aggregator(initialValue, value);
     }
   }
 
@@ -32,7 +26,7 @@ export class KeyedAggregate {
     delete this.data[key];
   }
 
-  get(key: string): number | null {
+  get(key: string): TAggregate | null {
     if (this.data.hasOwnProperty(key)) {
       return this.data[key];
     } else {
@@ -45,15 +39,38 @@ export class KeyedAggregate {
   }
 
   /** Returns a list of values ordered the same as getKeys(). */
-  getValues(): number[] {
+  getValues(): TAggregate[] {
     return this.getKeys().map(key => this.data[key]);
   }
 
-  getEntries(): [string, number][] {
-    return this.getKeys().map(key => <[string, number]>[key, this.data[key]]);
+  getEntries(): [string, TAggregate][] {
+    return this.getKeys().map(key => <[string, TAggregate]>[key, this.data[key]]);
   }
 
-  getObject(): { [key: string]: number } {
+  getObject(): { [key: string]: TAggregate } {
     return this.data;
+  }
+}
+
+export class KeyedNumberAggregate extends KeyedGenericAggregate<number> {
+  constructor() {
+    super(() => 0, (current, next) => current + next);
+  }
+
+  /** Returns a new KeyedNumberAggregate that contains only entries accepted by the given filter. */
+  filter(predicate: (key: string, value: number) => boolean): KeyedNumberAggregate {
+    const newAggregate = new KeyedNumberAggregate();
+    for (const [key, value] of this.getEntries()) {
+      if (predicate(key, value)) {
+        newAggregate.add(key, value);
+      }
+    }
+    return newAggregate;
+  }
+}
+
+export class KeyedArrayAggregate<T> extends KeyedGenericAggregate<T[], T> {
+  constructor() {
+    super(() => [], (current, next) => { current.push(next); return current; });
   }
 }
