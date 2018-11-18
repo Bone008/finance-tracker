@@ -316,12 +316,13 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       groups.add('other', otherAmount);
     }
 
+    const descendingEntries = groups.getEntries().sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
     return {
       datasets: [{
-        data: groups.getValues(),
-        backgroundColor: groups.getKeys().map(generateColor),
+        data: descendingEntries.map(entry => entry[1]),
+        backgroundColor: descendingEntries.map(generateColor),
       }],
-      labels: groups.getKeys(),
+      labels: descendingEntries.map(entry => entry[0]),
     };
   }
 
