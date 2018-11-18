@@ -7,6 +7,7 @@ import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
 import { AnalyticsComponent } from './analytics/analytics.component';
 import { ChartComponent } from './analytics/chart.component';
+import { LabelBreakdownComponent } from './analytics/label-breakdown.component';
 import { CommentsComponent } from './comments/comments.component';
 import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
@@ -54,6 +55,7 @@ const appRoutes: Routes = [
     FilterInputComponent,
     ChartComponent,
     FilterFormatValidatorDirective,
+    LabelBreakdownComponent,
   ],
   entryComponents: [
     FormImportComponent,
