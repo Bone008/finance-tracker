@@ -6,8 +6,7 @@ import { getRandomInt } from '../../core/util';
 import { extractAllLabels, getTransactionAmount } from '../model-util';
 import { LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
 
-/** Maximum number of groups in label breakdown chart. */
-const LABEL_CHART_GROUP_LIMIT = 6;
+const OTHER_GROUP_NAME = 'other';
 
 @Component({
   selector: 'app-label-breakdown',
@@ -21,14 +20,37 @@ export class LabelBreakdownComponent implements OnChanges {
   transactions: Transaction[];
 
   /** Data for pie charts showing expenses/income by label. */
-  labelBreakdownChartData: [ChartData, ChartData] = [{}, {}];
+  chartData: [ChartData, ChartData] = [{}, {}];
   /** List of labels that are shared by all matching transactions. */
   labelsSharedByAll: string[] = [];
+
+  /** Maximum number of groups to display in charts. */
+  private labelChartGroupLimits: [number, number] = [6, 6];
 
   constructor() { }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('on changes');
+    this.analyzeLabelBreakdown();
+  }
+
+  canIncreaseGroupLimit(chartIndex: number): boolean {
+    return this.chartData[chartIndex].labels !== undefined
+      && this.chartData[chartIndex].labels!.includes(OTHER_GROUP_NAME);
+  }
+
+  canDecreaseGroupLimit(chartIndex: number): boolean {
+    return this.labelChartGroupLimits[chartIndex] > 3
+      && this.chartData[chartIndex].labels !== undefined
+      && this.chartData[chartIndex].labels!.length > 3;
+  }
+
+  increaseGroupLimit(chartIndex: number) {
+    this.labelChartGroupLimits[chartIndex] += 3;
+    this.analyzeLabelBreakdown();
+  }
+
+  decreaseGroupLimit(chartIndex: number) {
+    this.labelChartGroupLimits[chartIndex] = Math.max(3, this.labelChartGroupLimits[chartIndex] - 3);
     this.analyzeLabelBreakdown();
   }
 
@@ -65,23 +87,23 @@ export class LabelBreakdownComponent implements OnChanges {
       }
     }
 
-    this.labelBreakdownChartData = [
-      this.generateLabelBreakdownChart(expensesGroups),
-      this.generateLabelBreakdownChart(incomeGroups),
+    this.chartData = [
+      this.generateLabelBreakdownChart(expensesGroups, this.labelChartGroupLimits[0]),
+      this.generateLabelBreakdownChart(incomeGroups, this.labelChartGroupLimits[1]),
     ];
   }
 
-  private generateLabelBreakdownChart(groups: KeyedNumberAggregate): ChartData {
+  private generateLabelBreakdownChart(groups: KeyedNumberAggregate, groupLimit: number): ChartData {
     // Collapse smallest groups into "other".
-    if (groups.length > LABEL_CHART_GROUP_LIMIT) {
+    if (groups.length > groupLimit) {
       const sortedEntries = groups.getEntries().sort((a, b) => Math.abs(a[1]) - Math.abs(b[1]));
-      const otherCount = groups.length - LABEL_CHART_GROUP_LIMIT + 1;
+      const otherCount = groups.length - groupLimit + 1;
       let otherAmount = 0;
       for (let i = 0; i < otherCount; i++) {
         groups.delete(sortedEntries[i][0]);
         otherAmount += sortedEntries[i][1];
       }
-      groups.add('other', otherAmount);
+      groups.add(OTHER_GROUP_NAME, otherAmount);
     }
 
     const descendingEntries = groups.getEntries().sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));

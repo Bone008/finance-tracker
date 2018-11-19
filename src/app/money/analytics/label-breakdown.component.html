@@ -1,13 +1,48 @@
+<div fxLayout="row" fxLayout.xs="column">
+  <div fxFlex="50" fxLayout="column">
+    <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="5px">
+      <button
+          mat-stroked-button
+          [disabled]="!canDecreaseGroupLimit(0)"
+          (click)="decreaseGroupLimit(0)">
+        Show less
+      </button>
+      <button
+          mat-stroked-button
+          [disabled]="!canIncreaseGroupLimit(0)"
+          (click)="increaseGroupLimit(0)">
+        Show more
+      </button>
+    </div>
+    <app-chart type="pie" [data]="chartData[0]"></app-chart>
+  </div>
+  <div fxFlex="50" fxLayout="column">
+    <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="5px">
+      <button
+          mat-stroked-button
+          [disabled]="!canDecreaseGroupLimit(1)"
+          (click)="decreaseGroupLimit(1)">
+        Show less
+      </button>
+      <button
+          mat-stroked-button
+          [disabled]="!canIncreaseGroupLimit(1)"
+          (click)="increaseGroupLimit(1)">
+        Show more
+      </button>
+    </div>
+    <app-chart type="pie" [data]="chartData[1]"></app-chart>
+  </div>
+</div>
+
 <div *ngIf="labelsSharedByAll.length > 0" class="shared-by-all-notice">
   <span>The label{{labelsSharedByAll.length === 1 ? '' : 's'}}&nbsp;</span>
-  <div *ngFor="let lbl of labelsSharedByAll" class="label-container" style="display: inline-block;">
-    <span class="label-name">{{lbl}}</span>
+  <div *ngFor="let lbl of labelsSharedByAll" style="display: inline-block;">
+    <div class="label-container">
+      <span class="label-name">{{lbl}}</span>
+    </div>
   </div>
-  <span>{{labelsSharedByAll.length === 1 ? 'is' : 'are'}} not shown in the chart below, because
+  <span>{{labelsSharedByAll.length === 1 ? 'is' : 'are'}} not shown in the chart above, because
     all analyzed transactions include {{labelsSharedByAll.length === 1 ? 'it' : 'them'}}.
   </span>
-</div>
-<div fxLayout="row" fxLayout.xs="column">
-  <app-chart fxFlex="50" type="pie" [data]="labelBreakdownChartData[0]"></app-chart>
-  <app-chart fxFlex="50" type="pie" [data]="labelBreakdownChartData[1]"></app-chart>
 </div>

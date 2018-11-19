@@ -3,12 +3,7 @@
   min-width: 0;
 }
 
-.shared-by-all-notice {
-  margin: 5px 0;
-  text-align: center;
-}
-
-.label-container {
+::ng-deep .label-container {
   display: flex;
   flex-direction: row;
   margin-right: 4px;
@@ -19,8 +14,8 @@
   border-radius: 5px;
 }
 
-.label-name,
-.label-value {
+::ng-deep .label-name,
+::ng-deep .label-value {
   padding: 4px;
   background: none;
   border: none;
@@ -28,6 +23,6 @@
   font: inherit;
 }
 
-.label-value {
+::ng-deep .label-value {
   border-left: 1px solid #999;
 }
