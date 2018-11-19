@@ -1,3 +1,10 @@
+.filter-container {
+  position: sticky;
+  top: 56px;
+  padding-top: 3px;
+  background: white;
+  z-index: 9999;
+}
 
 .collapse-button {
   min-width: 0;
@@ -25,4 +32,9 @@
 
 ::ng-deep .label-value {
   border-left: 1px solid #999;
+}
+
+.table-averages th, .table-averages td,
+.table-monthly-overview th, .table-monthly-overview td {
+  padding: 5px 18px;
 }

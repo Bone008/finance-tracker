@@ -4,13 +4,9 @@
   </mat-card-title>
 
   <mat-card-content>
-    <app-filter-input [state]="filterState"></app-filter-input>
-    
-    <mat-checkbox
-        (change)="averageOver3MonthsSubject.next($event.checked)"
-        [checked]="averageOver3MonthsSubject | async">
-      Average over 3 months
-    </mat-checkbox>
+    <div class="filter-container">
+      <app-filter-input [state]="filterState"></app-filter-input>
+    </div>
 
     <p *ngIf="labelGroups.length > 0" fxLayout="row wrap" fxLayoutGap="10px" fxLayoutAlign="start center">
       <span>Collapse child labels:</span>
@@ -24,50 +20,56 @@
       </mat-checkbox>
     </p>
 
-    <p>
-      <span>Label dominance order:&nbsp;</span>
+    <p fxLayout="row" fxLayoutAlign="start center">
+      <span>Label dominance order:&nbsp;&nbsp;</span>
       <button mat-mini-fab color="accent" (click)="openLabelDominanceDialog()"><mat-icon>edit</mat-icon></button>
+      <span fxFlex></span>
+    
+      <mat-checkbox
+          (change)="averageOver3MonthsSubject.next($event.checked)"
+          [checked]="averageOver3MonthsSubject | async">
+        Average over 3 months
+      </mat-checkbox>
     </p>
 
     <hr>
     <p>Analyzed {{matchingTransactionCount}} out of {{totalTransactionCount}} transactions.</p>
-
-    <app-chart type="bar" [data]="monthlyChartData" (elementClick)="onChartBucketClick($event.index)"></app-chart>
     <hr>
     <app-label-breakdown [labelGroups]="labelGroups" [transactions]="matchingTransactions"></app-label-breakdown>
     <hr>
+    <app-chart type="bar" [data]="monthlyChartData" (elementClick)="onChartBucketClick($event.index)"></app-chart>
+    <hr>
 
     <h3>Monthly averages:</h3>
-    <table>
+    <table class="table-averages">
       <tr>
         <th></th>
+        <th align="right">#</th>
         <th align="right">Expenses</th>
         <th align="right">Income</th>
-        <th align="right">#</th>
       </tr>
       <tr>
         <th align="left">Mean</th>
+        <td align="right">{{monthlyMeanBucket.numTransactions | number:'1.0-1'}}</td>
         <td align="right" class="negative">{{monthlyMeanBucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
         <td align="right">{{monthlyMeanBucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
-        <td align="right">{{monthlyMeanBucket.numTransactions | number:'1.0-1'}}</td>
       </tr>
       <tr>
         <th align="left">Median</th>
+        <td align="right">{{monthlyMedianBucket.numTransactions | number:'1.0-1'}}</td>
         <td align="right" class="negative">{{monthlyMedianBucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
         <td align="right">{{monthlyMedianBucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
-        <td align="right">{{monthlyMedianBucket.numTransactions | number:'1.0-1'}}</td>
       </tr>
     </table>
     <hr>
 
-    <table width="100%">
+    <table class="table-monthly-overview">
       <tr>
         <th align="left">Month</th>
         <th align="right">#</th>
         <th align="right">Expenses</th>
         <th align="right">Income</th>
         <th align="right">Balance</th>
-        <th align="left">Top labels</th>
       </tr>
       <tr *ngFor="let bucket of buckets">
           <td align="left">{{bucket.name}}</td>
@@ -76,12 +78,6 @@
           <td align="right">{{bucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
           <td align="right" [class.negative]="bucket.totalPositive + bucket.totalNegative < 0">
             {{(bucket.totalPositive + bucket.totalNegative) | number:'1.2-2'}}&nbsp;€
-          </td>
-          <td fxLayout="row wrap">
-            <div *ngFor="let lbl of bucket.topLabels" class="label-container">
-              <span class="label-name">{{lbl[0]}}</span>
-              <span class="label-value" [class.negative]="lbl[1] < 0">{{lbl[1] | number:'1.2-2'}}&nbsp;€</span>
-            </div>
           </td>
       </tr>
     </table>

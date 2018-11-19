@@ -217,28 +217,11 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       const positive = transactionBuckets[key].filter(t => t.amount > 0);
       const negative = transactionBuckets[key].filter(t => t.amount < 0);
 
-      // Aggregate labels by their contributing total amount.
-      const labelBuckets = {};
-      for (const tx of transactionBuckets[key]) {
-        const lbl = tx.relevantLabels.join(',') || '<none>';
-        if (typeof labelBuckets[lbl] === 'number') {
-          labelBuckets[lbl] += tx.amount;
-        } else {
-          labelBuckets[lbl] = tx.amount;
-        }
-      }
-
-      const topLabels = Object.keys(labelBuckets)
-        .map(lbl => <[string, number]>[lbl, labelBuckets[lbl]])
-        .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
-        .slice(0, 3);
-
       this.buckets.push({
         name: key,
         numTransactions: transactionBuckets[key].length,
         totalPositive: positive.map(t => t.amount).reduce((a, b) => a + b, 0),
         totalNegative: negative.map(t => t.amount).reduce((a, b) => a + b, 0),
-        topLabels,
       });
     }
 
@@ -303,5 +286,4 @@ export interface BucketInfo {
   numTransactions: number;
   totalPositive: number;
   totalNegative: number;
-  topLabels: [string, number][];
 }
