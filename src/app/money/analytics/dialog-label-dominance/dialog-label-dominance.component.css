@@ -6,3 +6,7 @@ table {
   width: 100%;
   border-collapse: collapse;
 }
+
+.label-row.irrelevant {
+  opacity: 0.5;
+}

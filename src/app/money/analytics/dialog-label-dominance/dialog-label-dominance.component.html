@@ -16,15 +16,18 @@
         <th align="left">Label</th>
         <th align="left">Dominance value</th>
       </tr>
-      <tr *ngFor="let label of allLabels">
-        <td>{{label}}</td>
+      <tr
+          *ngFor="let labelInfo of labelsWithCombinations"
+          class="label-row"
+          [class.irrelevant]="labelInfo.combinations.length === 0">
+        <td [matTooltip]="'Occurs together with: ' + labelInfo.combinations.join(', ')">
+          {{labelInfo.label}}
+        </td>
         <td>
           <input
               type="number"
-              size="2"
-              [name]="label"
-              [ngModel]="getValueForLabel(label)"
-              (ngModelChange)="setValueForLabel(label, $event)">
+              [name]="labelInfo.label"
+              [(ngModel)]="labelInfo.dominanceValue">
         </td>
       </tr>
     </table>
