@@ -20,7 +20,7 @@
           *ngFor="let labelInfo of labelsWithCombinations"
           class="label-row"
           [class.irrelevant]="labelInfo.combinations.length === 0">
-        <td [matTooltip]="'Occurs together with: ' + labelInfo.combinations.join(', ')">
+        <td class="label-cell" [matTooltip]="formatLabelTooltip(labelInfo)">
           {{labelInfo.label}}
         </td>
         <td>

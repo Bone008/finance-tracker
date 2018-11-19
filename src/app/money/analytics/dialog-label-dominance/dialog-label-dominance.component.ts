@@ -49,8 +49,16 @@ export class DialogLabelDominanceComponent implements OnInit {
   ngOnInit() {
   }
 
+  formatLabelTooltip(labelInfo: LabelCombinationsInfo) {
+    if (labelInfo.combinations.length > 0) {
+      return 'Used together with: ' + labelInfo.combinations.join(', ');
+    } else {
+      return 'Never used together with other labels.';
+    }
+  }
+
   onSubmit() {
-    // Copy back values from view model into passed in object.
+    // Copy values from view model back into the object that was passed in.
     for (const labelInfo of this.labelsWithCombinations) {
       this.dominanceOrder[labelInfo.label] = labelInfo.dominanceValue;
     }

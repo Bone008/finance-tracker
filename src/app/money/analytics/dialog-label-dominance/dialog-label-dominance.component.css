@@ -8,5 +8,12 @@ table {
 }
 
 .label-row.irrelevant {
+  color: rgba(0, 0, 0, 0.5);
+}
+.label-row.irrelevant input {
   opacity: 0.5;
+}
+
+.label-row:nth-child(even) .label-cell {
+  background: #eee;
 }
