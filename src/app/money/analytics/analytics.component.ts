@@ -11,7 +11,7 @@ import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
 import { extractAllLabels, getTransactionAmount, isSingle } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
-import { LabelDominanceOrder } from './label-dominance-dialog/label-dominance-dialog.component';
+import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
 
 /** The character that is used in label names to define a hierarchy. */
 export const LABEL_HIERARCHY_SEPARATOR = '/';

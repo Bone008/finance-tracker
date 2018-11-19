@@ -5,18 +5,18 @@ import { DataService } from '../../data.service';
 export type LabelDominanceOrder = { [label: string]: number };
 
 @Component({
-  selector: 'app-label-dominance-dialog',
-  templateUrl: './label-dominance-dialog.component.html',
-  styleUrls: ['./label-dominance-dialog.component.css']
+  selector: 'app-dialog-label-dominance',
+  templateUrl: './dialog-label-dominance.component.html',
+  styleUrls: ['./dialog-label-dominance.component.css']
 })
-export class LabelDominanceDialogComponent implements OnInit {
+export class DialogLabelDominanceComponent implements OnInit {
   readonly allLabels: string[];
   readonly dominanceOrder: LabelDominanceOrder;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) data: { dominanceOrder: LabelDominanceOrder },
     dataService: DataService,
-    private readonly matDialogRef: MatDialogRef<LabelDominanceDialogComponent>
+    private readonly matDialogRef: MatDialogRef<DialogLabelDominanceComponent>
   ) {
     this.allLabels = dataService.getAllLabels().sort();
     this.dominanceOrder = data.dominanceOrder;
