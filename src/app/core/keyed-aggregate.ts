@@ -22,6 +22,17 @@ class KeyedGenericAggregate<TAggregate, TValue = TAggregate> {
     }
   }
 
+  addMany(key: string, values: Iterable<TValue> | ArrayLike<TValue>) {
+    if (!this.data.hasOwnProperty(key)) {
+      this.data[key] = this.seeder();
+    }
+    let intermediate = this.data[key];
+    for (const value of Array.from(values)) {
+      intermediate = this.aggregator(intermediate, value);
+    }
+    this.data[key] = intermediate;
+  }
+
   delete(key: string) {
     delete this.data[key];
   }
@@ -72,5 +83,11 @@ export class KeyedNumberAggregate extends KeyedGenericAggregate<number> {
 export class KeyedArrayAggregate<T> extends KeyedGenericAggregate<T[], T> {
   constructor() {
     super(() => [], (current, next) => { current.push(next); return current; });
+  }
+}
+
+export class KeyedSetAggregate<T> extends KeyedGenericAggregate<Set<T>, T> {
+  constructor() {
+    super(() => new Set<T>(), (current, next) => { current.add(next); return current; });
   }
 }

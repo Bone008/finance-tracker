@@ -12,15 +12,18 @@ export class DataService {
   private highestImportedRowId = 0;
   private readonly transactionsSubject = new BehaviorSubject<Transaction[]>([]);
   private readonly globalCommentsSubject = new BehaviorSubject<GlobalComment[]>([]);
+  private readonly userSettingsSubject = new BehaviorSubject<UserSettings>(new UserSettings());
 
   readonly transactions$ = this.transactionsSubject.asObservable();
   readonly globalComments$ = this.globalCommentsSubject.asObservable();
+  readonly userSettings$ = this.userSettingsSubject.asObservable();
 
   setDataContainer(data: DataContainer) {
     this.data = data;
     this.updateHighestImportedRowId();
     this.notifyTransactions();
     this.notifyGlobalComments();
+    this.notifyUserSettings();
   }
 
   getDataContainer(): DataContainer {
@@ -129,6 +132,10 @@ export class DataService {
 
   private notifyGlobalComments() {
     this.globalCommentsSubject.next(this.data.globalComments);
+  }
+
+  private notifyUserSettings() {
+    this.userSettingsSubject.next(this.data.userSettings || new UserSettings());
   }
 
   private updateHighestImportedRowId() {

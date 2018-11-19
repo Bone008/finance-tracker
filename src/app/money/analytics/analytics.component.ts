@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ChartData, ChartDataSets } from 'chart.js';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Transaction } from '../../../proto/model';
 import { KeyedArrayAggregate } from '../../core/keyed-aggregate';
 import { timestampToMoment, timestampToWholeSeconds } from '../../core/proto-util';
@@ -49,7 +50,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     private readonly dialogService: DialogService) { }
 
   ngOnInit() {
-    this.labelDominanceSubject.next(this.dataService.getUserSettings().labelDominanceOrder);
+    this.dataService.userSettings$
+      .pipe(map(settings => settings.labelDominanceOrder))
+      .subscribe(this.labelDominanceSubject);
+
     this.labelCollapseSubject.subscribe(() => this.refreshUncollapsedLabels());
 
     this.txSubscription =
