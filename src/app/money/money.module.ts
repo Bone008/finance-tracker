@@ -8,6 +8,7 @@ import { MaterialModule } from '../material.module';
 import { AnalyticsComponent } from './analytics/analytics.component';
 import { ChartComponent } from './analytics/chart.component';
 import { LabelBreakdownComponent } from './analytics/label-breakdown.component';
+import { LabelDominanceDialogComponent } from './analytics/label-dominance-dialog/label-dominance-dialog.component';
 import { CommentsComponent } from './comments/comments.component';
 import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
@@ -56,6 +57,7 @@ const appRoutes: Routes = [
     ChartComponent,
     FilterFormatValidatorDirective,
     LabelBreakdownComponent,
+    LabelDominanceDialogComponent,
   ],
   entryComponents: [
     FormImportComponent,
@@ -63,6 +65,7 @@ const appRoutes: Routes = [
     DialogDeleteWithOrphansComponent,
     DialogSplitTransactionComponent,
     DialogSettingsComponent,
+    LabelDominanceDialogComponent,
   ],
   exports: [
     MoneyComponent,

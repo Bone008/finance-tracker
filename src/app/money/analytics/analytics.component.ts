@@ -7,9 +7,11 @@ import { KeyedArrayAggregate } from '../../core/keyed-aggregate';
 import { timestampToMoment, timestampToWholeSeconds } from '../../core/proto-util';
 import { maxBy } from '../../core/util';
 import { DataService } from '../data.service';
+import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
 import { extractAllLabels, getTransactionAmount, isSingle } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
+import { LabelDominanceOrder } from './label-dominance-dialog/label-dominance-dialog.component';
 
 /** The character that is used in label names to define a hierarchy. */
 export const LABEL_HIERARCHY_SEPARATOR = '/';
@@ -25,6 +27,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   readonly filterState = new FilterState();
   readonly averageOver3MonthsSubject = new BehaviorSubject<boolean>(false);
   readonly labelCollapseSubject = new BehaviorSubject<void>(void (0));
+  private readonly labelDominanceSubject = new BehaviorSubject<LabelDominanceOrder>({});
 
   private static readonly uncollapsedLabels = new Set<string>();
   labelGroups: LabelGroup[] = [];
@@ -42,9 +45,11 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly dataService: DataService,
-    private readonly filterService: TransactionFilterService) { }
+    private readonly filterService: TransactionFilterService,
+    private readonly dialogService: DialogService) { }
 
   ngOnInit() {
+    this.labelDominanceSubject.next(this.dataService.getUserSettings().labelDominanceOrder);
     this.labelCollapseSubject.subscribe(() => this.refreshUncollapsedLabels());
 
     this.txSubscription =
@@ -52,8 +57,9 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         this.dataService.transactions$,
         this.filterState.value$,
         this.averageOver3MonthsSubject,
-        this.labelCollapseSubject)
-        .subscribe(([_, filterValue, useAverage, __]) => this.analyzeTransactions(filterValue, useAverage));
+        this.labelCollapseSubject,
+        this.labelDominanceSubject)
+        .subscribe(([_, filterValue, useAverage, __, ___]) => this.analyzeTransactions(filterValue, useAverage));
   }
 
   ngOnDestroy() {
@@ -84,6 +90,17 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   uncollapseAllGroups() {
     this.labelGroups.forEach(group => group.shouldCollapse = false);
     this.labelCollapseSubject.next(void (0));
+  }
+
+  openLabelDominanceDialog() {
+    const originalDominanceOrder = this.labelDominanceSubject.getValue();
+    const dominanceOrder = Object.assign({}, originalDominanceOrder);
+
+    this.dialogService.openAnalyticsLabelDominance(dominanceOrder)
+      .afterConfirmed().subscribe(() => {
+        this.dataService.getUserSettings().labelDominanceOrder = dominanceOrder;
+        this.labelDominanceSubject.next(dominanceOrder);
+      });
   }
 
   private analyzeTransactions(filterValue: string, useAverage: boolean) {

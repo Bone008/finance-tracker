@@ -4,6 +4,7 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
 import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { Transaction, TransactionData } from '../../proto/model';
+import { LabelDominanceDialogComponent, LabelDominanceOrder } from './analytics/label-dominance-dialog/label-dominance-dialog.component';
 import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogSplitTransactionComponent } from './dialog-split-transaction/dialog-split-transaction.component';
@@ -62,6 +63,18 @@ export class DialogService {
     });
   }
 
+  openAnalyticsLabelDominance(dominanceOrder: LabelDominanceOrder)
+    : ConfirmableDialogRef<LabelDominanceDialogComponent> {
+    return this.openConfirmable(LabelDominanceDialogComponent, {
+      data: { dominanceOrder },
+    });
+  }
+
+  /**
+   * Should be used for dialogs with a boolean result.
+   * Augments the return value with Observables that are only invoked for the
+   * success or cancel cases, respectively.
+   */
   private openConfirmable<T, D = any>(
     component: ComponentType<T>, config?: MatDialogConfig<D>)
     : ConfirmableDialogRef<T> {

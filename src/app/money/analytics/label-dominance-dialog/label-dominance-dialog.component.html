@@ -1,0 +1,37 @@
+<h2 mat-dialog-title>Label dominance order</h2>
+
+<form (ngSubmit)="onSubmit()" fxLayout="column" class="dominance-form">
+  <mat-dialog-content fxLayout="column">
+    <p style="margin-top: 0;">
+      Define how transactions with multiple labels should show up in analytics.
+      Labels with a higher dominance value are considered exclusively and "absorb"
+      other labels on the same transaction with a lower dominance value.
+    </p>
+    <p style="margin-top: 0;">
+      If multiple labels on a transaction have the same dominance value, they form
+      a new combined label type.
+    </p>
+    <table>
+      <tr>
+        <th align="left">Label</th>
+        <th align="left">Dominance value</th>
+      </tr>
+      <tr *ngFor="let label of allLabels">
+        <td>{{label}}</td>
+        <td>
+          <input
+              type="number"
+              size="2"
+              [name]="label"
+              [ngModel]="getValueForLabel(label)"
+              (ngModelChange)="setValueForLabel(label, $event)">
+        </td>
+      </tr>
+    </table>
+  </mat-dialog-content>
+  
+  <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button type="submit" color="primary">Save</button>
+  </mat-dialog-actions>
+</form>

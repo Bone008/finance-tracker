@@ -4,6 +4,7 @@ import "google/protobuf/timestamp.proto";
 import "imported-row.proto";
 import "transaction.proto";
 import "global-comment.proto";
+import "user-settings.proto";
 
 message DataContainer {
   Timestamp last_modified = 1;
@@ -13,4 +14,6 @@ message DataContainer {
   repeated ImportedRow imported_rows = 3;
 
   repeated GlobalComment global_comments = 4;
+
+  UserSettings user_settings = 5;
 }

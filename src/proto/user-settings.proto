@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+// Contains settings bound to a database that should be persisted
+// across sessions and across devices.
+message UserSettings {
+  // NOT YET IMPLEMENTED. Amount of transactions to display on a page.
+  uint32 num_transactions_per_page = 1;
+
+  // Last known dominance order of labels for analytics. Values are signed!
+  map<string, int32> label_dominance_order = 2;
+}

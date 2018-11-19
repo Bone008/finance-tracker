@@ -3,6 +3,7 @@ import { ChartData } from 'chart.js';
 import { Transaction } from '../../../proto/model';
 import { KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { getRandomInt } from '../../core/util';
+import { DataService } from '../data.service';
 import { extractAllLabels, getTransactionAmount } from '../model-util';
 import { LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
 
@@ -27,7 +28,7 @@ export class LabelBreakdownComponent implements OnChanges {
   /** Maximum number of groups to display in charts. */
   private labelChartGroupLimits: [number, number] = [6, 6];
 
-  constructor() { }
+  constructor(private readonly dataService: DataService) { }
 
   ngOnChanges(changes: SimpleChanges) {
     this.analyzeLabelBreakdown();
@@ -70,15 +71,25 @@ export class LabelBreakdownComponent implements OnChanges {
       }
     }
 
+    const dominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
+
     // Group by labels.
     const expensesGroups = new KeyedNumberAggregate();
     const incomeGroups = new KeyedNumberAggregate();
     for (const transaction of this.transactions) {
-      const label = transaction.labels
+      // Get applicable labels ranked by their dominance in descending order.
+      const labelInfos = transaction.labels
         .filter(label => this.labelsSharedByAll.indexOf(label) === -1)
+        .map(label => ({ label, dominance: dominanceOrder[label] || 0 }))
+        .sort((a, b) => b.dominance - a.dominance);
+
+      const label = labelInfos.length === 0 ? '<none>' : labelInfos
+        // Only use dominant labels.
+        .filter(info => info.dominance === labelInfos[0].dominance)
         // TODO This may potentially lead to duplicates, but I don't care right now because it is quite unlikely.
-        .map(label => collapsedNames[label] || label)
-        .join(',') || '<none>';
+        .map(info => collapsedNames[info.label] || info.label)
+        .join(',');
+
       const amount = getTransactionAmount(transaction);
       if (amount > 0) {
         incomeGroups.add(label, amount);
