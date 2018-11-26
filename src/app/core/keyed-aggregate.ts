@@ -45,6 +45,7 @@ class KeyedGenericAggregate<TAggregate, TValue = TAggregate> {
     }
   }
 
+  /** Returns all keys in arbitrary order. */
   getKeys(): string[] {
     return Object.getOwnPropertyNames(this.data);
   }
@@ -54,8 +55,16 @@ class KeyedGenericAggregate<TAggregate, TValue = TAggregate> {
     return this.getKeys().map(key => this.data[key]);
   }
 
+  /** Returns all entries as tuples in arbitrary order. */
   getEntries(): [string, TAggregate][] {
     return this.getKeys().map(key => <[string, TAggregate]>[key, this.data[key]]);
+  }
+
+  /** Returns all entries as tuples, sorted by their keys. */
+  getEntriesSorted(compareFn?: (a: string, b: string) => number): [string, TAggregate][] {
+    return this.getKeys()
+      .sort(compareFn)
+      .map(key => <[string, TAggregate]>[key, this.data[key]]);
   }
 
   getObject(): { [key: string]: TAggregate } {

@@ -3,14 +3,14 @@ import { ChartData, ChartDataSets } from 'chart.js';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Transaction } from '../../../proto/model';
-import { KeyedArrayAggregate } from '../../core/keyed-aggregate';
-import { timestampToMoment, timestampToWholeSeconds } from '../../core/proto-util';
+import { BillingType, Transaction } from '../../../proto/model';
+import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
+import { protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../../core/proto-util';
 import { maxBy } from '../../core/util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { extractAllLabels, getTransactionAmount, isSingle } from '../model-util';
+import { extractAllLabels, getCanonicalBilling, getTransactionAmount, isSingle } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
 
@@ -150,76 +150,85 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   private analyzeMonthlyBreakdown(useAverage: boolean) {
-    let bucketRangeMin: moment.Moment | null = null;
-    let bucketRangeMax: moment.Moment | null = null;
-    const transactionBuckets: { [key: string]: BilledTransaction[] } = {};
+    const displayUnit = 'month';
     const keyFormat = 'YYYY-MM';
 
-    const getOrCreateTransactionBucket = (key: string) => {
-      if (!transactionBuckets.hasOwnProperty(key)) {
-        transactionBuckets[key] = [];
-        const mom = moment(key);
-        if (!bucketRangeMin || mom.isBefore(bucketRangeMin)) {
-          bucketRangeMin = mom;
-        }
-        if (!bucketRangeMax || mom.isAfter(bucketRangeMax)) {
-          bucketRangeMax = mom;
-        }
-      }
-      return transactionBuckets[key];
-    };
+    const transactionBuckets = new KeyedArrayAggregate<BilledTransaction>();
 
+    const debugContribHistogram = new KeyedNumberAggregate();
     for (const transaction of this.matchingTransactions) {
       const dateMoment = timestampToMoment(isSingle(transaction)
         ? transaction.single.date
         : maxBy(transaction.group!.children, child => timestampToWholeSeconds(child.date))!.date
       );
 
-      const key = dateMoment.format(keyFormat);
+      let fromMoment: moment.Moment;
+      let toMoment: moment.Moment;
+      if (transaction.billing) {
+        // TODO inherit billing from labels.
+        const billing = getCanonicalBilling(transaction.billing, dateMoment);
+        fromMoment = protoDateToMoment(billing.date);
+        toMoment = protoDateToMoment(billing.endDate);
 
-      if (!useAverage) {
-        getOrCreateTransactionBucket(key).push({
-          source: transaction,
-          relevantLabels: transaction.labels,
-          amount: getTransactionAmount(transaction),
-        });
-      } else {
-        //const contribBuckets = [key];
-        // TODO: figure out which direction makes sense to shift the moving average
-        const otherKey1 = dateMoment.clone().add(1, 'month').format(keyFormat);
-        const otherKey2 = dateMoment.clone().subtract(1, 'month').format(keyFormat);
-        //if (otherKey1 in transactionBuckets) contribBuckets.push(otherKey1);
-        //if (otherKey2 in transactionBuckets) contribBuckets.push(otherKey2);
-
-        const contribBuckets = [key, otherKey1, otherKey2];
-
-        const amountPerBucket = getTransactionAmount(transaction) / contribBuckets.length;
-        for (let buck of contribBuckets) {
-          getOrCreateTransactionBucket(buck).push({
-            source: transaction,
-            relevantLabels: transaction.labels,
-            amount: amountPerBucket,
-          });
+        // For now, we just have to adjust YEAR granularity down to month,
+        // in the future adjust this to always spread to at least displayUnit granularity.
+        if (billing.periodType === BillingType.YEAR) {
+          fromMoment.month(0);
+          toMoment.month(11);
         }
 
+        // TODO: Handle "billing.isPeriodic".
+      } else {
+        fromMoment = dateMoment;
+        toMoment = dateMoment;
+      }
+
+      const contributingKeys: string[] = [];
+      // Iterate over date units and collect their keys.
+      // Start with the normalized version of fromMoment (e.g. for months,
+      // 2018-05-22 is turned into 2018-05-01).
+      const it = moment(fromMoment.format(keyFormat), keyFormat);
+      while (it.isSameOrBefore(toMoment)) {
+        contributingKeys.push(it.format(keyFormat));
+        it.add(1, displayUnit);
+      }
+
+      debugContribHistogram.add(contributingKeys.length + "", 1);
+
+      // TODO: For DAY billing granularity, we may want to consider proportional contributions to the months.
+      const amountPerBucket = getTransactionAmount(transaction) / contributingKeys.length;
+      for (const key of contributingKeys) {
+        transactionBuckets.add(key, {
+          source: transaction,
+          relevantLabels: transaction.labels,
+          amount: amountPerBucket,
+        });
       }
     }
 
-    // Fix holes in transactionBuckets
-    if (bucketRangeMin && bucketRangeMax) {
-      for (let currentMoment = bucketRangeMin!; currentMoment.isBefore(bucketRangeMax, 'month'); currentMoment.add(1, 'month')) {
-        getOrCreateTransactionBucket(currentMoment.format(keyFormat));
+    console.log(debugContribHistogram.getEntries());
+
+    // Fill holes in transactionBuckets with empty buckets.
+    // Sort the keys alphanumerically as the keyFormat is big-endian.
+    const sortedKeys = transactionBuckets.getKeys().sort();
+    if (sortedKeys.length > 1) {
+      const last = sortedKeys[sortedKeys.length - 1];
+      const it = moment(sortedKeys[0]);
+      while (it.isBefore(last)) {
+        it.add(1, displayUnit);
+        // Make sure each date unit (e.g. month) is represented as a bucket.
+        transactionBuckets.addMany(it.format(keyFormat), []);
       }
     }
 
     this.buckets = [];
-    for (const key of Object.keys(transactionBuckets).sort()) {
-      const positive = transactionBuckets[key].filter(t => t.amount > 0);
-      const negative = transactionBuckets[key].filter(t => t.amount < 0);
+    for (const [key, billedTransactions] of transactionBuckets.getEntriesSorted()) {
+      const positive = billedTransactions.filter(t => t.amount > 0);
+      const negative = billedTransactions.filter(t => t.amount < 0);
 
       this.buckets.push({
         name: key,
-        numTransactions: transactionBuckets[key].length,
+        numTransactions: billedTransactions.length,
         totalPositive: positive.map(t => t.amount).reduce((a, b) => a + b, 0),
         totalNegative: negative.map(t => t.amount).reduce((a, b) => a + b, 0),
       });

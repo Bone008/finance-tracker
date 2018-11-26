@@ -1,7 +1,7 @@
 import * as Long from "long";
 import * as moment from 'moment';
 import * as $protobuf from "protobufjs";
-import { google, Money } from "../../proto/model";
+import { Date as ProtoDate, google, Money } from "../../proto/model";
 
 /** Creates a deep copy of a message by encoding and decoding it. */
 export function cloneMessage<T extends {
@@ -53,6 +53,27 @@ export function compareTimestamps(a: google.protobuf.Timestamp | null | undefine
   if (diffSeconds !== 0) return diffSeconds;
 
   return a.nanos - b.nanos;
+}
+
+export function momentToProtoDate(m: moment.Moment): ProtoDate {
+  return new ProtoDate({
+    year: m.year(),
+    month: m.month() + 1,
+    day: m.date(),
+  });
+}
+
+export function protoDateToMoment(date: ProtoDate): moment.Moment {
+  if (date.year === 0) {
+    throw new Error('cannot convert date without year to moment');
+  }
+  return moment([
+    date.year,
+    // Default to January if only year-granularity given.
+    Math.max(0, date.month - 1),
+    // Default to 1st of month if only month-granularity given.
+    Math.max(1, date.day)
+  ]);
 }
 
 export function numberToMoney(num: number): Money {

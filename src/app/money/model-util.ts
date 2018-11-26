@@ -1,5 +1,6 @@
-import { GroupData, Transaction, TransactionData } from "../../proto/model";
-import { moneyToNumber } from "../core/proto-util";
+import * as moment from 'moment';
+import { BillingInfo, BillingType, Date as ProtoDate, GroupData, Transaction, TransactionData } from "../../proto/model";
+import { momentToProtoDate, moneyToNumber, protoDateToMoment } from "../core/proto-util";
 
 /** Type guard to check if a transaction has dataType 'single'. */
 export function isSingle(transaction: Transaction)
@@ -108,4 +109,78 @@ export function extractAllLabelsSet(transactions: Transaction[]): Set<string> {
     }
   }
   return labels;
+}
+
+
+// (NOTE: Maybe this should be simplified to an independent interface that exposes moments and not dates.)
+export type CanonicalBillingInfo = BillingInfo & { isRelative: false, date: Date, endDate: Date };
+
+/**
+ * Returns the canonical form of a BillingInfo object:
+ * - "periodType" is inferred to DAY if unknown.
+ * - "date" is explicitly set and defaults to the reference date.
+ * - "endDate" is explicitly set and defaults to the value of "date".
+ * - Relative dates are resolved into absolute dates.
+ * - All dates are normalized to include the full interval with day granularity.
+ *   * periodType == DAY: no normalization necessary
+ *   * periodType == MONTH: "date" is 1st day of the month, "endDate" last day of the month.
+ *   * periodType == YEAR: "date" is Jan 1st, "endDate" is Dec 31st.
+ */
+export function getCanonicalBilling(billing: BillingInfo, referenceMoment: moment.Moment): CanonicalBillingInfo {
+  const periodType = (billing.periodType === BillingType.UNKNOWN ? BillingType.DAY : billing.periodType);
+
+  // Adjust granularity of reference moment to beginning of period type.
+  const normalizedReference = normalizeMomentToPeriodType(referenceMoment, periodType);
+
+  let startMoment = billing.date
+    ? (billing.isRelative
+      ? computeRelative(normalizedReference, billing.date)
+      : protoDateToMoment(billing.date))
+    : normalizedReference;
+  let endMoment = billing.endDate
+    ? (billing.isRelative
+      ? computeRelative(normalizedReference, billing.endDate)
+      : protoDateToMoment(billing.endDate))
+    : startMoment.clone();
+
+  startMoment = normalizeMomentToPeriodType(startMoment, periodType);
+  endMoment = normalizeMomentToPeriodType(endMoment, periodType);
+
+  // If necessary, normalize end date to "end of month/year".
+  if (periodType === BillingType.YEAR) {
+    endMoment.month(11).date(31);
+  } else if (periodType === BillingType.MONTH) {
+    // endMoment is currently at the 1st of the month.
+    endMoment.add(1, 'month').subtract(1, 'day');
+  }
+
+  return <CanonicalBillingInfo>new BillingInfo({
+    periodType,
+    isRelative: false,
+    date: momentToProtoDate(startMoment),
+    endDate: momentToProtoDate(endMoment),
+    isPeriodic: billing.isPeriodic,
+  });
+}
+
+function normalizeMomentToPeriodType(theMoment: moment.Moment, periodType: BillingType): moment.Moment {
+  const normalized = theMoment.clone();
+  switch (periodType) {
+    case BillingType.YEAR:
+      normalized.month(0);
+    // fall-through
+    case BillingType.MONTH:
+      normalized.date(1);
+    // fall-through
+    case BillingType.DAY:
+      normalized.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+  }
+  return normalized;
+}
+
+function computeRelative(referenceMoment: moment.Moment, delta: ProtoDate): moment.Moment {
+  return referenceMoment.clone()
+    .add(delta.year, 'year')
+    .add(delta.month, 'month')
+    .add(delta.day, 'day');
 }
