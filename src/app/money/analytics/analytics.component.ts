@@ -3,7 +3,7 @@ import { ChartData, ChartDataSets } from 'chart.js';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { BillingType, Transaction } from '../../../proto/model';
+import { BillingInfo, BillingType, Date as ProtoDate, Transaction } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../../core/proto-util';
 import { maxBy } from '../../core/util';
@@ -161,6 +161,46 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         ? transaction.single.date
         : maxBy(transaction.group!.children, child => timestampToWholeSeconds(child.date))!.date
       );
+
+      // DEBUG: enforce some example billing data
+      if (transaction.labels.includes('car/fuel')) {
+        transaction.billing = new BillingInfo({
+          periodType: BillingType.MONTH,
+          isRelative: true,
+          date: new ProtoDate({ year: 0, month: -2 }),
+          endDate: new ProtoDate({ year: 0, month: 0 }),
+        });
+      }
+      else if (transaction.labels.includes('university') || transaction.labels.includes('transport/semesterticket')) {
+        transaction.billing = new BillingInfo({
+          periodType: BillingType.MONTH,
+          isRelative: true,
+          date: new ProtoDate({ year: 0, month: 0 }),
+          endDate: new ProtoDate({ year: 0, month: 5 }),
+          isPeriodic: true,
+        });
+      }
+      else if (transaction.labels.includes('scholarship')) {
+        transaction.billing = new BillingInfo({
+          periodType: BillingType.MONTH,
+          isRelative: true,
+          date: new ProtoDate({ year: 0, month: 0 }),
+          endDate: new ProtoDate({ year: 0, month: 2 }),
+          isPeriodic: true,
+        });
+      }
+      else if (transaction.labels.includes('car/maintenance')) {
+        transaction.billing = new BillingInfo({
+          periodType: BillingType.YEAR,
+        });
+      }
+      else if (transaction.labels.includes('convention')) {
+        transaction.billing = new BillingInfo({
+          periodType: BillingType.DAY,
+          date: new ProtoDate({ year: 2018, month: 8, day: 20 }),
+          endDate: new ProtoDate({ year: 2018, month: 9, day: 1 }),
+        });
+      }
 
       let fromMoment: moment.Moment;
       let toMoment: moment.Moment;
