@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+// Represents a whole calendar date, e.g. date of birth. The time of day and
+// time zone are either specified elsewhere or are not significant. The date
+// is relative to the Proleptic Gregorian Calendar. The day may be 0 to
+// represent a year and month where the day is not significant, e.g. credit card
+// expiration date. If the day is 0, the month may also be 0 to represent a
+// date where only the year is significant. The year may be 0 to represent a
+// month and day independent of year, e.g. anniversary date.
+message Date {
+  // Year of date. Must be from 1 to 9999, or 0 if specifying a date without
+  // a year.
+  int32 year = 1;
+
+  // Month of year. Must be from 1 to 12, or 0 if only the year is significant.
+  int32 month = 2;
+
+  // Day of month. Must be from 1 to 31 and valid for the year and month, or 0
+  // if specifying a year/month where the day is not significant.
+  // If month is 0, day must be 0, too.
+  int32 day = 3;
+}

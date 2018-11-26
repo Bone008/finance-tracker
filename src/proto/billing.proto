@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+import "date.proto";
+
+enum BillingType {
+  UNKNOWN = 0;
+  DAY = 1;
+  MONTH = 2;
+  YEAR = 3;
+}
+
+message BillingInfo {
+  // At which date granularity the annotated transaction should be billed.
+  BillingType period_type = 1;
+
+  // If true, the values contained in "date" and "end_date" are to be interpreted
+  // as offsets from the annotated transaction. If false, "date" and "end_date"
+  // represent real calendar dates.
+  bool is_relative = 2;
+
+  // If set, overrides the annotated transaction's date (non-relative)
+  // or shifts it by the given values (relative). The date's interpreted
+  // granularity is determined by "type".
+  Date date = 3;
+
+  // May only be set if "date" is also set. If set, marks the inclusive end of 
+  // the billing period at the granularity given by "type". If unset, the period
+  // represented by "date" is the only part of the billing period.
+  Date end_date = 4;
+
+  // If true, the annotated transaction should be should be displayed as
+  // recurring at regular intervals.
+  bool is_periodic = 5;
+}

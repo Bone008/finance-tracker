@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
+import "billing.proto";
 import "money.proto";
 
 message Transaction {
@@ -10,7 +11,12 @@ message Transaction {
 
   // Whether the transaction was an internal transfer between accounts and should be ignored
   // in spending analytics.
+  // Deprecated!
   bool is_internal = 2;
+
+  // Info about billing specific to this transaction.
+  // If set, this overrides values inherited by the labels.
+  BillingInfo billing = 3;
 
   oneof data_type {
     TransactionData single = 100;
