@@ -1,4 +1,26 @@
 
+/** Wraps a function so its return value is always a single instance to comply with Angular's change detection. */
+export function makeShared<TReturn, TShared = TReturn>(
+  shared: TShared,
+  merge: (shared: TShared, newValue: TReturn) => TReturn,
+  fn: () => TReturn
+): (() => TReturn) {
+  return () => {
+    return merge(shared, fn());
+  };
+}
+
+export function makeSharedDate(fn: () => Date): () => Date;
+export function makeSharedDate(fn: () => Date | null): () => Date | null;
+export function makeSharedDate(fn: () => Date | null): () => Date | null {
+  return makeShared(new Date(), (shared, newValue) => {
+    if (newValue === null) return null;
+    shared.setTime(newValue.getTime());
+    return shared;
+  }, fn);
+}
+
+
 export function splitQuotedString(input: string): string[] {
   // TODO detect unterminated quotes
 

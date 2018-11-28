@@ -2,6 +2,7 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { Money, Transaction, TransactionData } from '../../../proto/model';
 import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../core/proto-util';
+import { makeSharedDate } from '../../core/util';
 
 export const MODE_ADD = 'add';
 export const MODE_EDIT = 'edit';
@@ -53,9 +54,9 @@ export class TransactionEditComponent implements OnInit {
     }
   }
 
-  getDate(): Date {
+  getDate = makeSharedDate(() => {
     return timestampToDate(this.singleData.date);
-  }
+  });
 
   setAmount(amount: number | null) {
     if (amount) {
@@ -88,13 +89,13 @@ export class TransactionEditComponent implements OnInit {
     }
   }
 
-  getDateCreated(): Date {
+  getDateCreated = makeSharedDate(() => {
     return timestampToDate(this.singleData.created);
-  }
+  });
 
-  getDateModified(): Date | null {
+  getDateModified = makeSharedDate(() => {
     return this.singleData.modified ? timestampToDate(this.singleData.modified) : null;
-  }
+  });
 
   onSubmit() {
     //console.log(this.transaction);
