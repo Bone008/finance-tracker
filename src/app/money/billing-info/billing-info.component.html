@@ -10,7 +10,8 @@
   <mat-checkbox
       *ngIf="billing.periodType !== PERIOD_TYPE_UNKNOWN"
       name="showCustom"
-      [(ngModel)]="showCustom">
+      [ngModel]="showCustom"
+      (ngModelChange)="setShowCustom($event)">
     Custom
   </mat-checkbox>
   <mat-checkbox

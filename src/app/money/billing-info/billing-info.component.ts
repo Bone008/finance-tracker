@@ -27,7 +27,7 @@ export class BillingInfoComponent implements OnInit {
   @Input()
   billing: BillingInfo;
 
-  private showCustom = false;
+  showCustom = false;
   isRange = false;
 
   constructor() { }
@@ -45,10 +45,6 @@ export class BillingInfoComponent implements OnInit {
     // Reset dates to default values.
     this.billing.date = null;
     this.billing.endDate = null;
-  }
-
-  getShowCustom(): boolean {
-    return this.showCustom;
   }
 
   setShowCustom(value: boolean) {
