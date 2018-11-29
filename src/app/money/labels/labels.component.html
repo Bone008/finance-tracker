@@ -2,13 +2,15 @@
   <mat-card-title fxLayout="row" fxLayoutGap="10px">
     Labels
   </mat-card-title>
-
-  <mat-card-content>
-    <div fxLayout="column" fxLayoutGap="16px">
-      <div *ngFor="let label of allLabels$ | async" fxLayout="row">
-        <span fxFlex="33">{{label.name}}</span>
-        <span class="status">{{label.numTransactions}} transactions</span>
-      </div>
-    </div>
-  </mat-card-content>
 </mat-card>
+
+<div class="main-card">
+  <mat-expansion-panel *ngFor="let label of allLabels$ | async">
+    <mat-expansion-panel-header>
+      <mat-panel-title fxFlex="50">{{label.name}}</mat-panel-title>
+      <mat-panel-description>{{label.numTransactions}} transactions</mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <p>Coming soon: Editing labels.</p>
+  </mat-expansion-panel>
+</div>
