@@ -328,7 +328,7 @@ export class TransactionFilterService {
       return null;
     }
 
-    const subPrecision = (value.indexOf('.') !== -1);
+    const subPrecision = (value.indexOf('.') !== -1 || (operator !== ':' && operator !== '='));
     // If the value is negative or 0, do a strict match considering the sign.
     if (searchAmount <= 0 || operator === '=') {
       return (transaction, dataList) => {
