@@ -36,14 +36,12 @@ export class BillingInfoComponent implements OnInit {
     this.showCustom = !!(this.billing.date || this.billing.endDate);
   }
 
-  getBillingPeriod(): BillingPeriodSelection {
-    return this.billingTypeToSelection(this.billing.periodType, this.isRange);
+  getBillingPeriod(): BillingType {
+    return this.billing.periodType;
   }
 
-  setBillingPeriod(selection: BillingPeriodSelection) {
-    [this.billing.periodType, this.isRange] =
-      this.selectionToBillingType(selection);
-
+  setBillingPeriod(value: BillingType) {
+    this.billing.periodType = value;
     // Reset dates to default values.
     this.billing.date = null;
     this.billing.endDate = null;
@@ -90,7 +88,7 @@ export class BillingInfoComponent implements OnInit {
   }
 
   setCustomComponent(range: 0 | 1, type: 'date' | 'month' | 'year', value: string | null) {
-    console.log(`setting ${type} to`, value);
+    //console.log(`setting ${type} to`, value);
     let protoDate: ProtoDate | null;
     if (value === null || value === '') {
       protoDate = null;
@@ -163,29 +161,6 @@ export class BillingInfoComponent implements OnInit {
         && this.getCustomRelative(0)! > this.getCustomRelative(1)!) {
         this.setCustomRelative(0, value);
       }
-    }
-  }
-
-  private selectionToBillingType(selection: BillingPeriodSelection): [BillingType, boolean] {
-    switch (selection) {
-      case BillingPeriodSelection.INHERIT: return [BillingType.UNKNOWN, false];
-      case BillingPeriodSelection.DAY: return [BillingType.DAY, false];
-      case BillingPeriodSelection.DAYS: return [BillingType.DAY, true];
-      case BillingPeriodSelection.MONTH: return [BillingType.MONTH, false];
-      case BillingPeriodSelection.MONTHS: return [BillingType.MONTH, true];
-      case BillingPeriodSelection.YEAR: return [BillingType.YEAR, false];
-      case BillingPeriodSelection.YEARS: return [BillingType.YEAR, true];
-      default: return [BillingType.UNKNOWN, false];
-    }
-  }
-
-  private billingTypeToSelection(type: BillingType, multiple: boolean): BillingPeriodSelection {
-    switch (type) {
-      case BillingType.UNKNOWN: return BillingPeriodSelection.INHERIT;
-      case BillingType.DAY: return (multiple ? BillingPeriodSelection.DAYS : BillingPeriodSelection.DAY);
-      case BillingType.MONTH: return (multiple ? BillingPeriodSelection.MONTHS : BillingPeriodSelection.MONTH);
-      case BillingType.YEAR: return (multiple ? BillingPeriodSelection.YEARS : BillingPeriodSelection.YEAR);
-      default: return BillingPeriodSelection.INHERIT;
     }
   }
 

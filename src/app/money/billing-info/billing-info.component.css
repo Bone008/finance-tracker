@@ -1,3 +1,8 @@
+:host {
+  display: flex;
+  flex-direction: column;
+}
+
 .relative-picker {
   width: 60px;
 }
@@ -7,4 +12,8 @@
 }
 ::ng-deep .relative-picker .mat-form-field-infix {
   margin-left: 9px;
+}
+
+.day-picker, .month-picker, .year-picker {
+  width: 140px;
 }
