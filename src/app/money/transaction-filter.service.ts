@@ -268,7 +268,8 @@ export class TransactionFilterService {
     matcher: (test: ((input: string) => boolean), transaction: Transaction, dataList: TransactionData[]) => boolean)
     : FilterMatcher | null {
     if (operator === '=') {
-      return (transaction, dataList) => matcher(input => input.toLowerCase() === value, transaction, dataList);
+      const lowerCaseValue = value.toLowerCase();
+      return (transaction, dataList) => matcher(input => input.toLowerCase() === lowerCaseValue, transaction, dataList);
     } else if (operator !== ':') {
       // invalid operator
       return null;
