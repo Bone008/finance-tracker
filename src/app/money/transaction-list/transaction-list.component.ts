@@ -209,7 +209,6 @@ export class TransactionListComponent implements AfterViewInit {
 
     const newTransaction = new Transaction({
       labels: Array.from(newLabelsSet),
-      isInternal: transactions.every(t => t.isInternal),
       group: new GroupData({
         children: newChildren,
       }),
@@ -228,7 +227,6 @@ export class TransactionListComponent implements AfterViewInit {
       data => new Transaction({
         single: data,
         labels: transaction.labels.slice(),
-        isInternal: transaction.isInternal,
         // TODO: Group comment is lost right now.
       }));
 

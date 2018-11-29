@@ -9,11 +9,6 @@ message Transaction {
   // May not contain duplicates.
   repeated string labels = 1;
 
-  // Whether the transaction was an internal transfer between accounts and should be ignored
-  // in spending analytics.
-  // Deprecated!
-  bool is_internal = 2;
-
   // Info about billing specific to this transaction.
   // If set, this overrides values inherited by the labels.
   BillingInfo billing = 3;
@@ -22,6 +17,9 @@ message Transaction {
     TransactionData single = 100;
     GroupData group = 101;
   }
+
+  // Removed fields: is_internal
+  reserved 2;
 }
 
 message GroupData {
