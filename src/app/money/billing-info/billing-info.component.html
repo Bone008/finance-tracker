@@ -1,0 +1,130 @@
+<div fxLayout="row" fxLayoutAlign="stretch center" fxLayoutGap="5px">
+  <mat-form-field>
+    <mat-select [ngModel]="getBillingPeriod()" (ngModelChange)="setBillingPeriod($event)" placeholder="Billing period">
+      <mat-option [value]="0">Inherit from label</mat-option>
+      <mat-option [value]="1">Day(s)</mat-option>
+      <!--<mat-option [value]="2">Multiple days</mat-option>-->
+      <mat-option [value]="3">Month(s)</mat-option>
+      <!--<mat-option [value]="4">Multiple months</mat-option>-->
+      <mat-option [value]="5">Year(s)</mat-option>
+      <!--<mat-option [value]="6">Multiple years</mat-option>-->
+    </mat-select>
+  </mat-form-field>
+  <mat-checkbox
+      *ngIf="billing.periodType !== PERIOD_TYPE_UNKNOWN"
+      name="showCustom"
+      [(ngModel)]="showCustom">
+    Custom
+  </mat-checkbox>
+  <mat-checkbox
+      *ngIf="showCustom"
+      name="isRelative"
+      [ngModel]="getIsRelative()"
+      (ngModelChange)="setIsRelative($event)">
+    Relative
+  </mat-checkbox>
+</div>
+
+<!-- === Generic relative === -->
+<div
+    *ngIf="showCustom && billing.isRelative"
+    fxLayout="row" fxLayoutAlign="stretch center" fxLayoutGap="10px">
+  <mat-form-field class="relative-picker" floatLabel="always">
+    <span matPrefix>{{getCustomRelative(0) !== null && getCustomRelative(0) >= 0 ? '+' : ' '}}</span>
+    <input
+        matInput
+        type="number"
+        name="relativeFrom"
+        placeholder="From"
+        [ngModel]="getCustomRelative(0)"
+        (ngModelChange)="setCustomRelative(0, $event)">
+  </mat-form-field>
+  <span>&nbsp;-&nbsp;</span>
+  <mat-form-field class="relative-picker" floatLabel="always">
+    <span matPrefix>{{getCustomRelative(1) !== null && getCustomRelative(1) >= 0 ? '+' : ' '}}</span>
+    <input
+        matInput
+        type="number"
+        name="relativeTo"
+        placeholder="To"
+        [ngModel]="getCustomRelative(1)"
+        (ngModelChange)="setCustomRelative(1, $event)">
+  </mat-form-field>
+</div>
+
+<!-- === Day picker === -->
+<div
+    *ngIf="showCustom && !billing.isRelative && billing.periodType === PERIOD_TYPE_DAY"
+    fxLayout="row" fxLayoutAlign="stretch center" fxLayoutGap="10px">
+  <mat-form-field>
+    <input
+        matInput
+        type="date"
+        name="dayFrom"
+        [ngModel]="getCustomDateStr(0)"
+        (ngModelChange)="setCustomComponent(0, 'date', $event)"
+        placeholder="Billing day">
+  </mat-form-field>
+  <span>-</span>
+  <mat-form-field>
+    <input
+        matInput
+        type="date"
+        name="dayTo"
+        [ngModel]="getCustomDateStr(1)"
+        (ngModelChange)="setCustomComponent(1, 'date', $event)"
+        placeholder="Billing day end">
+  </mat-form-field>
+</div>
+
+<!-- === Month picker === -->
+<div
+    *ngIf="showCustom && !billing.isRelative && billing.periodType === PERIOD_TYPE_MONTH"
+    fxLayout="row" fxLayoutAlign="stretch center" fxLayoutGap="10px">
+  <mat-form-field>
+    <input
+        matInput
+        type="date"
+        name="monthFrom"
+        [ngModel]="getCustomDateStr(0)"
+        (ngModelChange)="setCustomComponent(0, 'month', $event)"
+        placeholder="Billing month">
+  </mat-form-field>
+  <span>-</span>
+  <mat-form-field>
+    <input
+        matInput
+        type="date"
+        name="monthFrom"
+        [ngModel]="getCustomDateStr(1)"
+        (ngModelChange)="setCustomComponent(1, 'month', $event)"
+        placeholder="Billing month end">
+  </mat-form-field>
+</div>
+
+<!-- === Year picker === -->
+<div
+    *ngIf="showCustom && !billing.isRelative && billing.periodType === PERIOD_TYPE_YEAR"
+    fxLayout="row" fxLayoutAlign="stretch center" fxLayoutGap="10px">
+  <mat-form-field>
+      <input
+          matInput
+          type="number"
+          name="yearFrom"
+          class="year-picker"
+          [ngModel]="getCustomDate(0) | date:'yyyy'"
+          (ngModelChange)="setCustomComponent(0, 'year', $event)"
+          placeholder="Billing year">
+  </mat-form-field>
+  <span>-</span>
+  <mat-form-field>
+    <input
+        matInput
+        type="number"
+        name="yearTo"
+        class="year-picker"
+        [ngModel]="getCustomDate(1) | date:'yyyy'"
+        (ngModelChange)="setCustomComponent(1, 'year', $event)"
+        placeholder="Billing year end">
+  </mat-form-field>
+</div>

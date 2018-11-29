@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-import { Money, Transaction, TransactionData } from '../../../proto/model';
+import { BillingInfo, Money, Transaction, TransactionData } from '../../../proto/model';
 import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../core/proto-util';
 import { makeSharedDate } from '../../core/util';
 
@@ -38,6 +38,9 @@ export class TransactionEditComponent implements OnInit {
     this.singleData = data.transaction.single!;
     this.editMode = data.editMode;
 
+    if (!this.transaction.billing) {
+      this.transaction.billing = new BillingInfo();
+    }
     if (!this.singleData.amount) {
       this.singleData.amount = new Money();
     }

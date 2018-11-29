@@ -22,6 +22,7 @@ import { TransactionEditComponent } from './transaction-edit/transaction-edit.co
 import { AddInlineLabelComponent } from './transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transaction-labels/transaction-labels.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
+import { BillingInfoComponent } from './billing-info/billing-info.component';
 
 const appRoutes: Routes = [
   { path: 'transactions', component: TransactionListComponent },
@@ -58,6 +59,7 @@ const appRoutes: Routes = [
     FilterFormatValidatorDirective,
     LabelBreakdownComponent,
     DialogLabelDominanceComponent,
+    BillingInfoComponent,
   ],
   entryComponents: [
     FormImportComponent,

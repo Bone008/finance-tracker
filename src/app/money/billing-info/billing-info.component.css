@@ -1,0 +1,10 @@
+.relative-picker {
+  width: 60px;
+}
+
+::ng-deep .relative-picker .mat-form-field-prefix {
+  width: 0;
+}
+::ng-deep .relative-picker .mat-form-field-infix {
+  margin-left: 9px;
+}
