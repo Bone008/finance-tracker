@@ -11,6 +11,25 @@
       <mat-panel-description>{{label.numTransactions}} transactions</mat-panel-description>
     </mat-expansion-panel-header>
 
-    <p>Coming soon: Editing labels.</p>
+    <div fxLayout="column">
+      <!--
+      <mat-form-field>
+        <input
+            matInput
+            name="displayColor"
+            placeholder="Display color">
+      </mat-form-field>
+      <mat-form-field>
+        <input
+            matInput
+            placeholder="Transaction row display color">
+      </mat-form-field>
+      -->
+      <app-billing-info
+          unknownPeriodLabel="Default"
+          [billing]="getBillingForLabel(label)"
+          (billingChange)="updateBillingForLabel(label, $event)">
+      </app-billing-info>
+    </div>
   </mat-expansion-panel>
 </div>

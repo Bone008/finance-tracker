@@ -68,7 +68,7 @@
             (labelDelete)="deleteLabel($event)"
             (labelDeleteLast)="deleteLabel(transaction.labels[transaction.labels.length-1])">
         </app-transaction-labels>
-        <app-billing-info [billing]="transaction.billing"></app-billing-info>
+        <app-billing-info [billing]="transaction.billing" unknownPeriodLabel="Inherit from label"></app-billing-info>
       </div>
 
       <div fxFlex="none" fxFlex.gt-sm="40" fxLayout="column">
@@ -111,7 +111,8 @@
     </div>
     
     <p *ngIf="editMode==='edit'">
-      This transaction is {{singleData.importedRowId > 0 ? 'linked to CSV row #' + singleData.importedRowId : 'not linked to a CSV row'}}.<br>
+      This transaction is
+      {{singleData.importedRowId > 0 ? 'linked to CSV row #' + singleData.importedRowId : 'not linked to a CSV row'}}.<br>
       It was created on {{getDateCreated() | date:'medium'}} and
       {{getDateModified() ? 'modified on ' + (getDateModified() | date:'medium') : 'never modified'}}.
     </p>

@@ -1,7 +1,7 @@
 <div fxLayout="row" fxLayoutAlign="stretch center" fxLayoutGap="5px">
   <mat-form-field fxFlex>
     <mat-select [ngModel]="getBillingPeriod()" (ngModelChange)="setBillingPeriod($event)" placeholder="Billing period">
-      <mat-option [value]="PERIOD_TYPE_UNKNOWN">Inherit from label</mat-option>
+      <mat-option [value]="PERIOD_TYPE_UNKNOWN">{{unknownPeriodLabel}}</mat-option>
       <mat-option [value]="PERIOD_TYPE_DAY">Day(s)</mat-option>
       <mat-option [value]="PERIOD_TYPE_MONTH">Month(s)</mat-option>
       <mat-option [value]="PERIOD_TYPE_YEAR">Year(s)</mat-option>

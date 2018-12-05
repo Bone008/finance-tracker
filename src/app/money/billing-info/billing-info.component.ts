@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import * as moment from 'moment';
 import { BillingInfo, BillingType, Date as ProtoDate } from '../../../proto/model';
 import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
@@ -24,8 +24,14 @@ export class BillingInfoComponent implements OnInit {
   readonly PERIOD_TYPE_MONTH = BillingType.MONTH;
   readonly PERIOD_TYPE_YEAR = BillingType.YEAR;
 
+  /** The label to display for the default value of the billing period. */
+  @Input()
+  unknownPeriodLabel: string = "Unknown";
+
   @Input()
   billing: BillingInfo;
+  @Output()
+  billingChange = new EventEmitter<BillingInfo>();
 
   showCustom = false;
   isRange = false;
@@ -45,6 +51,7 @@ export class BillingInfoComponent implements OnInit {
     // Reset dates to default values.
     this.billing.date = null;
     this.billing.endDate = null;
+    this.notify();
   }
 
   setShowCustom(value: boolean) {
@@ -53,6 +60,7 @@ export class BillingInfoComponent implements OnInit {
       this.billing.date = null;
       this.billing.endDate = null;
     }
+    this.notify();
   }
 
   getIsRelative(): boolean {
@@ -65,6 +73,7 @@ export class BillingInfoComponent implements OnInit {
     // Reset dates to default values.
     this.billing.date = null;
     this.billing.endDate = null;
+    this.notify();
   }
 
   getCustomDateStr(range: 0 | 1): string | null {
@@ -116,6 +125,8 @@ export class BillingInfoComponent implements OnInit {
         this.setCustomComponent(0, type, value);
       }
     }
+
+    this.notify();
   }
 
   getCustomRelative(range: 0 | 1): number | null {
@@ -158,6 +169,12 @@ export class BillingInfoComponent implements OnInit {
         this.setCustomRelative(0, value);
       }
     }
+
+    this.notify();
+  }
+
+  private notify() {
+    this.billingChange.next(this.billing);
   }
 
 }

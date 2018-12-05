@@ -1,9 +1,10 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
-import { DataContainer, GlobalComment, ImportedRow, Transaction, TransactionData, UserSettings } from "../../proto/model";
+import { DataContainer, GlobalComment, ImportedRow, LabelConfig, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { pluralizeArgument } from "../core/util";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
+// TODO: Split this up into multiple services responsible for individual entities.
 @Injectable({
   providedIn: 'root'
 })
@@ -87,6 +88,20 @@ export class DataService {
 
   getAllLabels(): string[] {
     return extractAllLabels(this.data.transactions);
+  }
+
+  getLabelConfig(label: string): LabelConfig | null {
+    if (this.data.labelConfigs.hasOwnProperty(label)) {
+      return this.data.labelConfigs[label];
+    }
+    return null;
+  }
+
+  getOrCreateLabelConfig(label: string): LabelConfig {
+    if (!this.data.labelConfigs.hasOwnProperty(label)) {
+      this.data.labelConfigs[label] = new LabelConfig();
+    }
+    return this.data.labelConfigs[label];
   }
 
   getImportedRowById(id: number): ImportedRow | null {
