@@ -343,9 +343,17 @@ export class TransactionListComponent implements AfterViewInit {
     return extractTransactionData(transaction)
       .sort((a, b) => -compareTimestamps(a.date, b.date))
       .map<[string, string]>(data => [
-        [data.who, data.reason].filter(value => !!value).join(", "),
+        (isGroup(transaction)
+          ? `(${this.getSignString(moneyToNumber(data.amount))}) `
+          : '') + [data.who, data.reason].filter(value => !!value).join(", "),
         data.comment
       ]);
+  }
+
+  private getSignString(num: number): string {
+    if (num > 0) return '+';
+    if (num < 0) return '\u2013'; // ndash
+    return '0';
   }
 
   canGroup(selected: Transaction[]): boolean {
