@@ -121,10 +121,11 @@ export function getTransactionDominantLabels(
   excludedLabels: string[] = []
 ): string[] {
   // Get applicable labels ranked by their dominance in descending order.
+  // Equally dominant labels are sorted in alphabetical order.
   const labelInfos = transaction.labels
     .filter(label => excludedLabels.indexOf(label) === -1)
-    .map((label, index) => ({ label, index, dominance: dominanceOrder[label] || 0 }))
-    .sort((a, b) => b.dominance - a.dominance);
+    .map(label => ({ label, dominance: dominanceOrder[label] || 0 }))
+    .sort((a, b) => (b.dominance - a.dominance) || a.label.localeCompare(b.label));
 
   return labelInfos
     // Only use dominant labels.
