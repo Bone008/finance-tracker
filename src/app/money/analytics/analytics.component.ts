@@ -3,14 +3,14 @@ import { ChartData, ChartDataSets } from 'chart.js';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { BillingType, Transaction } from '../../../proto/model';
+import { BillingInfo, BillingType, Transaction } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../../core/proto-util';
 import { maxBy } from '../../core/util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { extractAllLabels, getCanonicalBilling, getTransactionAmount, isSingle } from '../model-util';
+import { CanonicalBillingInfo, extractAllLabels, getCanonicalBilling, getTransactionAmount, getTransactionDominantLabels, isSingle } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
 
@@ -127,6 +127,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Computes the list of parent labels that have sublabels and their collapsed
+   * state and stores it into this.labelGroups.
+   **/
   private analyzeLabelGroups() {
     const labels = extractAllLabels(this.matchingTransactions);
     const parentLabels = new KeyedArrayAggregate<string>();
@@ -157,31 +161,11 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
     const debugContribHistogram = new KeyedNumberAggregate();
     for (const transaction of this.matchingTransactions) {
-      const dateMoment = timestampToMoment(isSingle(transaction)
-        ? transaction.single.date
-        : maxBy(transaction.group!.children, child => timestampToWholeSeconds(child.date))!.date
-      );
+      const billing = this.resolveBillingInfo(transaction);
+      const fromMoment = protoDateToMoment(billing.date);
+      const toMoment = protoDateToMoment(billing.endDate);
 
-      let fromMoment: moment.Moment;
-      let toMoment: moment.Moment;
-      if (transaction.billing) {
-        // TODO inherit billing from labels.
-        const billing = getCanonicalBilling(transaction.billing, dateMoment);
-        fromMoment = protoDateToMoment(billing.date);
-        toMoment = protoDateToMoment(billing.endDate);
-
-        // For now, we just have to adjust YEAR granularity down to month,
-        // in the future adjust this to always spread to at least displayUnit granularity.
-        if (billing.periodType === BillingType.YEAR) {
-          fromMoment.month(0);
-          toMoment.month(11);
-        }
-
-        // TODO: Handle "billing.isPeriodic".
-      } else {
-        fromMoment = dateMoment;
-        toMoment = dateMoment;
-      }
+      // TODO: Handle "billing.isPeriodic".
 
       const contributingKeys: string[] = [];
       // Iterate over date units and collect their keys.
@@ -259,6 +243,37 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.monthlyMedianBucket.totalPositive = medianPositive;
     this.monthlyMedianBucket.totalNegative = medianNegative;
     this.monthlyMedianBucket.numTransactions = medianNum;
+  }
+
+  private resolveBillingInfo(transaction: Transaction): CanonicalBillingInfo {
+    // Initially assume unknown (default) billing.
+    let resolvedBilling = new BillingInfo({ periodType: BillingType.UNKNOWN });
+
+    // Check for individual billing config (overrides that inherited from labels).
+    if (transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN) {
+      resolvedBilling = transaction.billing;
+    } else {
+      // Check for billing config inherited from labels.
+      // Of the dominant labels, the first present billing config will be applied
+      // and the rest ignored.
+      const dominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
+      const dominantLabels = getTransactionDominantLabels(transaction, dominanceOrder);
+      for (const label of dominantLabels) {
+        const labelConfig = this.dataService.getLabelConfig(label);
+        if (labelConfig && labelConfig.billing && labelConfig.billing.periodType !== BillingType.UNKNOWN) {
+          resolvedBilling = labelConfig.billing;
+          break;
+        }
+      }
+    }
+
+    // Get reference date.
+    const dateMoment = timestampToMoment(isSingle(transaction)
+      ? transaction.single.date
+      : maxBy(transaction.group!.children, child => timestampToWholeSeconds(child.date))!.date
+    );
+
+    return getCanonicalBilling(resolvedBilling, dateMoment);
   }
 
   private calculateMeanAndMedian(numbers: number[]): [number, number] {

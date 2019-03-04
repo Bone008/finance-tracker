@@ -120,6 +120,10 @@ export function getTransactionDominantLabels(
   dominanceOrder: { [label: string]: number },
   excludedLabels: string[] = []
 ): string[] {
+  // Fast path for simple cases.
+  if (transaction.labels.length <= 1 && excludedLabels.length === 0) {
+    return transaction.labels;
+  }
   // Get applicable labels ranked by their dominance in descending order.
   // Equally dominant labels are sorted in alphabetical order.
   const labelInfos = transaction.labels
