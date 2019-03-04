@@ -11,25 +11,27 @@
       <mat-panel-description>{{label.numTransactions}} transactions</mat-panel-description>
     </mat-expansion-panel-header>
 
-    <div fxLayout="column">
-      <!--
-      <mat-form-field>
-        <input
-            matInput
-            name="displayColor"
-            placeholder="Display color">
-      </mat-form-field>
-      <mat-form-field>
-        <input
-            matInput
-            placeholder="Transaction row display color">
-      </mat-form-field>
-      -->
-      <app-billing-info
-          unknownPeriodLabel="Default"
-          [billing]="getBillingForLabel(label)"
-          (billingChange)="updateBillingForLabel(label, $event)">
-      </app-billing-info>
-    </div>
+    <ng-template matExpansionPanelContent>
+      <div fxLayout="column">
+        <!--
+        <mat-form-field>
+          <input
+              matInput
+              name="displayColor"
+              placeholder="Display color">
+        </mat-form-field>
+        <mat-form-field>
+          <input
+              matInput
+              placeholder="Transaction row display color">
+        </mat-form-field>
+        -->
+        <app-billing-info
+            unknownPeriodLabel="Default"
+            [billing]="getBillingForLabel(label.name)"
+            (billingChange)="updateBillingForLabel(label.name, $event)">
+        </app-billing-info>
+      </div>
+    </ng-template>
   </mat-expansion-panel>
 </div>
