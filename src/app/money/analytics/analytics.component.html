@@ -26,9 +26,9 @@
       <span fxFlex></span>
     
       <mat-checkbox
-          (change)="averageOver3MonthsSubject.next($event.checked)"
-          [checked]="averageOver3MonthsSubject | async">
-        Average over 3 months
+          (change)="ignoreBillingPeriodSubject.next($event.checked)"
+          [checked]="ignoreBillingPeriodSubject | async">
+        Ignore billing period
       </mat-checkbox>
     </p>
 

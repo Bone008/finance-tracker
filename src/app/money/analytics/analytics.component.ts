@@ -26,7 +26,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   // TODO Split this component into multiple parts, possibly add "AnalyticsService" for shared functionality.
 
   readonly filterState = new FilterState();
-  readonly averageOver3MonthsSubject = new BehaviorSubject<boolean>(false);
+  readonly ignoreBillingPeriodSubject = new BehaviorSubject<boolean>(false);
   readonly labelCollapseSubject = new BehaviorSubject<void>(void (0));
   private readonly labelDominanceSubject = new BehaviorSubject<LabelDominanceOrder>({});
 
@@ -60,10 +60,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       combineLatest(
         this.dataService.transactions$,
         this.filterState.value$,
-        this.averageOver3MonthsSubject,
+        this.ignoreBillingPeriodSubject,
         this.labelCollapseSubject,
         this.labelDominanceSubject)
-        .subscribe(([_, filterValue, useAverage, __, ___]) => this.analyzeTransactions(filterValue, useAverage));
+        .subscribe(([_, filterValue, ignoreBilling, __, ___]) => this.analyzeTransactions(filterValue, ignoreBilling));
   }
 
   ngOnDestroy() {
@@ -107,14 +107,14 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       });
   }
 
-  private analyzeTransactions(filterValue: string, useAverage: boolean) {
+  private analyzeTransactions(filterValue: string, ignoreBilling: boolean) {
     const allTransactions = this.dataService.getCurrentTransactionList();
     this.matchingTransactions = this.filterService.applyFilter(allTransactions, filterValue);
     this.totalTransactionCount = allTransactions.length;
     this.matchingTransactionCount = this.matchingTransactions.length;
 
     this.analyzeLabelGroups();
-    this.analyzeMonthlyBreakdown(useAverage);
+    this.analyzeMonthlyBreakdown(ignoreBilling);
   }
 
   private refreshUncollapsedLabels() {
@@ -153,7 +153,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       });
   }
 
-  private analyzeMonthlyBreakdown(useAverage: boolean) {
+  private analyzeMonthlyBreakdown(ignoreBilling: boolean) {
     const displayUnit = 'month';
     const keyFormat = 'YYYY-MM';
 
@@ -161,11 +161,11 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
     const debugContribHistogram = new KeyedNumberAggregate();
     for (const transaction of this.matchingTransactions) {
-      const billing = this.resolveBillingInfo(transaction);
+      const billing = this.resolveBillingInfo(transaction, ignoreBilling);
       const fromMoment = protoDateToMoment(billing.date);
       const toMoment = protoDateToMoment(billing.endDate);
 
-      // TODO: Handle "billing.isPeriodic".
+      // TODO: Handle "billing.isPeriodic" (currently completely unused).
 
       const contributingKeys: string[] = [];
       // Iterate over date units and collect their keys.
@@ -190,7 +190,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       }
     }
 
-    console.log(debugContribHistogram.getEntries());
+    //console.log(debugContribHistogram.getEntries());
 
     // Fill holes in transactionBuckets with empty buckets.
     // Sort the keys alphanumerically as the keyFormat is big-endian.
@@ -218,7 +218,9 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       });
     }
 
-    if (!useAverage) {
+    // Update the chart vertical scaling, but only when not toggling "Ignore billing period",
+    // since the user probably wants to visually compare values.
+    if (!ignoreBilling) {
       this.maxBucketExpense = -Math.min(...this.buckets.map(b => b.totalNegative));
     }
 
@@ -245,9 +247,19 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.monthlyMedianBucket.numTransactions = medianNum;
   }
 
-  private resolveBillingInfo(transaction: Transaction): CanonicalBillingInfo {
+  private resolveBillingInfo(transaction: Transaction, ignore: boolean): CanonicalBillingInfo {
+    // Get reference date.
+    const dateMoment = timestampToMoment(isSingle(transaction)
+      ? transaction.single.date
+      : maxBy(transaction.group!.children, child => timestampToWholeSeconds(child.date))!.date
+    );
+
     // Initially assume unknown (default) billing.
     let resolvedBilling = new BillingInfo({ periodType: BillingType.UNKNOWN });
+
+    if (ignore) {
+      return getCanonicalBilling(resolvedBilling, dateMoment);
+    }
 
     // Check for individual billing config (overrides that inherited from labels).
     if (transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN) {
@@ -266,12 +278,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         }
       }
     }
-
-    // Get reference date.
-    const dateMoment = timestampToMoment(isSingle(transaction)
-      ? transaction.single.date
-      : maxBy(transaction.group!.children, child => timestampToWholeSeconds(child.date))!.date
-    );
 
     return getCanonicalBilling(resolvedBilling, dateMoment);
   }
