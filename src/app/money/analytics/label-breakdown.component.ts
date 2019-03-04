@@ -4,7 +4,7 @@ import { Transaction } from '../../../proto/model';
 import { KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { getRandomInt } from '../../core/util';
 import { DataService } from '../data.service';
-import { extractAllLabels, getTransactionAmount } from '../model-util';
+import { extractAllLabels, getTransactionAmount, getTransactionDominantLabels } from '../model-util';
 import { LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
 
 const OTHER_GROUP_NAME = 'other';
@@ -77,17 +77,10 @@ export class LabelBreakdownComponent implements OnChanges {
     const expensesGroups = new KeyedNumberAggregate();
     const incomeGroups = new KeyedNumberAggregate();
     for (const transaction of this.transactions) {
-      // Get applicable labels ranked by their dominance in descending order.
-      const labelInfos = transaction.labels
-        .filter(label => this.labelsSharedByAll.indexOf(label) === -1)
-        .map(label => ({ label, dominance: dominanceOrder[label] || 0 }))
-        .sort((a, b) => b.dominance - a.dominance);
-
-      const label = labelInfos.length === 0 ? '<none>' : labelInfos
-        // Only use dominant labels.
-        .filter(info => info.dominance === labelInfos[0].dominance)
+      const dominantLabels = getTransactionDominantLabels(transaction, dominanceOrder, this.labelsSharedByAll);
+      const label = dominantLabels.length === 0 ? '<none>' : dominantLabels
         // TODO This may potentially lead to duplicates, but I don't care right now because it is quite unlikely.
-        .map(info => collapsedNames[info.label] || info.label)
+        .map(label => collapsedNames[label] || label)
         .join(',');
 
       const amount = getTransactionAmount(transaction);

@@ -111,6 +111,26 @@ export function extractAllLabelsSet(transactions: Transaction[]): Set<string> {
   return labels;
 }
 
+/**
+ * Returns an ordered list of labels of a transaction that are dominant with
+ * respect to a given partial order. The list may be empty.
+ */
+export function getTransactionDominantLabels(
+  transaction: Transaction,
+  dominanceOrder: { [label: string]: number },
+  excludedLabels: string[] = []
+): string[] {
+  // Get applicable labels ranked by their dominance in descending order.
+  const labelInfos = transaction.labels
+    .filter(label => excludedLabels.indexOf(label) === -1)
+    .map((label, index) => ({ label, index, dominance: dominanceOrder[label] || 0 }))
+    .sort((a, b) => b.dominance - a.dominance);
+
+  return labelInfos
+    // Only use dominant labels.
+    .filter(info => info.dominance === labelInfos[0].dominance)
+    .map(info => info.label);
+}
 
 // (NOTE: Maybe this should be simplified to an independent interface that exposes moments and not dates.)
 export type CanonicalBillingInfo = BillingInfo & { isRelative: false, date: Date, endDate: Date };
