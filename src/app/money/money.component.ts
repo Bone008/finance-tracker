@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import * as moment from 'moment';
 import { timer } from 'rxjs';
 import { takeWhile } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 import { DataContainer } from '../../proto/model';
 import { timestampToDate } from '../core/proto-util';
 import { DataService } from './data.service';
@@ -80,6 +81,9 @@ export class MoneyComponent implements OnInit, OnDestroy {
           if (data) {
             this.dataService.setDataContainer(data);
             this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
+          } else if (environment.production) {
+            this.dataService.setDataContainer(new DataContainer());
+            this.status = "No saved data";
           } else {
             this.dataService.setDataContainer(new DataContainer({
               transactions: createDummyTransactions(50),
