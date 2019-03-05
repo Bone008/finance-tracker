@@ -78,7 +78,7 @@ export class TransactionFilterService {
     const rawTokens = splitQuotedString(filter);
     if (rawTokens.length === 0) return [];
     let lastToken = rawTokens.pop()!.toLowerCase();
-    let continuationPrefix = rawTokens.join(' ') + (rawTokens.length > 0 ? ' ' : '');
+    let continuationPrefix = filter.substr(0, filter.toLowerCase().lastIndexOf(lastToken));
     if (lastToken.startsWith('-')) {
       lastToken = lastToken.substr(1);
       continuationPrefix += '-';
