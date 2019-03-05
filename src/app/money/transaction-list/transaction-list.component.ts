@@ -299,6 +299,24 @@ export class TransactionListComponent implements AfterViewInit {
     return label;
   }
 
+  navigateLabelEditUp(event: KeyboardEvent) {
+    // Not the Angular way, but it is simple and it works ...
+    const current = event.target as HTMLElement;
+    const nextRow = current.closest('.data-row')!.previousElementSibling;
+    if (nextRow) {
+      nextRow.querySelector<HTMLInputElement>('.add-inline-label input')!.focus();
+    }
+  }
+
+  navigateLabelEditDown(event: KeyboardEvent) {
+    // Not the Angular way, but it is simple and it works ...
+    const current = event.target as HTMLElement;
+    const nextRow = current.closest('.data-row')!.nextElementSibling;
+    if (nextRow) {
+      nextRow.querySelector<HTMLInputElement>('.add-inline-label input')!.focus();
+    }
+  }
+
   /** Returns if the number of selected elements matches the total number of visible rows. */
   isAllSelected() {
     return this.selection.selected.length

@@ -122,6 +122,8 @@
               (labelAdd)="addLabelToTransaction(transaction, $event)"
               (labelDelete)="deleteLabelFromTransaction(transaction, $event)"
               (labelDeleteLast)="deleteLastLabelFromTransaction(transaction)"
+              (keydown.arrowup)="navigateLabelEditUp($event)"
+              (keydown.arrowdown)="navigateLabelEditDown($event)"
               labelTitle="Click to filter by this label">
           </app-transaction-labels>
         </div>
