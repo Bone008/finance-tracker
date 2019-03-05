@@ -23,6 +23,7 @@ export class BillingInfoComponent implements OnInit {
   readonly PERIOD_TYPE_DAY = BillingType.DAY;
   readonly PERIOD_TYPE_MONTH = BillingType.MONTH;
   readonly PERIOD_TYPE_YEAR = BillingType.YEAR;
+  readonly PERIOD_TYPE_NONE = BillingType.NONE;
 
   /** The label to display for the default value of the billing period. */
   @Input()
@@ -51,6 +52,9 @@ export class BillingInfoComponent implements OnInit {
     // Reset dates to default values.
     this.billing.date = null;
     this.billing.endDate = null;
+    if (value === BillingType.UNKNOWN || value === BillingType.NONE) {
+      this.setShowCustom(false);
+    }
     this.notify();
   }
 

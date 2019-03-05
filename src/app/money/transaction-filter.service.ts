@@ -23,7 +23,7 @@ const TOKEN_IS_KEYWORDS = [
   'cash', 'bank', 'mixed', 'single', 'group', 'expense', 'income'
 ].sort();
 const TOKEN_BILLING_KEYWORDS = [
-  'default', 'day', 'month', 'year', 'relative', 'absolute', 'individual', 'multiple'
+  'default', 'none', 'day', 'month', 'year', 'relative', 'absolute', 'individual', 'multiple'
 ].sort();
 const TOKEN_OPERATORS_BY_KEYWORD: { [keyword: string]: MatcherOperator[] } = {
   'is': [':'],
@@ -285,11 +285,18 @@ export class TransactionFilterService {
 
     switch (value.toLowerCase()) {
       case 'default': return transaction => getRaw(transaction).periodType === BillingType.UNKNOWN;
+      case 'none': return transaction => getRaw(transaction).periodType === BillingType.NONE;
       case 'day': return transaction => getRaw(transaction).periodType === BillingType.DAY;
       case 'month': return transaction => getRaw(transaction).periodType === BillingType.MONTH;
       case 'year': return transaction => getRaw(transaction).periodType === BillingType.YEAR;
-      case 'relative': return transaction => getRaw(transaction).periodType !== BillingType.UNKNOWN && getRaw(transaction).isRelative;
-      case 'absolute': return transaction => getRaw(transaction).periodType !== BillingType.UNKNOWN && !getRaw(transaction).isRelative;
+      case 'relative': return transaction => {
+        const billing = getRaw(transaction);
+        return billing.periodType !== BillingType.UNKNOWN && billing.periodType !== BillingType.NONE && billing.isRelative;
+      };
+      case 'absolute': return transaction => {
+        const billing = getRaw(transaction);
+        return billing.periodType !== BillingType.UNKNOWN && billing.periodType !== BillingType.NONE && !billing.isRelative;
+      };
       case 'individual': return transaction => !!transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
       case 'multiple': return transaction => transaction.labels.filter(label => {
         const cfg = this.dataService.getLabelConfig(label);

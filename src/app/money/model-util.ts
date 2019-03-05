@@ -252,6 +252,7 @@ function normalizeMomentToPeriodType(theMoment: moment.Moment, periodType: Billi
       normalized.date(1);
     // fall-through
     case BillingType.DAY:
+    case BillingType.NONE:
       normalized.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
   }
   return normalized;

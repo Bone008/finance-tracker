@@ -1,10 +1,10 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { ChartData } from 'chart.js';
-import { Transaction } from '../../../proto/model';
+import { BillingType, Transaction } from '../../../proto/model';
 import { KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { getRandomInt } from '../../core/util';
 import { DataService } from '../data.service';
-import { extractAllLabels, getTransactionAmount, getTransactionDominantLabels } from '../model-util';
+import { extractAllLabels, getTransactionAmount, getTransactionDominantLabels, resolveTransactionCanonicalBilling } from '../model-util';
 import { LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
 
 const OTHER_GROUP_NAME = 'other';
@@ -77,6 +77,11 @@ export class LabelBreakdownComponent implements OnChanges {
     const expensesGroups = new KeyedNumberAggregate();
     const incomeGroups = new KeyedNumberAggregate();
     for (const transaction of this.transactions) {
+      const resolvedBilling = resolveTransactionCanonicalBilling(transaction, this.dataService, dominanceOrder);
+      if (resolvedBilling.periodType === BillingType.NONE) {
+        continue;
+      }
+
       const dominantLabels = getTransactionDominantLabels(transaction, dominanceOrder, this.labelsSharedByAll);
       const label = dominantLabels.length === 0 ? '<none>' : dominantLabels
         // TODO This may potentially lead to duplicates, but I don't care right now because it is quite unlikely.

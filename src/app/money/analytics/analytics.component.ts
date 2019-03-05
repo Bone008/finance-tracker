@@ -4,13 +4,13 @@ import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { LoggerService } from 'src/app/core/logger.service';
-import { Transaction } from '../../../proto/model';
+import { BillingType, Transaction } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { protoDateToMoment } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { extractAllLabels, getTransactionAmount, resolveTransactionCanonicalBilling } from '../model-util';
+import { CanonicalBillingInfo, extractAllLabels, getTransactionAmount, resolveTransactionCanonicalBilling } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
 
@@ -168,18 +168,25 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
     const debugContribHistogram = new KeyedNumberAggregate();
     for (const transaction of this.matchingTransactions) {
-      // Hack: To ignore billing, temporarily clear fields of transaction.
-      const origValues = { billing: transaction.billing, labels: transaction.labels };
+      let billing: CanonicalBillingInfo;
       if (ignoreBilling) {
+        // Hack: To ignore billing, temporarily clear fields of transaction.
+        const origValues = { billing: transaction.billing, labels: transaction.labels };
         transaction.billing = null;
         transaction.labels = [];
+        try { billing = resolveTransactionCanonicalBilling(transaction, this.dataService, labelDominanceOrder); }
+        finally {
+          transaction.billing = origValues.billing;
+          transaction.labels = origValues.labels;
+        }
+      }
+      else {
+        billing = resolveTransactionCanonicalBilling(transaction, this.dataService, labelDominanceOrder);
       }
 
-      const billing = resolveTransactionCanonicalBilling(transaction, this.dataService, labelDominanceOrder);
-
-      if (ignoreBilling) {
-        transaction.billing = origValues.billing;
-        transaction.labels = origValues.labels;
+      // Skip transactions that are excluded from billing.
+      if (billing.periodType === BillingType.NONE) {
+        continue;
       }
 
       const fromMoment = protoDateToMoment(billing.date);

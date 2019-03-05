@@ -5,10 +5,11 @@
       <mat-option [value]="PERIOD_TYPE_DAY">Day(s)</mat-option>
       <mat-option [value]="PERIOD_TYPE_MONTH">Month(s)</mat-option>
       <mat-option [value]="PERIOD_TYPE_YEAR">Year(s)</mat-option>
+      <mat-option [value]="PERIOD_TYPE_NONE">None</mat-option>
     </mat-select>
   </mat-form-field>
   <mat-checkbox
-      *ngIf="billing.periodType !== PERIOD_TYPE_UNKNOWN"
+      *ngIf="billing.periodType !== PERIOD_TYPE_UNKNOWN && billing.periodType !== PERIOD_TYPE_NONE"
       name="showCustom"
       [ngModel]="showCustom"
       (ngModelChange)="setShowCustom($event)">
