@@ -1,6 +1,8 @@
 import * as moment from 'moment';
 import { BillingInfo, BillingType, Date as ProtoDate, GroupData, Transaction, TransactionData } from "../../proto/model";
-import { momentToProtoDate, moneyToNumber, protoDateToMoment } from "../core/proto-util";
+import { momentToProtoDate, moneyToNumber, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from "../core/proto-util";
+import { maxBy } from '../core/util';
+import { DataService } from './data.service';
 
 /** Type guard to check if a transaction has dataType 'single'. */
 export function isSingle(transaction: Transaction)
@@ -117,7 +119,7 @@ export function extractAllLabelsSet(transactions: Transaction[]): Set<string> {
  */
 export function getTransactionDominantLabels(
   transaction: Transaction,
-  dominanceOrder: { [label: string]: number },
+  labelDominanceOrder: { [label: string]: number },
   excludedLabels: string[] = []
 ): string[] {
   // Fast path for simple cases.
@@ -128,7 +130,7 @@ export function getTransactionDominantLabels(
   // Equally dominant labels are sorted in alphabetical order.
   const labelInfos = transaction.labels
     .filter(label => excludedLabels.indexOf(label) === -1)
-    .map(label => ({ label, dominance: dominanceOrder[label] || 0 }))
+    .map(label => ({ label, dominance: labelDominanceOrder[label] || 0 }))
     .sort((a, b) => (b.dominance - a.dominance) || a.label.localeCompare(b.label));
 
   return labelInfos
@@ -137,8 +139,60 @@ export function getTransactionDominantLabels(
     .map(info => info.label);
 }
 
+
 // (NOTE: Maybe this should be simplified to an independent interface that exposes moments and not dates.)
 export type CanonicalBillingInfo = BillingInfo & { isRelative: false, date: Date, endDate: Date };
+
+/**
+ * Returns the canonical billing info that applies to a transaction by resolving
+ * inheritance from labels according to the given partial order.
+ */
+export function resolveTransactionCanonicalBilling(
+  transaction: Transaction,
+  dataService: DataService,
+  labelDominanceOrder: { [label: string]: number }
+): CanonicalBillingInfo {
+  // Get reference date.
+  const dateMoment = timestampToMoment(isSingle(transaction)
+    ? transaction.single.date
+    : maxBy(transaction.group!.children, child => timestampToWholeSeconds(child.date))!.date
+  );
+
+  const rawBilling = resolveTransactionRawBilling(transaction, dataService, labelDominanceOrder);
+  return getCanonicalBilling(rawBilling, dateMoment);
+}
+
+/**
+ * Returns the NOT canonicalized billing info that applies to a transaction by
+ * resolving inheritance from labels according to the given partial order.
+ */
+export function resolveTransactionRawBilling(
+  transaction: Transaction,
+  dataService: DataService,
+  labelDominanceOrder: { [label: string]: number }
+): BillingInfo {
+  // Initially assume unknown (default) billing.
+  let resolvedBilling = new BillingInfo({ periodType: BillingType.UNKNOWN });
+
+  // Check for individual billing config (overrides that inherited from labels).
+  if (transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN) {
+    resolvedBilling = transaction.billing;
+  } else {
+    // Check for billing config inherited from labels.
+    // Of the dominant labels, the first present billing config will be applied
+    // and the rest ignored.
+    const dominantLabels = getTransactionDominantLabels(transaction, labelDominanceOrder);
+    for (const label of dominantLabels) {
+      const labelConfig = dataService.getLabelConfig(label);
+      if (labelConfig && labelConfig.billing && labelConfig.billing.periodType !== BillingType.UNKNOWN) {
+        resolvedBilling = labelConfig.billing;
+        break;
+      }
+    }
+  }
+
+  return resolvedBilling;
+}
 
 /**
  * Returns the canonical form of a BillingInfo object:

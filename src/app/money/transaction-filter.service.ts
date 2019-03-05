@@ -1,10 +1,10 @@
 import { Injectable } from "@angular/core";
 import * as moment from 'moment';
-import { ITransactionData, Transaction, TransactionData } from "../../proto/model";
+import { BillingType, ITransactionData, Transaction, TransactionData } from "../../proto/model";
 import { timestampToMoment } from '../core/proto-util';
 import { filterFuzzyOptions, splitQuotedString } from "../core/util";
 import { DataService } from "./data.service";
-import { extractTransactionData, getTransactionAmount, isGroup, isSingle } from "./model-util";
+import { extractTransactionData, getTransactionAmount, isGroup, isSingle, resolveTransactionRawBilling } from "./model-util";
 
 type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
 interface FilterToken {
@@ -15,15 +15,19 @@ type MatcherOperator = ':' | '=' | '<' | '>' | '<=' | '>=';
 const TOKEN_REGEX = /^(\w+)(:|=|<=?|>=?)(.*)$/;
 
 // List of valid filter keywords used for autocomplete.
-// Note: Should be alphabetically sorted.
+// Note: Alphabetically sorted by calling sort() immediately after initializer.
 const TOKEN_KEYWORDS = [
-  'is', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'whoidentifier', 'bookingtext', 'comment', 'label'
+  'is', 'billing', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'whoidentifier', 'bookingtext', 'comment', 'label'
 ].sort();
 const TOKEN_IS_KEYWORDS = [
   'cash', 'bank', 'mixed', 'single', 'group', 'expense', 'income'
 ].sort();
+const TOKEN_BILLING_KEYWORDS = [
+  'default', 'day', 'month', 'year', 'relative', 'absolute', 'individual', 'multiple'
+].sort();
 const TOKEN_OPERATORS_BY_KEYWORD: { [keyword: string]: MatcherOperator[] } = {
   'is': [':'],
+  'billing': [':'],
   'date': [':', '=', '<', '>', '<=', '>='],
   'created': [':', '=', '<', '>', '<=', '>='],
   'modified': [':', '=', '<', '>', '<=', '>='],
@@ -84,6 +88,12 @@ export class TransactionFilterService {
     if (lastToken.startsWith('is:')) {
       continuationPrefix += 'is:';
       return filterFuzzyOptions(TOKEN_IS_KEYWORDS, lastToken.substr(3), true)
+        .map(keyword => continuationPrefix + keyword + ' ');
+    }
+    // Suggest special "billing:" filters.
+    else if (lastToken.startsWith('billing:')) {
+      continuationPrefix += 'billing:';
+      return filterFuzzyOptions(TOKEN_BILLING_KEYWORDS, lastToken.substr(8), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
     // Suggest labels.
@@ -201,6 +211,8 @@ export class TransactionFilterService {
             // invalid 'is' keyword
             return null;
         }
+      case 'billing':
+        return this.makeBillingMatcher(value, operator);
       case 'date':
         return this.makeDateMatcher(value, operator, 'date');
       case 'created':
@@ -254,6 +266,35 @@ export class TransactionFilterService {
             || test(timestampToMoment(data.date).format('YYYY-MM-DD'))
             || transaction.labels.some(label => test(label))));
 
+      default:
+        // invalid keyword
+        return null;
+    }
+  }
+
+  /** Tries to create a matcher for the billing field. */
+  private makeBillingMatcher(value: string, operator: MatcherOperator): FilterMatcher | null {
+    if (operator !== ':') {
+      // invalid operator
+      return null;
+    }
+
+    const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
+    // Helper.
+    const getRaw = (transaction: Transaction) => resolveTransactionRawBilling(transaction, this.dataService, labelDominanceOrder);
+
+    switch (value.toLowerCase()) {
+      case 'default': return transaction => getRaw(transaction).periodType === BillingType.UNKNOWN;
+      case 'day': return transaction => getRaw(transaction).periodType === BillingType.DAY;
+      case 'month': return transaction => getRaw(transaction).periodType === BillingType.MONTH;
+      case 'year': return transaction => getRaw(transaction).periodType === BillingType.YEAR;
+      case 'relative': return transaction => getRaw(transaction).periodType !== BillingType.UNKNOWN && getRaw(transaction).isRelative;
+      case 'absolute': return transaction => getRaw(transaction).periodType !== BillingType.UNKNOWN && !getRaw(transaction).isRelative;
+      case 'individual': return transaction => !!transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
+      case 'multiple': return transaction => transaction.labels.filter(label => {
+        const cfg = this.dataService.getLabelConfig(label);
+        return cfg && cfg.billing && cfg.billing.periodType !== BillingType.UNKNOWN;
+      }).length > 1;
       default:
         // invalid keyword
         return null;
