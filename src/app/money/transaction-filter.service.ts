@@ -1,10 +1,10 @@
 import { Injectable } from "@angular/core";
 import * as moment from 'moment';
 import { BillingType, ITransactionData, Transaction, TransactionData } from "../../proto/model";
-import { timestampToMoment } from '../core/proto-util';
-import { filterFuzzyOptions, splitQuotedString } from "../core/util";
+import { protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
+import { filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
 import { DataService } from "./data.service";
-import { extractTransactionData, getTransactionAmount, isGroup, isSingle, resolveTransactionRawBilling } from "./model-util";
+import { extractTransactionData, getTransactionAmount, isGroup, isSingle, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
 
 type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
 interface FilterToken {
@@ -272,42 +272,6 @@ export class TransactionFilterService {
     }
   }
 
-  /** Tries to create a matcher for the billing field. */
-  private makeBillingMatcher(value: string, operator: MatcherOperator): FilterMatcher | null {
-    if (operator !== ':') {
-      // invalid operator
-      return null;
-    }
-
-    const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
-    // Helper.
-    const getRaw = (transaction: Transaction) => resolveTransactionRawBilling(transaction, this.dataService, labelDominanceOrder);
-
-    switch (value.toLowerCase()) {
-      case 'default': return transaction => getRaw(transaction).periodType === BillingType.UNKNOWN;
-      case 'none': return transaction => getRaw(transaction).periodType === BillingType.NONE;
-      case 'day': return transaction => getRaw(transaction).periodType === BillingType.DAY;
-      case 'month': return transaction => getRaw(transaction).periodType === BillingType.MONTH;
-      case 'year': return transaction => getRaw(transaction).periodType === BillingType.YEAR;
-      case 'relative': return transaction => {
-        const billing = getRaw(transaction);
-        return billing.periodType !== BillingType.UNKNOWN && billing.periodType !== BillingType.NONE && billing.isRelative;
-      };
-      case 'absolute': return transaction => {
-        const billing = getRaw(transaction);
-        return billing.periodType !== BillingType.UNKNOWN && billing.periodType !== BillingType.NONE && !billing.isRelative;
-      };
-      case 'individual': return transaction => !!transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
-      case 'multiple': return transaction => transaction.labels.filter(label => {
-        const cfg = this.dataService.getLabelConfig(label);
-        return cfg && cfg.billing && cfg.billing.periodType !== BillingType.UNKNOWN;
-      }).length > 1;
-      default:
-        // invalid keyword
-        return null;
-    }
-  }
-
   /**
    * Parses the given value as a regular expression and returns a FilterMatcher
    * that applies that expression to the data, or returns null if the regex could not be parsed.
@@ -331,13 +295,74 @@ export class TransactionFilterService {
     }
   }
 
+  /** Tries to create a matcher for the billing field. */
+  private makeBillingMatcher(value: string, operator: MatcherOperator): FilterMatcher | null {
+    const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
+    // Helper.
+    const getCanonical = (transaction: Transaction) => resolveTransactionCanonicalBilling(transaction, this.dataService, labelDominanceOrder);
+    const getRaw = (transaction: Transaction) => resolveTransactionRawBilling(transaction, this.dataService, labelDominanceOrder);
+
+    if (operator === ':') {
+      switch (value.toLowerCase()) {
+        case 'default': return transaction => getRaw(transaction).periodType === BillingType.UNKNOWN;
+        case 'none': return transaction => getRaw(transaction).periodType === BillingType.NONE;
+        case 'day': return transaction => getRaw(transaction).periodType === BillingType.DAY;
+        case 'month': return transaction => getRaw(transaction).periodType === BillingType.MONTH;
+        case 'year': return transaction => getRaw(transaction).periodType === BillingType.YEAR;
+        case 'relative': return transaction => {
+          const billing = getRaw(transaction);
+          return billing.periodType !== BillingType.UNKNOWN && billing.periodType !== BillingType.NONE && billing.isRelative;
+        };
+        case 'absolute': return transaction => {
+          const billing = getRaw(transaction);
+          return billing.periodType !== BillingType.UNKNOWN && billing.periodType !== BillingType.NONE && !billing.isRelative;
+        };
+        case 'individual': return transaction => !!transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
+        case 'multiple': return transaction => transaction.labels.filter(label => {
+          const cfg = this.dataService.getLabelConfig(label);
+          return cfg && cfg.billing && cfg.billing.periodType !== BillingType.UNKNOWN;
+        }).length > 1;
+        default: // ignore, handled by more generic date range matcher
+      }
+    }
+
+    // Delegate non-keywords and range operators to a date range matcher.
+    return this.makeDateRangeMatcher(value, operator, transaction => {
+      const billing = getCanonical(transaction);
+      if (billing.periodType === BillingType.NONE) {
+        // Never match.
+        return [];
+      }
+      // Return resolved interval.
+      return [[protoDateToMoment(billing.date), protoDateToMoment(billing.endDate)]];
+    });
+  }
+
   private makeDateMatcher(value: string, operator: MatcherOperator,
-    fieldName: keyof ITransactionData & ('date' | 'created' | 'modified'))
-    : FilterMatcher | null {
+    fieldName: keyof ITransactionData & ('date' | 'created' | 'modified')
+  ): FilterMatcher | null {
+    return this.makeDateRangeMatcher(value, operator,
+      (_, dataList) => {
+        // TODO Replace date selection by "nominal date" of groups once we support that.
+        const maxValue = maxBy(dataList, data => timestampToWholeSeconds(data[fieldName]))![fieldName];
+        return [[timestampToMoment(maxValue), timestampToMoment(maxValue)]];
+      });
+  }
+
+  /**
+   * Creates a matcher to match against a date interval.
+   * 
+   * @param rangeSelector Callback that returns a list of date ranges given a transaction.
+   *    Transactions pass the filter if at least one of the ranges successfully matches.
+   */
+  private makeDateRangeMatcher(value: string, operator: MatcherOperator,
+    rangeSelector: (transaction: Transaction, dataList: TransactionData[]) => [moment.Moment, moment.Moment][]
+  ): FilterMatcher | null {
     // TODO support relative date input
     if (value === 'empty' || value === 'never') {
       if (operator !== ':') return null; // invalid operator
-      return (_, dataList) => dataList.some(data => !data[fieldName]);
+      return (t, d) => rangeSelector(t, d).some(
+        interval => interval[0].unix() === 0 && interval[1].unix() === 0);
     } else {
       let granularity: 'year' | 'month' | 'day';
       if (MOMENT_YEAR_REGEX.test(value)) {
@@ -354,17 +379,18 @@ export class TransactionFilterService {
         return null;
       }
 
-      let predicate: (date: moment.Moment, granularity: 'year' | 'month' | 'day') => boolean;
+      let intervalPredicate: (from: moment.Moment, to: moment.Moment) => boolean;
+      // LHS:  [from ........................... to]
+      // RHS:                   ^-- searchMoment
       switch (operator) {
-        case '<': predicate = searchMoment.isAfter; break;
-        case '<=': predicate = searchMoment.isSameOrAfter; break;
-        case '>': predicate = searchMoment.isBefore; break;
-        case '>=': predicate = searchMoment.isSameOrBefore; break;
+        case '<': intervalPredicate = (from, to) => from.isBefore(searchMoment, granularity); break;
+        case '<=': intervalPredicate = (from, to) => from.isSameOrBefore(searchMoment, granularity); break;
+        case '>': intervalPredicate = (from, to) => to.isAfter(searchMoment, granularity); break;
+        case '>=': intervalPredicate = (from, to) => to.isSameOrAfter(searchMoment, granularity); break;
         case ':':
-        case '=': predicate = searchMoment.isSame; break;
+        case '=': intervalPredicate = (from, to) => from.isSameOrBefore(searchMoment, granularity) && to.isSameOrAfter(searchMoment, granularity); break;
       }
-      return (_, dataList) =>
-        dataList.some(data => predicate.call(searchMoment, timestampToMoment(data[fieldName]), granularity));
+      return (t, d) => rangeSelector(t, d).some(interval => intervalPredicate(...interval));
     }
   }
 

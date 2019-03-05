@@ -4,9 +4,10 @@ import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { LoggerService } from 'src/app/core/logger.service';
-import { BillingType, Transaction } from '../../../proto/model';
+import { splitQuotedString } from 'src/app/core/util';
+import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
-import { protoDateToMoment } from '../../core/proto-util';
+import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
@@ -37,11 +38,13 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   totalTransactionCount = 0;
   matchingTransactionCount = 0;
   buckets: BucketInfo[] = [];
-  maxBucketExpense = 0;
   monthlyChartData: ChartData = {};
   monthlyMeanBucket: Partial<BucketInfo> = {};
   monthlyMedianBucket: Partial<BucketInfo> = {};
+  hasFilteredPartiallyBilledTransactions = false;
 
+  /** The part of the current filter string that performs date filtering. */
+  private dateRestrictingFilter: string | null = null;
   private txSubscription: Subscription;
 
   constructor(
@@ -108,11 +111,22 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       });
   }
 
+  private refreshUncollapsedLabels() {
+    for (const group of this.labelGroups) {
+      if (group.shouldCollapse) {
+        AnalyticsComponent.uncollapsedLabels.delete(group.parentName);
+      } else {
+        AnalyticsComponent.uncollapsedLabels.add(group.parentName);
+      }
+    }
+  }
+
   private analyzeTransactions(filterValue: string, ignoreBilling: boolean) {
     let tStart = performance.now();
 
     const allTransactions = this.dataService.getCurrentTransactionList();
-    this.matchingTransactions = this.filterService.applyFilter(allTransactions, filterValue);
+    const processedFilter = this.preprocessFilter(filterValue, ignoreBilling);
+    this.matchingTransactions = this.filterService.applyFilter(allTransactions, processedFilter);
     this.totalTransactionCount = allTransactions.length;
     this.matchingTransactionCount = this.matchingTransactions.length;
 
@@ -123,14 +137,30 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.loggerService.debug(`analyzeTransactions: ${tEnd - tStart} ms for ${this.matchingTransactionCount} transactions`);
   }
 
-  private refreshUncollapsedLabels() {
-    for (const group of this.labelGroups) {
-      if (group.shouldCollapse) {
-        AnalyticsComponent.uncollapsedLabels.delete(group.parentName);
-      } else {
-        AnalyticsComponent.uncollapsedLabels.add(group.parentName);
-      }
+  /** Replaces 'date' filter tokens with 'billing' tokens and updates this.dateRestrictingFilter accordingly. */
+  private preprocessFilter(filterValue: string, ignoreBilling: boolean): string {
+    this.dateRestrictingFilter = null;
+
+    if (ignoreBilling) {
+      return filterValue;
     }
+    // TODO make operating on individual filter tokens nicer :(
+    const tokens = splitQuotedString(filterValue);
+    const dateTokenRegex = /^(-?)date(:|=|<=?|>=?)/;
+    const dateTokens: string[] = [];
+    const processed = tokens.map(token => {
+      if (dateTokenRegex.test(token)) {
+        token = token.replace('date', 'billing');
+        dateTokens.push('"' + token + '"');
+      }
+      return '"' + token + '"';
+    }).join(' ');
+
+    if (dateTokens.length > 0) {
+      this.dateRestrictingFilter = dateTokens.join(' ');
+    }
+
+    return processed;
   }
 
   /**
@@ -217,7 +247,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       }
     }
 
-    //console.log(debugContribHistogram.getEntries());
+    this.loggerService.debug("stats of # of billed months", debugContribHistogram.getEntries());
 
     // Fill holes in transactionBuckets with empty buckets.
     // Sort the keys alphanumerically as the keyFormat is big-endian.
@@ -232,6 +262,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       }
     }
 
+    this.cleanBucketsByDateFilter(transactionBuckets);
+
     this.buckets = [];
     for (const [key, billedTransactions] of transactionBuckets.getEntriesSorted()) {
       const positive = billedTransactions.filter(t => t.amount > 0);
@@ -243,12 +275,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         totalPositive: positive.map(t => t.amount).reduce((a, b) => a + b, 0),
         totalNegative: negative.map(t => t.amount).reduce((a, b) => a + b, 0),
       });
-    }
-
-    // Update the chart vertical scaling, but only when not toggling "Ignore billing period",
-    // since the user probably wants to visually compare values.
-    if (!ignoreBilling) {
-      this.maxBucketExpense = -Math.min(...this.buckets.map(b => b.totalNegative));
     }
 
     const datasets: ChartDataSets[] = [];
@@ -272,6 +298,29 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.monthlyMedianBucket.totalPositive = medianPositive;
     this.monthlyMedianBucket.totalNegative = medianNegative;
     this.monthlyMedianBucket.numTransactions = medianNum;
+  }
+
+  // TODO: This is specialized to MONTH view, make sure to change once other granularities are supported.
+  private cleanBucketsByDateFilter(transactionBuckets: KeyedArrayAggregate<BilledTransaction>) {
+    this.hasFilteredPartiallyBilledTransactions = false;
+
+    if (!this.dateRestrictingFilter) {
+      return;
+    }
+    // Create a fake transaction that is billed during the bucket's month
+    // and check if it would pass the date filter.
+    const dummyBilling = new BillingInfo({ periodType: BillingType.MONTH });
+    const dummyTransactionList = [new Transaction({ billing: dummyBilling, single: new TransactionData() })];
+    for (const [key, billedTransactions] of transactionBuckets.getEntries()) {
+      const keyMoment = moment(key);
+      dummyBilling.date = momentToProtoDate(keyMoment);
+      const result = this.filterService.applyFilter(dummyTransactionList, this.dateRestrictingFilter);
+      if (result.length === 0) {
+        // This bucket does not pass the filter.
+        transactionBuckets.delete(key);
+        this.hasFilteredPartiallyBilledTransactions = true;
+      }
+    }
   }
 
   private calculateMeanAndMedian(numbers: number[]): [number, number] {
