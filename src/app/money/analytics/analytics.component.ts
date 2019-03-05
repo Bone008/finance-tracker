@@ -3,6 +3,7 @@ import { ChartData, ChartDataSets } from 'chart.js';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { LoggerService } from 'src/app/core/logger.service';
 import { Transaction } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { protoDateToMoment } from '../../core/proto-util';
@@ -46,7 +47,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   constructor(
     private readonly dataService: DataService,
     private readonly filterService: TransactionFilterService,
-    private readonly dialogService: DialogService) { }
+    private readonly dialogService: DialogService,
+    private readonly loggerService: LoggerService) { }
 
   ngOnInit() {
     this.dataService.userSettings$
@@ -107,6 +109,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   private analyzeTransactions(filterValue: string, ignoreBilling: boolean) {
+    let tStart = performance.now();
+
     const allTransactions = this.dataService.getCurrentTransactionList();
     this.matchingTransactions = this.filterService.applyFilter(allTransactions, filterValue);
     this.totalTransactionCount = allTransactions.length;
@@ -114,6 +118,9 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
     this.analyzeLabelGroups();
     this.analyzeMonthlyBreakdown(ignoreBilling);
+
+    let tEnd = performance.now();
+    this.loggerService.debug(`analyzeTransactions: ${tEnd - tStart} ms for ${this.matchingTransactionCount} transactions`);
   }
 
   private refreshUncollapsedLabels() {

@@ -78,6 +78,10 @@ export class MoneyComponent implements OnInit, OnDestroy {
     this.storageService.loadData()
       .then(
         data => {
+          if (!environment.production) {
+            window['DEBUG_DATA'] = data;
+          }
+
           if (data) {
             this.dataService.setDataContainer(data);
             this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
