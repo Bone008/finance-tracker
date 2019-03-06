@@ -1,6 +1,7 @@
 import { SelectionModel } from '@angular/cdk/collections';
 import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource } from '@angular/material';
+import { ActivatedRoute } from '@angular/router';
 import * as moment from 'moment';
 import { combineLatest, of, Subscription } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
@@ -36,12 +37,21 @@ export class TransactionListComponent implements AfterViewInit {
     private readonly filterService: TransactionFilterService,
     private readonly loggerService: LoggerService,
     private readonly dialogService: DialogService,
+    private readonly route: ActivatedRoute,
     private readonly changeDetector: ChangeDetectorRef) {
   }
 
   ngAfterViewInit() {
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsSubject = this.transactionsDataSource.connect();
+
+    // TODO Add full support for query param by also updating it when the filter changes.
+    this.route.queryParamMap.subscribe(queryParams => {
+      const queryFilter = queryParams.get('q');
+      if (queryFilter) {
+        this.filterState.setValueNow(queryFilter);
+      }
+    });
 
     const filterValue$ = this.filterState.value$.pipe(
       // Remember last received value.

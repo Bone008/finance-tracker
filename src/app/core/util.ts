@@ -20,6 +20,11 @@ export function makeSharedDate(fn: () => Date | null): () => Date | null {
   }, fn);
 }
 
+/** Escapes a string so it is safe to use as a literal in a regular expression. */
+export function escapeRegex(input: string): string {
+  // Source: https://stackoverflow.com/a/3561711
+  return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
 
 export function splitQuotedString(input: string): string[] {
   // TODO detect unterminated quotes

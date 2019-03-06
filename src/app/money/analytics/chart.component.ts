@@ -5,6 +5,7 @@ import { Chart, ChartData, ChartType } from 'chart.js';
 export interface ChartElementClickEvent {
   datasetIndex: number;
   index: number;
+  mouseEvent: MouseEvent;
 }
 
 // Set global defaults for chart.js.
@@ -15,6 +16,9 @@ export interface ChartElementClickEvent {
   }
 });
 
+/**
+ * More or less generic wrapper around chart.js based on data-bound input.
+ */
 @Component({
   selector: 'app-chart',
   templateUrl: './chart.component.html',
@@ -79,7 +83,7 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
             const datasetIndex: any = elements[0]._datasetIndex;
             const index: any = elements[0]._index;
             if (typeof datasetIndex === 'number' && typeof index === 'number') {
-              this.elementClick.emit({ datasetIndex, index });
+              this.elementClick.emit({ datasetIndex, index, mouseEvent: event });
             } else {
               console.warn('Could not locate datasetIndex and index on clicked chart element!', elements[0]);
             }

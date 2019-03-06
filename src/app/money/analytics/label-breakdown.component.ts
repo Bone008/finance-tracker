@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { ChartData } from 'chart.js';
 import { BillingType, Transaction } from '../../../proto/model';
 import { KeyedNumberAggregate } from '../../core/keyed-aggregate';
@@ -6,7 +6,9 @@ import { getRandomInt } from '../../core/util';
 import { DataService } from '../data.service';
 import { extractAllLabels, getTransactionAmount, getTransactionDominantLabels, resolveTransactionCanonicalBilling } from '../model-util';
 import { LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
+import { ChartElementClickEvent } from './chart.component';
 
+const NONE_GROUP_NAME = '<none>';
 const OTHER_GROUP_NAME = 'other';
 
 @Component({
@@ -19,6 +21,16 @@ export class LabelBreakdownComponent implements OnChanges {
   labelGroups: LabelGroup[] = [];
   @Input()
   transactions: Transaction[];
+
+  /**
+   * When the user clicks on any of the groups in the pie chart, emits the list
+   * of label names in the clicked group. Collapsed labels end with '+'.
+   */
+  @Output()
+  groupClick = new EventEmitter<string[]>();
+  /** Same as groupClick, but emitted when user clicks while holding alt key. */
+  @Output()
+  groupAltClick = new EventEmitter<string[]>();
 
   /** Data for pie charts showing expenses/income by label. */
   chartData: [ChartData, ChartData] = [{}, {}];
@@ -55,6 +67,23 @@ export class LabelBreakdownComponent implements OnChanges {
     this.analyzeLabelBreakdown();
   }
 
+  onElementClick(chartIndex: number, event: ChartElementClickEvent) {
+    let clickedGroup = <string>this.chartData[chartIndex].labels![event.index];
+    let clickedLabels: string[];
+    if (clickedGroup === NONE_GROUP_NAME) {
+      clickedLabels = [];
+    } else {
+      clickedLabels = clickedGroup.split(',');
+    }
+    clickedLabels.unshift(...this.labelsSharedByAll);
+
+    if (event.mouseEvent.altKey) {
+      this.groupAltClick.emit(clickedLabels);
+    } else {
+      this.groupClick.emit(clickedLabels);
+    }
+  }
+
   private analyzeLabelBreakdown() {
     // Exclude labels from breakdown which every matched transaction is tagged with.
     this.labelsSharedByAll = extractAllLabels(this.transactions)
@@ -83,7 +112,7 @@ export class LabelBreakdownComponent implements OnChanges {
       }
 
       const dominantLabels = getTransactionDominantLabels(transaction, dominanceOrder, this.labelsSharedByAll);
-      const label = dominantLabels.length === 0 ? '<none>' : dominantLabels
+      const label = dominantLabels.length === 0 ? NONE_GROUP_NAME : dominantLabels
         // TODO This may potentially lead to duplicates, but I don't care right now because it is quite unlikely.
         .map(label => collapsedNames[label] || label)
         .join(',');

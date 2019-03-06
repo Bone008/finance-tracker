@@ -20,9 +20,10 @@ export class FilterState {
       debounceTime(FILTER_DEBOUNCE_TIME));
 
     this.value$ = merge(debouncedSoftChange, this.immediateChangeSubject).pipe(
+      // Make it initially emit an event. Note that this has to be before the
+      // map() operation, so new subscribers always receive the current value.
+      startWith(void (0)),
       map(() => this._currentValue),
-      // Make it initially emit an event.
-      startWith(initialValue),
       distinctUntilChanged()
     );
   }

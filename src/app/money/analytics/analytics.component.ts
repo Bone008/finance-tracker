@@ -1,10 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { ChartData, ChartDataSets } from 'chart.js';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { LoggerService } from 'src/app/core/logger.service';
-import { splitQuotedString } from 'src/app/core/util';
+import { escapeRegex, splitQuotedString } from 'src/app/core/util';
 import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
@@ -53,6 +54,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     private readonly dataService: DataService,
     private readonly filterService: TransactionFilterService,
     private readonly dialogService: DialogService,
+    private readonly router: Router,
     private readonly loggerService: LoggerService) { }
 
   ngOnInit() {
@@ -76,19 +78,54 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.txSubscription.unsubscribe();
   }
 
+  /** Navigate to transactions screen when alt-clicking labels. */
+  onLabelBucketAltClick(clickedLabels: string[]) {
+    const filter = this.getAdjustedFilterFromClickedLabels(clickedLabels);
+    this.router.navigate(['/transactions'], { queryParams: { q: filter } });
+  }
+
+  /** Add label(s) to filter when clicking on them. */
+  onLabelBucketClick(clickedLabels: string[]) {
+    this.filterState.setValueNow(this.getAdjustedFilterFromClickedLabels(clickedLabels));
+  }
+
+  private getAdjustedFilterFromClickedLabels(clickedLabels: string[]): string {
+    // TODO Refactor token operations into some utility method.
+    const addedTokens = (clickedLabels.length === 0
+      ? ['-label:.']
+      : clickedLabels.map(label => (label.endsWith('+')
+        ? 'label:^' + escapeRegex(label.substring(0, label.length - 1))
+        : 'label=' + label)));
+    let filter = this.filterState.getCurrentValue();
+    for (const newToken of addedTokens) {
+      if (filter.length > 0) {
+        if (filter.includes(newToken)) {
+          continue; // Don't add duplicate tokens (best effort matching).
+        }
+        filter += " " + newToken;
+      } else {
+        filter = newToken;
+      }
+    }
+    return filter;
+  }
+
   onChartBucketClick(monthIndex: number) {
     // e.g. '2018-01'
     const bucketName = this.monthlyChartData.labels![monthIndex];
 
     // TODO Refactor token operations into some utility method.
     const addedToken = 'date:' + bucketName;
-    let newFilter = this.filterState.getCurrentValue();
-    if (newFilter.length > 0) {
-      newFilter += " " + addedToken;
-    } else {
-      newFilter = addedToken;
+    let filter = this.filterState.getCurrentValue();
+    if (filter.includes(addedToken)) {
+      return; // Don't add duplicate tokens (best effort matching).
     }
-    this.filterState.setValueNow(newFilter);
+    if (filter.length > 0) {
+      filter += " " + addedToken;
+    } else {
+      filter = addedToken;
+    }
+    this.filterState.setValueNow(filter);
   }
 
   collapseAllGroups() {
