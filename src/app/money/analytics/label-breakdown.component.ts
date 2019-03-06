@@ -115,7 +115,12 @@ export class LabelBreakdownComponent implements OnChanges {
       groups.add(OTHER_GROUP_NAME, otherAmount);
     }
 
-    const descendingEntries = groups.getEntries().sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+    const descendingEntries = groups.getEntries().sort((a, b) =>
+      // Always sort other as last entry.
+      (Number(a[0] === OTHER_GROUP_NAME) - Number(b[0] === OTHER_GROUP_NAME))
+      // Sort descending by amount.
+      || Math.abs(b[1]) - Math.abs(a[1]));
+
     return {
       datasets: [{
         data: descendingEntries.map(entry => entry[1]),
