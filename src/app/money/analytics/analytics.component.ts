@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ChartData, ChartDataSets } from 'chart.js';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, tap } from 'rxjs/operators';
 import { LoggerService } from 'src/app/core/logger.service';
 import { splitQuotedString } from 'src/app/core/util';
 import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
@@ -26,7 +26,9 @@ export const LABEL_HIERARCHY_SEPARATOR = '/';
 export class AnalyticsComponent implements OnInit, OnDestroy {
   // TODO Split this component into multiple parts, possibly add "AnalyticsService" for shared functionality.
 
-  readonly filterState = new FilterState();
+  private static lastFilterValue = "";
+
+  readonly filterState = new FilterState(AnalyticsComponent.lastFilterValue);
   readonly ignoreBillingPeriodSubject = new BehaviorSubject<boolean>(false);
   readonly labelCollapseSubject = new BehaviorSubject<void>(void (0));
   private readonly labelDominanceSubject = new BehaviorSubject<LabelDominanceOrder>({});
@@ -63,7 +65,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.txSubscription =
       combineLatest(
         this.dataService.transactions$,
-        this.filterState.value$,
+        this.filterState.value$.pipe(tap(value => AnalyticsComponent.lastFilterValue = value)),
         this.ignoreBillingPeriodSubject,
         this.labelCollapseSubject,
         this.labelDominanceSubject)
@@ -92,12 +94,12 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   collapseAllGroups() {
     AnalyticsComponent.uncollapsedLabels.clear();
     this.labelGroups.forEach(group => group.shouldCollapse = true);
-    this.labelCollapseSubject.next(void (0));
+    this.labelCollapseSubject.next();
   }
 
   uncollapseAllGroups() {
     this.labelGroups.forEach(group => group.shouldCollapse = false);
-    this.labelCollapseSubject.next(void (0));
+    this.labelCollapseSubject.next();
   }
 
   openLabelDominanceDialog() {

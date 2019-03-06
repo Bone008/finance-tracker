@@ -20,7 +20,9 @@ import { TransactionFilterService } from '../transaction-filter.service';
   styleUrls: ['./transaction-list.component.css'],
 })
 export class TransactionListComponent implements AfterViewInit {
-  readonly filterState = new FilterState();
+  private static lastFilterValue = "";
+
+  readonly filterState = new FilterState(TransactionListComponent.lastFilterValue);
   readonly transactionsDataSource = new MatTableDataSource<Transaction>();
   transactionsSubject = of<Transaction[]>([]);
   selection = new SelectionModel<Transaction>(true);
@@ -42,6 +44,8 @@ export class TransactionListComponent implements AfterViewInit {
     this.transactionsSubject = this.transactionsDataSource.connect();
 
     const filterValue$ = this.filterState.value$.pipe(
+      // Remember last received value.
+      tap(value => TransactionListComponent.lastFilterValue = value),
       // Reset to first page whenever filter is changed.
       tap(() => this.transactionsDataSource.paginator!.firstPage())
     );

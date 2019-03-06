@@ -1,5 +1,5 @@
 import { merge, Observable, Subject } from "rxjs";
-import { debounceTime, distinctUntilChanged, startWith } from "rxjs/operators";
+import { debounceTime, distinctUntilChanged, map, startWith } from "rxjs/operators";
 
 /** Time in ms to wait after input before applying the filter. */
 const FILTER_DEBOUNCE_TIME = 500;
@@ -7,19 +7,22 @@ const FILTER_DEBOUNCE_TIME = 500;
 export class FilterState {
   readonly value$: Observable<string>;
 
-  private _currentValue = "";
+  private _currentValue: string;
   /** Emits events whenever the value softly changes. */
-  private readonly softChangeSubject = new Subject<string>();
+  private readonly softChangeSubject = new Subject<void>();
   /** Emits events whenever the value should be updated PRONTO. */
-  private readonly immediateChangeSubject = new Subject<string>();
+  private readonly immediateChangeSubject = new Subject<void>();
 
-  constructor() {
+  constructor(initialValue = "") {
+    this._currentValue = initialValue;
+
     const debouncedSoftChange = this.softChangeSubject.pipe(
       debounceTime(FILTER_DEBOUNCE_TIME));
 
     this.value$ = merge(debouncedSoftChange, this.immediateChangeSubject).pipe(
+      map(() => this._currentValue),
       // Make it initially emit an event.
-      startWith(""),
+      startWith(initialValue),
       distinctUntilChanged()
     );
   }
@@ -30,11 +33,11 @@ export class FilterState {
 
   setValue(newValue: string) {
     this._currentValue = newValue;
-    this.softChangeSubject.next(newValue);
+    this.softChangeSubject.next();
   }
 
   setValueNow(newValue: string) {
     this._currentValue = newValue;
-    this.immediateChangeSubject.next(newValue);
+    this.immediateChangeSubject.next();
   }
 }
