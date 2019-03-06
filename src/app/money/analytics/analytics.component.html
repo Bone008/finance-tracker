@@ -38,11 +38,11 @@
     <app-label-breakdown
         [labelGroups]="labelGroups"
         [transactions]="matchingTransactions"
-        (groupClick)="onLabelBucketClick($event)"
-        (groupAltClick)="onLabelBucketAltClick($event)">
+        (groupClick)="onLabelBucketClick($event, false)"
+        (groupAltClick)="onLabelBucketClick($event, true)">
     </app-label-breakdown>
     <hr>
-    <app-chart type="bar" [data]="monthlyChartData" (elementClick)="onChartBucketClick($event.index)"></app-chart>
+    <app-chart type="bar" [data]="monthlyChartData" (elementClick)="onChartBucketClick($event.index, $event.mouseEvent.altKey)"></app-chart>
     <p *ngIf="hasFilteredPartiallyBilledTransactions">Note: Some transactions are partially billed for the selected date range. Their contributions to other months are not shown.</p>
     <hr>
 

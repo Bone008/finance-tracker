@@ -78,18 +78,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.txSubscription.unsubscribe();
   }
 
-  /** Navigate to transactions screen when alt-clicking labels. */
-  onLabelBucketAltClick(clickedLabels: string[]) {
-    const filter = this.getAdjustedFilterFromClickedLabels(clickedLabels);
-    this.router.navigate(['/transactions'], { queryParams: { q: filter } });
-  }
-
-  /** Add label(s) to filter when clicking on them. */
-  onLabelBucketClick(clickedLabels: string[]) {
-    this.filterState.setValueNow(this.getAdjustedFilterFromClickedLabels(clickedLabels));
-  }
-
-  private getAdjustedFilterFromClickedLabels(clickedLabels: string[]): string {
+  /** Add label(s) to filter when clicking on them or navigate to transactions. */
+  onLabelBucketClick(clickedLabels: string[], isAltClick: boolean) {
     // TODO Refactor token operations into some utility method.
     const addedTokens = (clickedLabels.length === 0
       ? ['-label:.']
@@ -107,10 +97,16 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         filter = newToken;
       }
     }
-    return filter;
+
+    if (isAltClick) {
+      this.router.navigate(['/transactions'], { queryParams: { q: filter } });
+    } else {
+      this.filterState.setValueNow(filter);
+    }
   }
 
-  onChartBucketClick(monthIndex: number) {
+  /** Add month to filter when clicking on it or navigate to transactions. */
+  onChartBucketClick(monthIndex: number, isAltClick: boolean) {
     // e.g. '2018-01'
     const bucketName = this.monthlyChartData.labels![monthIndex];
 
@@ -125,7 +121,12 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     } else {
       filter = addedToken;
     }
-    this.filterState.setValueNow(filter);
+
+    if (isAltClick) {
+      this.router.navigate(['/transactions'], { queryParams: { q: filter } });
+    } else {
+      this.filterState.setValueNow(filter);
+    }
   }
 
   collapseAllGroups() {
