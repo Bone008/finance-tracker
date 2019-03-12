@@ -132,12 +132,14 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   collapseAllGroups() {
     AnalyticsComponent.uncollapsedLabels.clear();
     this.labelGroups.forEach(group => group.shouldCollapse = true);
-    this.labelCollapseSubject.next();
+    // Note: Do not remove void param as compiler will complain even though
+    // IDE says it is fine.
+    this.labelCollapseSubject.next(void (0));
   }
 
   uncollapseAllGroups() {
     this.labelGroups.forEach(group => group.shouldCollapse = false);
-    this.labelCollapseSubject.next();
+    this.labelCollapseSubject.next(void (0));
   }
 
   openLabelDominanceDialog() {

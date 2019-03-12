@@ -390,7 +390,7 @@ export class TransactionFilterService {
         case ':':
         case '=': intervalPredicate = (from, to) => from.isSameOrBefore(searchMoment, granularity) && to.isSameOrAfter(searchMoment, granularity); break;
       }
-      return (t, d) => rangeSelector(t, d).some(interval => intervalPredicate(...interval));
+      return (t, d) => rangeSelector(t, d).some(interval => intervalPredicate(interval[0], interval[1]));
     }
   }
 
