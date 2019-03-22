@@ -34,58 +34,25 @@
 
     <hr>
     <p>Analyzed {{matchingTransactionCount}} out of {{totalTransactionCount}} transactions.</p>
+    <p *ngIf="hasFilteredPartiallyBilledTransactions">
+      Note: Some transactions are partially billed for the selected date range.
+      Their contributions to other months are not shown.
+    </p>
     <hr>
+
     <app-label-breakdown
         [labelGroups]="labelGroups"
         [billedTransactionBuckets]="billedTransactionBuckets"
-        (groupClick)="onLabelBucketClick($event, false)"
-        (groupAltClick)="onLabelBucketClick($event, true)">
+        (groupClick)="onLabelGroupClick($event, false)"
+        (groupAltClick)="onLabelGroupClick($event, true)">
     </app-label-breakdown>
-    <hr>
-    <app-chart type="bar" [data]="monthlyChartData" (elementClick)="onChartBucketClick($event.index, $event.mouseEvent.altKey)"></app-chart>
-    <p *ngIf="hasFilteredPartiallyBilledTransactions">Note: Some transactions are partially billed for the selected date range. Their contributions to other months are not shown.</p>
+    
     <hr>
 
-    <h3>Monthly averages:</h3>
-    <table class="table-averages">
-      <tr>
-        <th></th>
-        <th align="right">#</th>
-        <th align="right">Expenses</th>
-        <th align="right">Income</th>
-      </tr>
-      <tr>
-        <th align="left">Mean</th>
-        <td align="right">{{monthlyMeanBucket.numTransactions | number:'1.0-1'}}</td>
-        <td align="right" class="negative">{{monthlyMeanBucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
-        <td align="right">{{monthlyMeanBucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
-      </tr>
-      <tr>
-        <th align="left">Median</th>
-        <td align="right">{{monthlyMedianBucket.numTransactions | number:'1.0-1'}}</td>
-        <td align="right" class="negative">{{monthlyMedianBucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
-        <td align="right">{{monthlyMedianBucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
-      </tr>
-    </table>
-    <hr>
-
-    <table class="table-monthly-overview">
-      <tr>
-        <th align="left">Month</th>
-        <th align="right">#</th>
-        <th align="right">Expenses</th>
-        <th align="right">Income</th>
-        <th align="right">Balance</th>
-      </tr>
-      <tr *ngFor="let bucket of buckets">
-          <td align="left">{{bucket.name}}</td>
-          <td align="right">{{bucket.numTransactions}}</td>
-          <td align="right" class="negative">{{bucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
-          <td align="right">{{bucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
-          <td align="right" [class.negative]="bucket.totalPositive + bucket.totalNegative < 0">
-            {{(bucket.totalPositive + bucket.totalNegative) | number:'1.2-2'}}&nbsp;€
-          </td>
-      </tr>
-    </table>
+    <app-bucket-breakdown
+        [billedTransactionBuckets]="billedTransactionBuckets"
+        (bucketClick)="onChartBucketClick($event, false)"
+        (bucketAltClick)="onChartBucketClick($event, true)">
+    </app-bucket-breakdown>
   </mat-card-content>
 </mat-card>

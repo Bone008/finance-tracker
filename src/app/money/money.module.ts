@@ -23,6 +23,7 @@ import { AddInlineLabelComponent } from './transaction-labels/add-inline-label.c
 import { TransactionLabelsComponent } from './transaction-labels/transaction-labels.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
 import { BillingInfoComponent } from './billing-info/billing-info.component';
+import { BucketBreakdownComponent } from './analytics/bucket-breakdown.component';
 
 const appRoutes: Routes = [
   { path: 'transactions', component: TransactionListComponent },
@@ -60,6 +61,7 @@ const appRoutes: Routes = [
     LabelBreakdownComponent,
     DialogLabelDominanceComponent,
     BillingInfoComponent,
+    BucketBreakdownComponent,
   ],
   entryComponents: [
     FormImportComponent,

@@ -1,6 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChartData, ChartDataSets } from 'chart.js';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
@@ -39,6 +38,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   labelGroups: LabelGroup[] = [];
   totalTransactionCount = 0;
   matchingTransactionCount = 0;
+  hasFilteredPartiallyBilledTransactions = false;
 
   /**
    * Main output of the transaction preprocessing. Contains filtered transactions
@@ -46,13 +46,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
    * Subcomponents can further process this dataset.
    */
   billedTransactionBuckets = new KeyedArrayAggregate<BilledTransaction>();
-
-  // 2019-03-22: I think these are the props that can be moved to "BucketBreakdown".
-  buckets: BucketInfo[] = [];
-  monthlyChartData: ChartData = {};
-  monthlyMeanBucket: Partial<BucketInfo> = {};
-  monthlyMedianBucket: Partial<BucketInfo> = {};
-  hasFilteredPartiallyBilledTransactions = false;
 
   private matchingTransactions: Transaction[] = [];
   /** The part of the current filter string that performs date filtering. */
@@ -87,8 +80,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.txSubscription.unsubscribe();
   }
 
-  /** Add label(s) to filter when clicking on them or navigate to transactions. */
-  onLabelBucketClick(clickedLabels: string[], isAltClick: boolean) {
+  /** Add label(s) to filter or navigate to transactions when clicking on them. */
+  onLabelGroupClick(clickedLabels: string[], isAltClick: boolean) {
     // TODO Refactor token operations into some utility method.
     const addedTokens = (clickedLabels.length === 0
       ? ['-label:.']
@@ -114,21 +107,17 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Add month to filter when clicking on it or navigate to transactions. */
-  onChartBucketClick(monthIndex: number, isAltClick: boolean) {
-    // e.g. '2018-01'
-    const bucketName = this.monthlyChartData.labels![monthIndex];
-
+  /** Add month to filter or navigate to transactions when clicking on it. */
+  onChartBucketClick(bucketName: string, isAltClick: boolean) {
     // TODO Refactor token operations into some utility method.
     const addedToken = 'date:' + bucketName;
     let filter = this.filterState.getCurrentValue();
-    if (filter.includes(addedToken)) {
-      return; // Don't add duplicate tokens (best effort matching).
-    }
-    if (filter.length > 0) {
-      filter += " " + addedToken;
-    } else {
-      filter = addedToken;
+    if (!filter.includes(addedToken)) {
+      if (filter.length > 0) {
+        filter += " " + addedToken;
+      } else {
+        filter = addedToken;
+      }
     }
 
     if (isAltClick) {
@@ -315,44 +304,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.cleanBucketsByDateFilter(billedBuckets);
 
     this.billedTransactionBuckets = billedBuckets;
-
-
-
-    // TODO: move rest of method to separate component "BucketBreakdown"
-    this.buckets = [];
-    for (const [key, billedTransactions] of billedBuckets.getEntriesSorted()) {
-      const positive = billedTransactions.filter(t => t.amount > 0);
-      const negative = billedTransactions.filter(t => t.amount < 0);
-
-      this.buckets.push({
-        name: key,
-        numTransactions: billedTransactions.length,
-        totalPositive: positive.map(t => t.amount).reduce((a, b) => a + b, 0),
-        totalNegative: negative.map(t => t.amount).reduce((a, b) => a + b, 0),
-      });
-    }
-
-    const datasets: ChartDataSets[] = [];
-    if (this.buckets.some(b => b.totalNegative !== 0))
-      datasets.push({ data: this.buckets.map(b => -b.totalNegative), label: 'Expenses', backgroundColor: 'red' });
-    if (this.buckets.some(b => b.totalPositive !== 0))
-      datasets.push({ data: this.buckets.map(b => b.totalPositive), label: 'Income', backgroundColor: 'blue' });
-
-    this.monthlyChartData = {
-      labels: this.buckets.map(b => b.name),
-      datasets,
-    };
-
-    // Calculate mean and median.
-    const [meanPositive, medianPositive] = this.calculateMeanAndMedian(this.buckets.map(b => b.totalPositive));
-    const [meanNegative, medianNegative] = this.calculateMeanAndMedian(this.buckets.map(b => b.totalNegative));
-    const [meanNum, medianNum] = this.calculateMeanAndMedian(this.buckets.map(b => b.numTransactions));
-    this.monthlyMeanBucket.totalPositive = meanPositive;
-    this.monthlyMeanBucket.totalNegative = meanNegative;
-    this.monthlyMeanBucket.numTransactions = meanNum;
-    this.monthlyMedianBucket.totalPositive = medianPositive;
-    this.monthlyMedianBucket.totalNegative = medianNegative;
-    this.monthlyMedianBucket.numTransactions = medianNum;
   }
 
   // TODO: This is specialized to MONTH view, make sure to change once other granularities are supported.
@@ -378,20 +329,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
   }
 
-  private calculateMeanAndMedian(numbers: number[]): [number, number] {
-    if (numbers.length === 0) return [NaN, NaN];
-    const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
-
-    let median: number;
-    const sorted = numbers.slice(0).sort((a, b) => a - b);
-    if (sorted.length % 2 === 0) {
-      median = (sorted[(sorted.length >> 1) - 1] + sorted[sorted.length >> 1]) / 2;
-    } else {
-      median = sorted[sorted.length >> 1];
-    }
-    return [mean, median];
-  }
-
 }
 
 /** Provides data about a label with sublabels (induced label hierarchy). */
@@ -405,12 +342,4 @@ export interface LabelGroup {
 export interface BilledTransaction {
   source: Transaction;
   amount: number;
-}
-
-/** Contains aggregate data about a date bucket. */
-export interface BucketInfo {
-  name: string;
-  numTransactions: number;
-  totalPositive: number;
-  totalNegative: number;
 }

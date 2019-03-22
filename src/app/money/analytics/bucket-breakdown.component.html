@@ -1,0 +1,47 @@
+<div>
+  <app-chart type="bar" [data]="monthlyChartData" (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)"></app-chart>
+  
+  <hr>
+
+  <h3>Monthly averages:</h3>
+  <table class="table-averages">
+    <tr>
+      <th></th>
+      <th align="right">#</th>
+      <th align="right">Expenses</th>
+      <th align="right">Income</th>
+    </tr>
+    <tr>
+      <th align="left">Mean</th>
+      <td align="right">{{monthlyMeanBucket.numTransactions | number:'1.0-1'}}</td>
+      <td align="right" class="negative">{{monthlyMeanBucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
+      <td align="right">{{monthlyMeanBucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
+    </tr>
+    <tr>
+      <th align="left">Median</th>
+      <td align="right">{{monthlyMedianBucket.numTransactions | number:'1.0-1'}}</td>
+      <td align="right" class="negative">{{monthlyMedianBucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
+      <td align="right">{{monthlyMedianBucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
+    </tr>
+  </table>
+  <hr>
+
+  <table class="table-monthly-overview">
+    <tr>
+      <th align="left">Month</th>
+      <th align="right">#</th>
+      <th align="right">Expenses</th>
+      <th align="right">Income</th>
+      <th align="right">Balance</th>
+    </tr>
+    <tr *ngFor="let bucket of buckets">
+        <td align="left">{{bucket.name}}</td>
+        <td align="right">{{bucket.numTransactions}}</td>
+        <td align="right" class="negative">{{bucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
+        <td align="right">{{bucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
+        <td align="right" [class.negative]="bucket.totalPositive + bucket.totalNegative < 0">
+          {{(bucket.totalPositive + bucket.totalNegative) | number:'1.2-2'}}&nbsp;€
+        </td>
+    </tr>
+  </table>
+</div>
