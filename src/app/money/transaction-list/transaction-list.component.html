@@ -70,6 +70,14 @@
         <button
             mat-icon-button
             color="primary"
+            matTooltip="Create copy from selected ..."
+            [disabled]="selection.selected.length !== 1"
+            (click)="startCopyTransaction(selection.selected[0])">
+          <mat-icon>file_copy</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            color="primary"
             matTooltip="Delete selected"
             [disabled]="selection.selected.length === 0"
             (click)="deleteTransactions(selection.selected)">

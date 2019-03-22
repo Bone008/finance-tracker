@@ -3,11 +3,13 @@ import * as moment from 'moment';
 import * as $protobuf from "protobufjs";
 import { Date as ProtoDate, google, Money } from "../../proto/model";
 
-/** Creates a deep copy of a message by encoding and decoding it. */
-export function cloneMessage<T extends {
+/** Type alias for message classes that can encode/decode messages of type M. */
+type MessageRW<M> = {
   encode: (message: M, writer?: $protobuf.Writer) => $protobuf.Writer,
   decode: (reader: ($protobuf.Reader | Uint8Array), length?: number) => M,
-}, M>(messageType: T, message: M) {
+};
+/** Creates a deep copy of a message by encoding and decoding it. */
+export function cloneMessage<M>(messageType: MessageRW<M>, message: M) {
   const encoded = messageType.encode(message).finish();
   return messageType.decode(encoded);
 }

@@ -120,12 +120,23 @@ export class TransactionListComponent implements AfterViewInit {
   }
 
   startAddTransaction() {
-    const transaction = new Transaction({
+    // Adding is equivalent to copying from an empty transaction.
+    this.startCopyTransaction(new Transaction({
       single: new TransactionData({
         date: timestampNow(),
         isCash: true,
       }),
-    });
+    }));
+  }
+
+  /** Opens dialog to create a new transaction with values taken from another one. */
+  startCopyTransaction(template: Transaction) {
+    const transaction = cloneMessage(Transaction, template);
+    if (!isSingle(transaction)) throw new Error('only single transaction templates supported');
+    // Reset date to now.
+    transaction.single.date = timestampNow();
+    // Reset modified flag.
+    transaction.single.modified = null;
 
     this.dialogService.openTransactionEdit(transaction, MODE_ADD)
       .afterConfirmed().subscribe(() => {
@@ -397,9 +408,9 @@ export class TransactionListComponent implements AfterViewInit {
   }
 
   getGroupTooltip(selected: Transaction[]): string {
-    if (this.canGroup(selected)) return "Group selection";
-    if (this.canUngroup(selected)) return "Ungroup selection";
-    return "Group/ungroup selection";
+    if (this.canGroup(selected)) return "Group selected";
+    if (this.canUngroup(selected)) return "Ungroup selected";
+    return "Group/ungroup selected";
   }
 
   getSelectionSummary(): object | null {
