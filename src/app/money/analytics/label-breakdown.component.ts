@@ -9,7 +9,7 @@ import { LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
 import { ChartElementClickEvent } from './chart.component';
 
 const NONE_GROUP_NAME = '<none>';
-const OTHER_GROUP_NAME = 'other';
+const OTHER_GROUP_NAME = '<other>';
 
 @Component({
   selector: 'app-label-breakdown',
@@ -68,7 +68,11 @@ export class LabelBreakdownComponent implements OnChanges {
   }
 
   onElementClick(chartIndex: number, event: ChartElementClickEvent) {
-    let clickedGroup = <string>this.chartData[chartIndex].labels![event.index];
+    const clickedGroup = <string>this.chartData[chartIndex].labels![event.index];
+    if (clickedGroup === OTHER_GROUP_NAME) {
+      // Ignore clicks on "other" aggregate group.
+      return;
+    }
     let clickedLabels: string[];
     if (clickedGroup === NONE_GROUP_NAME) {
       clickedLabels = [];
