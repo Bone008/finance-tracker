@@ -93,6 +93,14 @@ export class KeyedArrayAggregate<T> extends KeyedGenericAggregate<T[], T> {
   constructor() {
     super(() => [], (current, next) => { current.push(next); return current; });
   }
+
+  *getValuesFlat(): Iterable<T> {
+    for (const value of this.getValues()) {
+      for (const scalar of value) {
+        yield scalar;
+      }
+    }
+  }
 }
 
 export class KeyedSetAggregate<T> extends KeyedGenericAggregate<Set<T>, T> {

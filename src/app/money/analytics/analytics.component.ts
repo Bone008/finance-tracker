@@ -35,17 +35,26 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   private readonly labelDominanceSubject = new BehaviorSubject<LabelDominanceOrder>({});
 
   private static readonly uncollapsedLabels = new Set<string>();
+  // TODO: Refactor this into a "LabelGroupService" that abstracts & persists the storage of this.
   labelGroups: LabelGroup[] = [];
-
-  matchingTransactions: Transaction[] = []; // This is the dataset that child components operate on.
   totalTransactionCount = 0;
   matchingTransactionCount = 0;
+
+  /**
+   * Main output of the transaction preprocessing. Contains filtered transactions
+   * billed to and split across their respective date buckets.
+   * Subcomponents can further process this dataset.
+   */
+  billedTransactionBuckets = new KeyedArrayAggregate<BilledTransaction>();
+
+  // 2019-03-22: I think these are the props that can be moved to "BucketBreakdown".
   buckets: BucketInfo[] = [];
   monthlyChartData: ChartData = {};
   monthlyMeanBucket: Partial<BucketInfo> = {};
   monthlyMedianBucket: Partial<BucketInfo> = {};
   hasFilteredPartiallyBilledTransactions = false;
 
+  private matchingTransactions: Transaction[] = [];
   /** The part of the current filter string that performs date filtering. */
   private dateRestrictingFilter: string | null = null;
   private txSubscription: Subscription;
@@ -236,7 +245,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     const keyFormat = 'YYYY-MM';
 
     const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
-    const transactionBuckets = new KeyedArrayAggregate<BilledTransaction>();
+    const billedBuckets = new KeyedArrayAggregate<BilledTransaction>();
 
     const debugContribHistogram = new KeyedNumberAggregate();
     for (const transaction of this.matchingTransactions) {
@@ -281,9 +290,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       // TODO: For DAY billing granularity, we may want to consider proportional contributions to the months.
       const amountPerBucket = getTransactionAmount(transaction) / contributingKeys.length;
       for (const key of contributingKeys) {
-        transactionBuckets.add(key, {
+        billedBuckets.add(key, {
           source: transaction,
-          relevantLabels: transaction.labels,
           amount: amountPerBucket,
         });
       }
@@ -291,23 +299,28 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
     this.loggerService.debug("stats of # of billed months", debugContribHistogram.getEntries());
 
-    // Fill holes in transactionBuckets with empty buckets.
+    // Fill holes in billedBuckets with empty buckets.
     // Sort the keys alphanumerically as the keyFormat is big-endian.
-    const sortedKeys = transactionBuckets.getKeys().sort();
+    const sortedKeys = billedBuckets.getKeys().sort();
     if (sortedKeys.length > 1) {
       const last = sortedKeys[sortedKeys.length - 1];
       const it = moment(sortedKeys[0]);
       while (it.isBefore(last)) {
         it.add(1, displayUnit);
         // Make sure each date unit (e.g. month) is represented as a bucket.
-        transactionBuckets.addMany(it.format(keyFormat), []);
+        billedBuckets.addMany(it.format(keyFormat), []);
       }
     }
 
-    this.cleanBucketsByDateFilter(transactionBuckets);
+    this.cleanBucketsByDateFilter(billedBuckets);
 
+    this.billedTransactionBuckets = billedBuckets;
+
+
+
+    // TODO: move rest of method to separate component "BucketBreakdown"
     this.buckets = [];
-    for (const [key, billedTransactions] of transactionBuckets.getEntriesSorted()) {
+    for (const [key, billedTransactions] of billedBuckets.getEntriesSorted()) {
       const positive = billedTransactions.filter(t => t.amount > 0);
       const negative = billedTransactions.filter(t => t.amount < 0);
 
@@ -343,7 +356,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   // TODO: This is specialized to MONTH view, make sure to change once other granularities are supported.
-  private cleanBucketsByDateFilter(transactionBuckets: KeyedArrayAggregate<BilledTransaction>) {
+  private cleanBucketsByDateFilter(billedBuckets: KeyedArrayAggregate<BilledTransaction>) {
     this.hasFilteredPartiallyBilledTransactions = false;
 
     if (!this.dateRestrictingFilter) {
@@ -353,13 +366,13 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     // and check if it would pass the date filter.
     const dummyBilling = new BillingInfo({ periodType: BillingType.MONTH });
     const dummyTransactionList = [new Transaction({ billing: dummyBilling, single: new TransactionData() })];
-    for (const [key, billedTransactions] of transactionBuckets.getEntries()) {
+    for (const [key, billedTransactions] of billedBuckets.getEntries()) {
       const keyMoment = moment(key);
       dummyBilling.date = momentToProtoDate(keyMoment);
       const result = this.filterService.applyFilter(dummyTransactionList, this.dateRestrictingFilter);
       if (result.length === 0) {
         // This bucket does not pass the filter.
-        transactionBuckets.delete(key);
+        billedBuckets.delete(key);
         this.hasFilteredPartiallyBilledTransactions = true;
       }
     }
@@ -388,12 +401,13 @@ export interface LabelGroup {
   shouldCollapse: boolean;
 }
 
-interface BilledTransaction {
+/** Contains data about a transcation billed to a specific date bucket. */
+export interface BilledTransaction {
   source: Transaction;
-  relevantLabels: string[];
   amount: number;
 }
 
+/** Contains aggregate data about a date bucket. */
 export interface BucketInfo {
   name: string;
   numTransactions: number;

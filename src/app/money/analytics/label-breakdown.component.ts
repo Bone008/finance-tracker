@@ -1,11 +1,10 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { ChartData } from 'chart.js';
-import { BillingType, Transaction } from '../../../proto/model';
-import { KeyedNumberAggregate } from '../../core/keyed-aggregate';
+import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { getRandomInt } from '../../core/util';
 import { DataService } from '../data.service';
-import { extractAllLabels, getTransactionAmount, getTransactionDominantLabels, resolveTransactionCanonicalBilling } from '../model-util';
-import { LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
+import { extractAllLabels, getTransactionDominantLabels } from '../model-util';
+import { BilledTransaction, LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
 import { ChartElementClickEvent } from './chart.component';
 
 const NONE_GROUP_NAME = '<none>';
@@ -20,7 +19,7 @@ export class LabelBreakdownComponent implements OnChanges {
   @Input()
   labelGroups: LabelGroup[] = [];
   @Input()
-  transactions: Transaction[];
+  billedTransactionBuckets: KeyedArrayAggregate<BilledTransaction>;
 
   /**
    * When the user clicks on any of the groups in the pie chart, emits the list
@@ -90,8 +89,9 @@ export class LabelBreakdownComponent implements OnChanges {
 
   private analyzeLabelBreakdown() {
     // Exclude labels from breakdown which every matched transaction is tagged with.
-    this.labelsSharedByAll = extractAllLabels(this.transactions)
-      .filter(label => this.transactions.every(transaction => transaction.labels.includes(label)));
+    const flatTransactionsView = Array.from(this.billedTransactionBuckets.getValuesFlat()).map(bt => bt.source);
+    this.labelsSharedByAll = extractAllLabels(flatTransactionsView)
+      .filter(label => flatTransactionsView.every(transaction => transaction.labels.includes(label)));
 
     // Build index of label collapse for better complexity while grouping.
     const collapsedNames: { [fullLabel: string]: string } = {};
@@ -109,23 +109,17 @@ export class LabelBreakdownComponent implements OnChanges {
     // Group by labels.
     const expensesGroups = new KeyedNumberAggregate();
     const incomeGroups = new KeyedNumberAggregate();
-    for (const transaction of this.transactions) {
-      const resolvedBilling = resolveTransactionCanonicalBilling(transaction, this.dataService, dominanceOrder);
-      if (resolvedBilling.periodType === BillingType.NONE) {
-        continue;
-      }
-
-      const dominantLabels = getTransactionDominantLabels(transaction, dominanceOrder, this.labelsSharedByAll);
+    for (const billedTx of this.billedTransactionBuckets.getValuesFlat()) {
+      const dominantLabels = getTransactionDominantLabels(billedTx.source, dominanceOrder, this.labelsSharedByAll);
       const label = dominantLabels.length === 0 ? NONE_GROUP_NAME : dominantLabels
         // TODO This may potentially lead to duplicates, but I don't care right now because it is quite unlikely.
         .map(label => collapsedNames[label] || label)
         .join(',');
 
-      const amount = getTransactionAmount(transaction);
-      if (amount > 0) {
-        incomeGroups.add(label, amount);
+      if (billedTx.amount > 0) {
+        incomeGroups.add(label, billedTx.amount);
       } else {
-        expensesGroups.add(label, amount);
+        expensesGroups.add(label, billedTx.amount);
       }
     }
 
