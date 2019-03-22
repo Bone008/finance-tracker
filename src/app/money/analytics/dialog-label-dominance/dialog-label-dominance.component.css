@@ -17,3 +17,10 @@ table {
 .label-row:nth-child(even) .label-cell {
   background: #eee;
 }
+
+.separator {
+  height: 2px;
+  flex-shrink: 0;
+  background: #ccc;
+  margin: 0.5em 0;
+}

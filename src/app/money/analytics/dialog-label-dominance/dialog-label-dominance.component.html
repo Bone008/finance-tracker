@@ -11,26 +11,35 @@
       If multiple labels on a transaction have the same dominance value, they form
       a new combined label type.
     </p>
-    <table>
-      <tr>
-        <th align="left">Label</th>
-        <th align="left">Dominance value</th>
-      </tr>
-      <tr
-          *ngFor="let labelInfo of labelsWithCombinations"
-          class="label-row"
-          [class.irrelevant]="labelInfo.combinations.length === 0">
-        <td class="label-cell" [matTooltip]="formatLabelTooltip(labelInfo)">
-          {{labelInfo.label}}
-        </td>
-        <td>
-          <input
-              type="number"
-              [name]="labelInfo.label"
-              [(ngModel)]="labelInfo.dominanceValue">
-        </td>
-      </tr>
-    </table>
+    <ng-container *ngFor="let group of labelsViewModel; first as isFirst">
+      <div *ngIf="!isFirst" class="separator"></div>
+      <table>
+        <tr *ngIf="isFirst; else notFirst">
+          <th align="left">Label</th>
+          <th align="left" width="100">Dominance value</th>
+        </tr>
+        <ng-template #notFirst>
+          <tr>
+            <th></th>
+            <th width="100"></th>
+          </tr>
+        </ng-template>
+        <tr
+            *ngFor="let labelInfo of group"
+            class="label-row"
+            [class.irrelevant]="labelInfo.combinations.length === 0">
+          <td class="label-cell" [matTooltip]="formatLabelTooltip(labelInfo)">
+            {{labelInfo.label}}
+          </td>
+          <td>
+            <input
+                type="number"
+                [name]="labelInfo.label"
+                [(ngModel)]="labelInfo.dominanceValue">
+          </td>
+        </tr>
+      </table>
+    </ng-container>
   </mat-dialog-content>
   
   <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">

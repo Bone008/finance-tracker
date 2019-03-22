@@ -1,5 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { environment } from 'src/environments/environment';
 import { KeyedSetAggregate } from '../../../core/keyed-aggregate';
 import { DataService } from '../../data.service';
 
@@ -17,7 +18,7 @@ export interface LabelCombinationsInfo {
   styleUrls: ['./dialog-label-dominance.component.css']
 })
 export class DialogLabelDominanceComponent implements OnInit {
-  readonly labelsWithCombinations: LabelCombinationsInfo[];
+  readonly labelsViewModel: LabelCombinationsInfo[][];
   private readonly dominanceOrder: LabelDominanceOrder;
 
   constructor(
@@ -39,11 +40,58 @@ export class DialogLabelDominanceComponent implements OnInit {
       }
     }
 
-    this.labelsWithCombinations = labelCombinations.getEntries().map(entry => ({
-      label: entry[0],
-      combinations: Array.from(entry[1]).sort(),
-      dominanceValue: this.dominanceOrder[entry[0]] || 0,
-    })).sort((a, b) => (a.label < b.label ? -1 : 1));
+    // Group entries by those occuring together anywhere (find connected components).
+    const connectedComponents: Set<string>[] = [];
+    /** Set of labels that are not combined with any other label. */
+    const isolatedLabels = new Set<string>();
+    let activeComponent: Set<string>;
+    const unseenSet = new Set<string>(labelCombinations.getKeys());
+    while (unseenSet.size > 0) {
+      // Grab any label out of the remaining ones.
+      const startingLabel = unseenSet.values().next().value;
+      unseenSet.delete(startingLabel);
+
+      // Start a graph search through the combinations, add them to the active component.
+      // Because we are using 'open' as a LIFO stack, this is effectively a DFS.
+      const open = [startingLabel];
+      activeComponent = new Set<string>();
+      while (open.length > 0) {
+        const label = open.pop()!;
+        activeComponent.add(label);
+        const neighbors = labelCombinations.get(label)!;
+        for (const neighbor of Array.from(neighbors)) {
+          // Add only unvisited neighbors to 'open' list.
+          if (unseenSet.delete(neighbor)) {
+            open.push(neighbor);
+          }
+        }
+      }
+
+      // Finalize this component.
+      if (activeComponent.size > 1) {
+        connectedComponents.push(activeComponent);
+      } else {
+        isolatedLabels.add(startingLabel);
+      }
+    }
+
+    // Sort by size and add isolated as final component.
+    connectedComponents.sort((a, b) => a.size - b.size);
+    connectedComponents.push(isolatedLabels);
+    // Sanity check.
+    if (!environment.production) {
+      const totalSize = connectedComponents.reduce((acc, x) => acc + x.size, 0);
+      console.assert(totalSize === labelCombinations.length,
+        "partitioned graph should contain every label exactly once");
+    }
+
+    this.labelsViewModel = connectedComponents.map(component =>
+      Array.from(component).sort().map(label => ({
+        label,
+        combinations: Array.from(labelCombinations.get(label)!),
+        dominanceValue: this.dominanceOrder[label] || 0,
+      }))
+    );
   }
 
   ngOnInit() {
@@ -59,8 +107,10 @@ export class DialogLabelDominanceComponent implements OnInit {
 
   onSubmit() {
     // Copy values from view model back into the object that was passed in.
-    for (const labelInfo of this.labelsWithCombinations) {
-      this.dominanceOrder[labelInfo.label] = labelInfo.dominanceValue;
+    for (const group of this.labelsViewModel) {
+      for (const labelInfo of group) {
+        this.dominanceOrder[labelInfo.label] = labelInfo.dominanceValue;
+      }
     }
     this.matDialogRef.close(true);
   }
