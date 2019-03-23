@@ -124,7 +124,7 @@ export class StorageService {
       formData
     )
       .pipe(catchError(e => this.logHttpErrors(e, "Saving failed!")))
-      .pipe(mergeMap<SaveStorageResponse, void>(response => {
+      .pipe(mergeMap(response => {
         if (!response.success) {
           this.loggerService.error("Server error while saving:", response.error);
           if (response.stackTrace) {
@@ -134,7 +134,7 @@ export class StorageService {
         }
 
         // On success, update stored hash.
-        return calculateHash(compressedData).then<void>(hash => {
+        return calculateHash(compressedData).then(hash => {
           this.lastKnownHash = hash;
         });
       })).toPromise();
