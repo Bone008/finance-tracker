@@ -9,7 +9,7 @@ import { timestampToDate } from '../core/proto-util';
 import { DataService } from './data.service';
 import { DialogService } from './dialog.service';
 import { StorageSettingsService } from './storage-settings.service';
-import { createDummyTransactions, StorageService } from './storage.service';
+import { StorageService } from './storage.service';
 
 @Component({
   selector: 'app-money',
@@ -82,17 +82,11 @@ export class MoneyComponent implements OnInit, OnDestroy {
             window['DEBUG_DATA'] = data;
           }
 
-          if (data) {
-            this.dataService.setDataContainer(data);
+          this.dataService.setDataContainer(data);
+          if (data.lastModified) {
             this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
-          } else if (environment.production) {
-            this.dataService.setDataContainer(new DataContainer());
-            this.status = "No saved data";
           } else {
-            this.dataService.setDataContainer(new DataContainer({
-              transactions: createDummyTransactions(50),
-            }));
-            this.status = "Using dummy data";
+            this.status = "No saved data";
           }
         },
         error => {

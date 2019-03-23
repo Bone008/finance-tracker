@@ -3,10 +3,10 @@ import { Injectable } from "@angular/core";
 import { gzip, ungzip } from "pako";
 import { Observable, of, throwError } from "rxjs";
 import { catchError, map } from "rxjs/operators";
-import { DataContainer, Transaction, TransactionData } from "../../proto/model";
+import { DataContainer } from "../../proto/model";
 import { LoggerService } from "../core/logger.service";
-import { dateToTimestamp, numberToMoney, timestampNow } from "../core/proto-util";
-import { delay, getRandomBoolean, getRandomElement, getRandomInt } from "../core/util";
+import { timestampNow } from "../core/proto-util";
+import { delay } from "../core/util";
 import { StorageSettingsService } from "./storage-settings.service";
 
 const LEGACY_STORAGE_KEY = "money_data_container";
@@ -46,13 +46,14 @@ export class StorageService {
 
   /**
    * Attempts to load data from the storage backend.
-   * Returns null if no data was saved yet.
+   * Generates a data key and returns an empty container if no data was saved yet.
    */
-  loadData(): Promise<DataContainer | null> {
+  loadData(): Promise<DataContainer> {
     const storageSettings = this.storageSettingsService.getSettings();
     if (!storageSettings) {
-      // We don't even have a data key yet.
-      return Promise.resolve(null);
+      // We don't have a data key yet, generate one and return empty container.
+      this.storageSettingsService.getOrInitSettings();
+      return Promise.resolve(new DataContainer());
     }
     const dataKey = storageSettings.dataKey;
 
@@ -67,7 +68,9 @@ export class StorageService {
       .pipe(catchError(e => this.logHttpErrors(e, "Error loading data!")))
       .pipe(map(responseData => {
         // Pass through not found.
-        if (responseData === null) return null;
+        if (responseData === null) {
+          return new DataContainer();
+        }
 
         // Decompress & decode if we have a response.
         let uncompressedData: Uint8Array;
@@ -120,9 +123,13 @@ export class StorageService {
     // on the server may contain bogus data.
     const compactBuffer = compressedData.buffer.slice(0, compressedData.byteLength);
 
-    const dataKey = this.storageSettingsService.getOrInitSettings().dataKey;
+    const settings = this.storageSettingsService.getSettings();
+    if (!settings) {
+      return Promise.reject("No data key! Check settings.");
+    }
+
     return this.httpClient.post<SaveStorageResponse>(
-      '/api/storage/' + dataKey,
+      '/api/storage/' + settings.dataKey,
       compactBuffer,
       {
         'headers': {
@@ -180,50 +187,4 @@ export class StorageService {
     }
     return bufferView;
   }
-}
-
-
-const MOCK_WHOS = ['Mueller GmbH', 'REWE Buxdehude', 'Dönerfritze 2000', 'Worker dude', 'SWEET JESUS AUTOHANDEL', 'Aral GmbH', 'AMAZON EU S.A R.L., NIEDERLASSUNG DEUTSCHLAND', 'PayPal (Europe) S.a.r.l. et Cie., S.C.A.'];
-const MOCK_COMMENTS = [
-  "pizza place",
-  "hans im glück",
-  "gift from grandma",
-  "not sure lol",
-  "only an estimate",
-];
-
-export function createDummyTransactions(num: number): Transaction[] {
-  const transactions = new Array<Transaction>(num);
-  for (let i = 0; i < num; i++) {
-    const date = new Date(Date.now() - getRandomInt(0, 120) * (24 * 60 * 60 * 1000));
-    const baseAmount = getRandomInt(100, 1000);
-    const exponent = getRandomInt(-2, 2);
-    const amount = (Math.random() > 0.7 ? 1 : -1) * baseAmount * Math.pow(10, exponent);
-
-    const labels: string[] = [];
-    if (getRandomBoolean())
-      labels.push(getRandomBoolean() ? 'food/groceries' : 'food/supermarket');
-    if (getRandomBoolean())
-      labels.push('travel');
-    if (getRandomBoolean())
-      labels.push('car/fuel');
-    if (getRandomInt(0, 3) === 0)
-      labels.push('accommodation');
-    if (amount > 0 && getRandomBoolean())
-      labels.push(getRandomBoolean() ? 'scholarship' : 'salary');
-
-    transactions[i] = new Transaction({
-      labels,
-      single: new TransactionData({
-        created: timestampNow(),
-        date: dateToTimestamp(date),
-        amount: numberToMoney(amount),
-        who: getRandomElement(MOCK_WHOS),
-        isCash: Math.random() > 0.8,
-        comment: getRandomBoolean() ? "" : getRandomElement(MOCK_COMMENTS),
-      }),
-    });
-  }
-
-  return transactions;
 }
