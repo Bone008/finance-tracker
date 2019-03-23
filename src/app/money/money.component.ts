@@ -1,10 +1,11 @@
 import { MediaMatcher } from '@angular/cdk/layout';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import * as moment from 'moment';
-import { timer } from 'rxjs';
-import { takeWhile } from 'rxjs/operators';
+import { fromEvent, merge, of, timer } from 'rxjs';
+import { catchError, filter, switchMap, takeWhile } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { DataContainer } from '../../proto/model';
+import { LoggerService } from '../core/logger.service';
 import { timestampToDate } from '../core/proto-util';
 import { DataService } from './data.service';
 import { DialogService } from './dialog.service';
@@ -23,12 +24,14 @@ export class MoneyComponent implements OnInit, OnDestroy {
   mobileQuery: MediaQueryList;
   private _mobileQueryListener: () => void;
   private alive = true;
+  private isStaleNotificationPending = false;
 
   constructor(
     private readonly dataService: DataService,
     private readonly storageService: StorageService,
     private readonly storageSettingsService: StorageSettingsService,
     private readonly dialogService: DialogService,
+    private readonly loggerService: LoggerService,
     changeDetectorRef: ChangeDetectorRef, media: MediaMatcher
   ) {
     this.mobileQuery = media.matchMedia('screen and (max-width: 959px)');
@@ -39,7 +42,26 @@ export class MoneyComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.refreshData();
 
-    timer(0, 60000).pipe(takeWhile(() => this.alive)).subscribe(() => {
+    const periodicTimer = timer(0, 60 * 1000)
+      .pipe(
+        takeWhile(_ => this.alive),
+        filter(i => i === 0 || document.visibilityState !== 'hidden')
+      );
+    const onFocusEvent = fromEvent(document, 'visibilitychange')
+      .pipe(filter(_ => document.visibilityState === 'visible'));
+    const onFocusAndPeriodically = merge(periodicTimer, onFocusEvent);
+
+    // Keep checking freshness of data.
+    onFocusAndPeriodically.pipe(
+      switchMap(() => this.storageService.checkIsDataStale()),
+      catchError(error => {
+        this.loggerService.error("Could not check for staleness of data!", error);
+        return of(false);
+      })
+    ).subscribe(value => this.notifyStaleData(value));
+
+    // Update relative time display.
+    onFocusAndPeriodically.subscribe(() => {
       if (this.status && this.status.indexOf("Last saved") === 0) {
         this.status = "Last saved " + this.formatDate(
           timestampToDate(this.dataService.getDataContainer().lastModified));
@@ -96,7 +118,7 @@ export class MoneyComponent implements OnInit, OnDestroy {
       .then(() => this.hasData = true);
   }
 
-  async syncData() {
+  async syncData(): Promise<void> {
     if (!this.hasData) return;
 
     this.status = "Saving ...";
@@ -113,6 +135,19 @@ export class MoneyComponent implements OnInit, OnDestroy {
 
   private formatDate(date: Date): string {
     return moment(date).fromNow();
+  }
+
+  private notifyStaleData(isStale: boolean) {
+    if (!isStale) return;
+    if (this.isStaleNotificationPending) return;
+
+    this.status = "Out of sync!";
+    this.isStaleNotificationPending = true;
+    const dialog = this.dialogService.openStaleData();
+    dialog.afterClosed().subscribe(() => this.isStaleNotificationPending = false);
+    dialog.afterConfirmed().subscribe(() => {
+      this.refreshData();
+    });
   }
 
 }

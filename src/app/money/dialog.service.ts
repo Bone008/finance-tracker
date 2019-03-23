@@ -8,6 +8,7 @@ import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/
 import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogSplitTransactionComponent } from './dialog-split-transaction/dialog-split-transaction.component';
+import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
 import { FormImportComponent } from './form-import/form-import.component';
 import { StorageSettings } from './storage-settings.service';
 import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
@@ -36,6 +37,10 @@ export class DialogService {
     return this.openConfirmable(DialogSettingsComponent, {
       data: { storageSettings },
     });
+  }
+
+  openStaleData(): ConfirmableDialogRef<DialogStaleDataComponent> {
+    return this.openConfirmable(DialogStaleDataComponent);
   }
 
   openFormImport(): ConfirmableDialogRef<FormImportComponent> {

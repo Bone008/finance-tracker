@@ -6,13 +6,16 @@ import { RouterModule, Routes } from '@angular/router';
 import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
 import { AnalyticsComponent } from './analytics/analytics.component';
+import { BucketBreakdownComponent } from './analytics/bucket-breakdown.component';
 import { ChartComponent } from './analytics/chart.component';
 import { DialogLabelDominanceComponent } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
 import { LabelBreakdownComponent } from './analytics/label-breakdown.component';
+import { BillingInfoComponent } from './billing-info/billing-info.component';
 import { CommentsComponent } from './comments/comments.component';
 import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogSplitTransactionComponent } from './dialog-split-transaction/dialog-split-transaction.component';
+import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
 import { FilterFormatValidatorDirective } from './filter-input/filter-format-validator.directive';
 import { FilterInputComponent } from './filter-input/filter-input.component';
 import { FormImportComponent } from './form-import/form-import.component';
@@ -22,8 +25,6 @@ import { TransactionEditComponent } from './transaction-edit/transaction-edit.co
 import { AddInlineLabelComponent } from './transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transaction-labels/transaction-labels.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
-import { BillingInfoComponent } from './billing-info/billing-info.component';
-import { BucketBreakdownComponent } from './analytics/bucket-breakdown.component';
 
 const appRoutes: Routes = [
   { path: 'transactions', component: TransactionListComponent },
@@ -62,6 +63,7 @@ const appRoutes: Routes = [
     DialogLabelDominanceComponent,
     BillingInfoComponent,
     BucketBreakdownComponent,
+    DialogStaleDataComponent,
   ],
   entryComponents: [
     FormImportComponent,
@@ -70,6 +72,7 @@ const appRoutes: Routes = [
     DialogSplitTransactionComponent,
     DialogSettingsComponent,
     DialogLabelDominanceComponent,
+    DialogStaleDataComponent,
   ],
   exports: [
     MoneyComponent,

@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { gzip, ungzip } from "pako";
 import { Observable, of, throwError } from "rxjs";
-import { catchError, mergeMap, switchMap } from "rxjs/operators";
+import { catchError, map, mergeMap, switchMap } from "rxjs/operators";
 import { DataContainer } from "../../proto/model";
 import { LoggerService } from "../core/logger.service";
 import { timestampNow } from "../core/proto-util";
@@ -34,7 +34,7 @@ export class StorageService {
   ) {
   }
 
-  private logHttpErrors(error: HttpErrorResponse, friendlyError: string): Observable<never> {
+  private rethrowHttpErrors(error: HttpErrorResponse, friendlyError: string): Observable<never> {
     if (error.error instanceof ErrorEvent) {
       // A client-side or network error occurred.
       this.loggerService.error("A network error occurred:", error.error.message);
@@ -44,6 +44,22 @@ export class StorageService {
     }
 
     return throwError(friendlyError);
+  }
+
+  /**
+   * Attempts to determine if our local view of the data is out of date.
+   */
+  checkIsDataStale(): Promise<boolean> {
+    if (!this.storageSettingsService.hasSettings() || !this.lastKnownHash) {
+      return Promise.resolve(false);
+    }
+
+    return this.sendLoadData(this.storageSettingsService.getSettings()!.dataKey)
+      .pipe(
+        switchMap(responseData => responseData ? calculateHash(responseData) : of(null)),
+        map(hash => hash !== null && hash !== this.lastKnownHash)
+      )
+      .toPromise();
   }
 
   /**
@@ -59,15 +75,7 @@ export class StorageService {
     }
     const dataKey = storageSettings.dataKey;
 
-    return this.httpClient.get(
-      '/api/storage/' + dataKey,
-      { responseType: 'arraybuffer' }
-    )
-      .pipe(catchError((error: HttpErrorResponse) => {
-        if (error.status === 404) return of(null);
-        else return throwError(error);
-      }))
-      .pipe(catchError(e => this.logHttpErrors(e, "Error loading data!")))
+    return this.sendLoadData(dataKey)
       .pipe(switchMap(responseData => {
         // Pass through not found.
         if (responseData === null) {
@@ -101,6 +109,16 @@ export class StorageService {
       .toPromise();
   }
 
+  /** Sends the GET request for data and handles HTTP errors. */
+  private sendLoadData(dataKey: string): Observable<ArrayBuffer | null> {
+    return this.httpClient.get('/api/storage/' + dataKey, { responseType: 'arraybuffer' })
+      .pipe(catchError((error: HttpErrorResponse) => {
+        if (error.status === 404) return of(null);
+        else return throwError(error);
+      }))
+      .pipe(catchError(e => this.rethrowHttpErrors(e, "Error loading data!")));
+  }
+
   saveData(data: DataContainer): Promise<void> {
     data.lastModified = timestampNow();
 
@@ -119,11 +137,8 @@ export class StorageService {
       formData.set('lastKnownHash', this.lastKnownHash);
     }
 
-    return this.httpClient.post<SaveStorageResponse>(
-      '/api/storage/' + settings.dataKey,
-      formData
-    )
-      .pipe(catchError(e => this.logHttpErrors(e, "Saving failed!")))
+    return this.httpClient.post<SaveStorageResponse>('/api/storage/' + settings.dataKey, formData)
+      .pipe(catchError(e => this.rethrowHttpErrors(e, "Saving failed!")))
       .pipe(mergeMap(response => {
         if (!response.success) {
           this.loggerService.error("Server error while saving:", response.error);

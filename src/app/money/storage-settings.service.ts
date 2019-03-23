@@ -15,6 +15,10 @@ export interface StorageSettings {
 export class StorageSettingsService {
   constructor() { }
 
+  hasSettings(): boolean {
+    return localStorage.getItem('storage_settings_dataKey') !== null;
+  }
+
   getSettings(): StorageSettings | null {
     let dataKey = localStorage.getItem('storage_settings_dataKey');
     if (!dataKey) {
