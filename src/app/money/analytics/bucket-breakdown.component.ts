@@ -47,16 +47,22 @@ export class BucketBreakdownComponent implements OnChanges {
       this.buckets.push({
         name: key,
         numTransactions: billedTransactions.length,
-        totalPositive: positive.map(t => t.amount).reduce((a, b) => a + b, 0),
-        totalNegative: negative.map(t => t.amount).reduce((a, b) => a + b, 0),
+        totalPositive: positive.filter(t => !t.isPeriodic).map(t => t.amount).reduce((a, b) => a + b, 0),
+        totalNegative: negative.filter(t => !t.isPeriodic).map(t => t.amount).reduce((a, b) => a + b, 0),
+        totalPositivePeriodic: positive.filter(t => t.isPeriodic).map(t => t.amount).reduce((a, b) => a + b, 0),
+        totalNegativePeriodic: negative.filter(t => t.isPeriodic).map(t => t.amount).reduce((a, b) => a + b, 0),
       });
     }
 
     const datasets: ChartDataSets[] = [];
+    if (this.buckets.some(b => b.totalNegativePeriodic !== 0))
+      datasets.push({ data: this.buckets.map(b => -b.totalNegativePeriodic), label: 'Expenses (periodic)', backgroundColor: '#900', stack: 'expenses' });
     if (this.buckets.some(b => b.totalNegative !== 0))
-      datasets.push({ data: this.buckets.map(b => -b.totalNegative), label: 'Expenses', backgroundColor: 'red' });
+      datasets.push({ data: this.buckets.map(b => -b.totalNegative), label: 'Expenses', backgroundColor: 'red', stack: 'expenses' });
+    if (this.buckets.some(b => b.totalPositivePeriodic !== 0))
+      datasets.push({ data: this.buckets.map(b => b.totalPositivePeriodic), label: 'Income (periodic)', backgroundColor: '#009', stack: 'income' });
     if (this.buckets.some(b => b.totalPositive !== 0))
-      datasets.push({ data: this.buckets.map(b => b.totalPositive), label: 'Income', backgroundColor: 'blue' });
+      datasets.push({ data: this.buckets.map(b => b.totalPositive), label: 'Income', backgroundColor: 'blue', stack: 'income' });
 
     this.monthlyChartData = {
       labels: this.buckets.map(b => b.name),
@@ -97,4 +103,6 @@ export interface BucketInfo {
   numTransactions: number;
   totalPositive: number;
   totalNegative: number;
+  totalPositivePeriodic: number;
+  totalNegativePeriodic: number;
 }

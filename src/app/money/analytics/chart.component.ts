@@ -89,6 +89,10 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
             }
           }
         },
+        scales: {
+          xAxes: [{ stacked: true }],
+          yAxes: [{ stacked: true }],
+        },
       },
     });
   }

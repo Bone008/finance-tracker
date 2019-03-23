@@ -28,14 +28,12 @@ export class BillingInfoComponent implements OnInit {
   /** The label to display for the default value of the billing period. */
   @Input()
   unknownPeriodLabel: string = "Unknown";
-
   @Input()
   billing: BillingInfo;
   @Output()
   billingChange = new EventEmitter<BillingInfo>();
 
   showCustom = false;
-  isRange = false;
 
   constructor() { }
 
@@ -55,6 +53,15 @@ export class BillingInfoComponent implements OnInit {
     if (value === BillingType.UNKNOWN || value === BillingType.NONE) {
       this.setShowCustom(false);
     }
+    this.notify();
+  }
+
+  getIsPeriodic() {
+    return this.billing.isPeriodic;
+  }
+
+  setIsPeriodic(value: boolean) {
+    this.billing.isPeriodic = value;
     this.notify();
   }
 

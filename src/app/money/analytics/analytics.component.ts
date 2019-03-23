@@ -262,8 +262,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       const fromMoment = protoDateToMoment(billing.date);
       const toMoment = protoDateToMoment(billing.endDate);
 
-      // TODO: Handle "billing.isPeriodic" (currently completely unused).
-
       const contributingKeys: string[] = [];
       // Iterate over date units and collect their keys.
       // Start with the normalized version of fromMoment (e.g. for months,
@@ -282,6 +280,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         billedBuckets.add(key, {
           source: transaction,
           amount: amountPerBucket,
+          numBuckets: contributingKeys.length,
+          isPeriodic: billing.isPeriodic,
         });
       }
     }
@@ -341,5 +341,10 @@ export interface LabelGroup {
 /** Contains data about a transcation billed to a specific date bucket. */
 export interface BilledTransaction {
   source: Transaction;
+  /** The (partial) amount this transaction contributes to this bucket. */
   amount: number;
+  /** The total number of buckets this transaction is contributing to. */
+  numBuckets: number;
+  /** Whether the transaction is billed in the 'periodic' category or not. */
+  isPeriodic: boolean;
 }

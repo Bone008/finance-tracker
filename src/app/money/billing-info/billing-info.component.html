@@ -10,6 +10,13 @@
   </mat-form-field>
   <mat-checkbox
       *ngIf="billing.periodType !== PERIOD_TYPE_UNKNOWN && billing.periodType !== PERIOD_TYPE_NONE"
+      name="isPeriodic"
+      [ngModel]="getIsPeriodic()"
+      (ngModelChange)="setIsPeriodic($event)">
+    Periodic
+  </mat-checkbox>
+  <mat-checkbox
+      *ngIf="billing.periodType !== PERIOD_TYPE_UNKNOWN && billing.periodType !== PERIOD_TYPE_NONE"
       name="showCustom"
       [ngModel]="showCustom"
       (ngModelChange)="setShowCustom($event)">
