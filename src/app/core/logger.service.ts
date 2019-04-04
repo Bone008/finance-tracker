@@ -7,6 +7,10 @@ export class LoggerService {
     console.log(message, ...optionalParams);
   }
 
+  warn(message: string, ...optionalParams: any[]) {
+    console.warn(message, ...optionalParams);
+  }
+
   error(message: string, cause?: any) {
     console.error(message, cause);
   }

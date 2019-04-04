@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+// A rule for automatic processing of transactions. Executed on matching
+// triggers, the rule applies its list of actions to every transaction
+// that passes the filter.
+message ProcessingRule {
+  // Set of triggers that invoke this rule.
+  repeated ProcessingTrigger triggers = 1;
+
+  // Filter string that determines which transactions this rule applies to.
+  string filter = 2;
+
+  // Orderes list of actions that should be performed.
+  repeated ProcessingAction actions = 3;
+
+  // Whether to stop processing further rules after this one.
+  bool is_last = 4;
+}
+
+enum ProcessingTrigger {
+  // Fallback for unknown triggers, ignore.
+  UNKNOWN = 0;
+  // Invoke when a transaction is manually created.
+  ADDED = 1;
+  // Invoke when a transaction is imported from a CSV file.
+  IMPORTED = 2;
+  // Invoke when a transaction is changed (data modified, labels changed, grouped, split, etc.).
+  MODIFIED = 3;
+}
+
+
+// A single action to apply.
+message ProcessingAction {
+  message SetFieldData {
+    string field_name = 1;
+    string value = 2;
+  }
+
+  oneof type {
+    string add_label = 1;
+    string remove_label = 2;
+    SetFieldData set_field = 3;
+  }
+}

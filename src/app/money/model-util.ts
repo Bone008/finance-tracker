@@ -114,6 +114,32 @@ export function extractAllLabelsSet(transactions: Transaction[]): Set<string> {
 }
 
 /**
+ * Adds a label to a transaction after sanitizing it and checking for duplicates.
+ * @returns true if the label was added, false if it already existed
+ */
+export function addLabelToTransaction(transaction: Transaction, label: string): boolean {
+  label = label.toLowerCase();
+  if (transaction.labels.indexOf(label) === -1) {
+    transaction.labels.push(label);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Removes a label from a transaction if it exists (after sanitizing it).
+ * @returns true if the label was removed, false if it was not found
+ */
+export function removeLabelFromTransaction(transaction: Transaction, label: string): boolean {
+  label = label.toLowerCase();
+  const index = transaction.labels.indexOf(label);
+  if (index !== -1) {
+    transaction.labels.splice(index, 1);
+  }
+  return index !== -1;
+}
+
+/**
  * Returns an ordered list of labels of a transaction that are dominant with
  * respect to a given partial order. The list may be empty.
  */

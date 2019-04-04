@@ -11,7 +11,8 @@ import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestam
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { extractTransactionData, forEachTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionDataField } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, forEachTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
+import { RuleService } from '../rule.service';
 import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 import { TransactionFilterService } from '../transaction-filter.service';
 
@@ -35,6 +36,7 @@ export class TransactionListComponent implements AfterViewInit {
   constructor(
     private readonly dataService: DataService,
     private readonly filterService: TransactionFilterService,
+    private readonly ruleService: RuleService,
     private readonly loggerService: LoggerService,
     private readonly dialogService: DialogService,
     private readonly route: ActivatedRoute,
@@ -114,11 +116,13 @@ export class TransactionListComponent implements AfterViewInit {
 
         this.selection.select(entry.transaction);
       }
+      this.ruleService.notifyImported(entries.map(e => e.transaction));
 
       this.loggerService.log(`Imported ${dialogRef.componentInstance.entriesToImport.length} transactions.`);
     });
   }
 
+  /** Opens dialog to create a new transaction. */
   startAddTransaction() {
     // Adding is equivalent to copying from an empty transaction.
     this.startCopyTransaction(new Transaction({
@@ -142,6 +146,7 @@ export class TransactionListComponent implements AfterViewInit {
       .afterConfirmed().subscribe(() => {
         transaction.single!.created = timestampNow();
         this.dataService.addTransactions(transaction);
+        this.ruleService.notifyAdded(transaction);
       });
   }
 
@@ -151,7 +156,7 @@ export class TransactionListComponent implements AfterViewInit {
       .afterConfirmed().subscribe(() => {
         Object.assign(transaction, tempTransaction);
         transaction.single!.modified = timestampNow();
-        console.log("Edited", transaction);
+        this.ruleService.notifyModified([transaction]);
       });
   }
 
@@ -175,6 +180,7 @@ export class TransactionListComponent implements AfterViewInit {
       data.modified = now;
 
       this.dataService.addTransactions(newTransaction);
+      this.ruleService.notifyModified([transaction, newTransaction]);
 
       this.selection.select(newTransaction);
       console.log("Split", data, `into ${newAmount} + ${remainingAmount}.`);
@@ -242,6 +248,7 @@ export class TransactionListComponent implements AfterViewInit {
     this.selection.clear();
     this.dataService.removeTransactions(transactions);
     this.dataService.addTransactions(newTransaction);
+    this.ruleService.notifyModified([newTransaction]);
     this.selection.select(newTransaction);
   }
 
@@ -258,10 +265,11 @@ export class TransactionListComponent implements AfterViewInit {
     this.selection.deselect(transaction);
     this.dataService.removeTransactions(transaction);
     this.dataService.addTransactions(newTransactions);
+    this.ruleService.notifyModified(newTransactions);
     this.selection.select(...newTransactions);
   }
 
-  /** Calls groupSelection or ungroupSelection, depending on what makes sense. */
+  /** Calls group or ungroup, depending on what makes sense. */
   groupOrUngroupTransactions(transactions: Transaction[]) {
     if (this.canGroup(transactions)) {
       this.groupTransactions(transactions);
@@ -281,10 +289,9 @@ export class TransactionListComponent implements AfterViewInit {
       : [principal];
 
     for (let transaction of affectedTransactions) {
-      if (transaction.labels.indexOf(newLabel) === -1) {
-        transaction.labels.push(newLabel);
-      }
+      addLabelToTransaction(transaction, newLabel);
     }
+    this.ruleService.notifyModified(affectedTransactions);
   }
 
   deleteLabelFromTransaction(principal: Transaction, label: string) {
@@ -293,11 +300,9 @@ export class TransactionListComponent implements AfterViewInit {
       : [principal];
 
     for (let transaction of affectedTransactions) {
-      const index = transaction.labels.indexOf(label);
-      if (index !== -1) {
-        transaction.labels.splice(index, 1);
-      }
+      removeLabelFromTransaction(transaction, label);
     }
+    this.ruleService.notifyModified(affectedTransactions);
   }
 
   /** Returns the label that was deleted, or null if prerequisites were not met. */
@@ -321,6 +326,7 @@ export class TransactionListComponent implements AfterViewInit {
     for (let transaction of affectedTransactions) {
       transaction.labels.splice(-1, 1);
     }
+    this.ruleService.notifyModified(affectedTransactions);
     return label;
   }
 

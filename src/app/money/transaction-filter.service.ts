@@ -132,12 +132,17 @@ export class TransactionFilterService {
       // Empty results on error
       return [];
     } else {
-      return transactions.filter(t => this.matchesFilter(t, parsedFilter));
+      return transactions.filter(t => this.matchesParsedFilter(t, parsedFilter));
     }
   }
 
+  /** Tests if a single transaction matches a raw filter. */
+  matchesFilter(transaction: Transaction, filter: string): boolean {
+    return this.applyFilter([transaction], filter).length > 0;
+  }
+
   /** Tests if a single transaction passes a parsed filter. */
-  private matchesFilter(transaction: Transaction, parsedFilter: FilterToken[]): boolean {
+  private matchesParsedFilter(transaction: Transaction, parsedFilter: FilterToken[]): boolean {
     if (parsedFilter.length === 0) {
       return true;
     }

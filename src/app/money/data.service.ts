@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
-import { DataContainer, GlobalComment, ImportedRow, LabelConfig, Transaction, TransactionData, UserSettings } from "../../proto/model";
+import { DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { pluralizeArgument } from "../core/util";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
@@ -36,6 +36,10 @@ export class DataService {
       this.data.userSettings = new UserSettings();
     }
     return this.data.userSettings;
+  }
+
+  getProcessingRules(): ProcessingRule[] {
+    return this.data.processingRules;
   }
 
   getCurrentTransactionList(): Transaction[] {

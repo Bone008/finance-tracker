@@ -6,6 +6,7 @@ import "transaction.proto";
 import "global-comment.proto";
 import "user-settings.proto";
 import "label-config.proto";
+import "processing-rule.proto";
 
 message DataContainer {
   Timestamp last_modified = 1;
@@ -19,4 +20,6 @@ message DataContainer {
   UserSettings user_settings = 5;
 
   map<string, LabelConfig> label_configs = 6;
+
+  repeated ProcessingRule processing_rules = 7;
 }
