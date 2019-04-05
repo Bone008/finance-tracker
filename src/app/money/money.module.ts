@@ -26,6 +26,7 @@ import { TransactionEditComponent } from './transaction-edit/transaction-edit.co
 import { AddInlineLabelComponent } from './transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transaction-labels/transaction-labels.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
+import { LabelBoxComponent } from './label-box/label-box.component';
 
 const appRoutes: Routes = [
   { path: 'transactions', component: TransactionListComponent },
@@ -67,6 +68,7 @@ const appRoutes: Routes = [
     BucketBreakdownComponent,
     DialogStaleDataComponent,
     RulesComponent,
+    LabelBoxComponent,
   ],
   entryComponents: [
     FormImportComponent,

@@ -9,27 +9,3 @@
 .collapse-button {
   min-width: 0;
 }
-
-::ng-deep .label-container {
-  display: flex;
-  flex-direction: row;
-  margin-right: 4px;
-  margin-top: 2px;
-  margin-bottom: 2px;
-  background: #eef;
-  border: 1px solid #999;
-  border-radius: 5px;
-}
-
-::ng-deep .label-name,
-::ng-deep .label-value {
-  padding: 4px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font: inherit;
-}
-
-::ng-deep .label-value {
-  border-left: 1px solid #999;
-}

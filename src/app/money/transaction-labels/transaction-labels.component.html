@@ -1,20 +1,12 @@
 <div fxLayout="row wrap" fxLayoutAlign="start center">
-  <div *ngFor="let label of labels" class="label-container">
-    <button
-        type="button"
-        [title]="labelTitle"
-        (click)="$event.stopPropagation(); emitLabelClick(label, $event)"
-        class="label-button">
-      {{label}}
-    </button>
-    <button
-        type="button"
-        (click)="$event.stopPropagation(); labelDelete.emit(label)"
-        title="Delete this label"
-        class="label-delete-button">
-      <mat-icon>close</mat-icon>
-    </button>
-  </div>
+  <app-label
+      *ngFor="let label of labels"
+      canClick canDelete
+      [tooltip]="labelTitle"
+      (click)="$event.stopPropagation(); emitLabelClick(label, $event)"
+      (delete)="labelDelete.emit(label)">
+    {{label}}
+  </app-label>
 
   <app-add-inline-label
       #addInlineLabel

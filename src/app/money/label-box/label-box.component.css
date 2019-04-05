@@ -1,0 +1,35 @@
+:host {
+  display: flex;
+  flex-direction: row;
+  margin-right: 4px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  background: #eef;
+  border: 1px solid #999;
+  border-radius: 5px;
+  cursor: default;
+}
+
+:host(.inline) {
+  display: inline-flex;
+}
+
+.label-content,
+.label-delete-button {
+  padding: 4px;
+}
+
+:host(.clickable) .label-content {
+  cursor: pointer;
+}
+.label-delete-button {
+  border-left: 1px solid #999;
+  cursor: pointer;
+}
+
+.label-delete-button .mat-icon {
+  width: 1em;
+  height: 1em;
+  font-size: inherit;
+  transform: translateY(0.15em);
+}

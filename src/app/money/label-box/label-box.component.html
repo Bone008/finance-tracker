@@ -1,0 +1,10 @@
+<div class="label-content" [title]="tooltip">
+  <ng-content></ng-content>
+</div>
+<div
+    class="label-delete-button"
+    *ngIf="canDelete"
+    (click)="$event.stopPropagation(); delete.emit($event)"
+    title="Delete this label">
+  <mat-icon>close</mat-icon>
+</div>

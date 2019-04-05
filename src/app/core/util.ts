@@ -1,4 +1,10 @@
 
+/** Coerces a data-bound value (typically a string) to a boolean. */
+// Inspired by https://github.com/angular/material2/blob/master/src/cdk/coercion/boolean-property.ts
+export function coerceBooleanProperty(value: any): boolean {
+  return value != null && `${value}` !== 'false';
+}
+
 /** Wraps a function so its return value is always a single instance to comply with Angular's change detection. */
 export function makeShared<TReturn, TShared = TReturn>(
   shared: TShared,
