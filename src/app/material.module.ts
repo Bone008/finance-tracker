@@ -23,9 +23,11 @@ import {
 } from '@angular/material';
 
 import { FlexLayoutModule } from '@angular/flex-layout';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 
 @NgModule({
   imports: [
+    DragDropModule,
     MatAutocompleteModule,
     MatButtonModule,
     MatCardModule,
@@ -48,6 +50,7 @@ import { FlexLayoutModule } from '@angular/flex-layout';
     FlexLayoutModule,
   ],
   exports: [
+    DragDropModule,
     MatAutocompleteModule,
     MatButtonModule,
     MatCardModule,

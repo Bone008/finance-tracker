@@ -8,7 +8,7 @@ import { addLabelToTransaction, isSingle, removeLabelFromTransaction } from './m
 import { TransactionFilterService } from './transaction-filter.service';
 
 /** Represents all strings that can be changed through the setField action. */
-type SettableField = keyof Pick<TransactionData, (
+export type SettableField = keyof Pick<TransactionData, (
   'amount' | 'bookingText' | 'comment' | 'date' | 'reason' | 'who' | 'whoIdentifier'
 )>;
 const SETTABLE_FIELDS: SettableField[] = [

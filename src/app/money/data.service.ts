@@ -48,7 +48,27 @@ export class DataService {
             })
           }),
         ],
-      })
+      }),
+      new ProcessingRule({
+        triggers: [ProcessingTrigger.IMPORTED, ProcessingTrigger.MODIFIED],
+        filter: 'amount<0 is:bank who:^(rewe|edeka|aldi|netto|lidl) -label:.',
+        actions: [
+          new ProcessingAction({ addLabel: 'food/groceries' }),
+        ],
+      }),
+      new ProcessingRule({
+        triggers: [ProcessingTrigger.IMPORTED],
+        filter: 'amount<0 reason:Netflix',
+        actions: [new ProcessingAction({ addLabel: 'movies/streaming' })],
+      }),
+      new ProcessingRule({
+        triggers: [ProcessingTrigger.IMPORTED],
+        filter: 'bookingtext:BARGELDAUSZAHLUNG',
+        actions: [
+          new ProcessingAction({ addLabel: 'atm' }),
+          new ProcessingAction({ addLabel: 'todo/group' }),
+        ],
+      }),
     ];
 
     this.updateHighestImportedRowId();

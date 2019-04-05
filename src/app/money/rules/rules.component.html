@@ -3,17 +3,55 @@
     Rules
   </mat-card-title>
 
-  <mat-card-content>
-    <div class="data-row" *ngFor="let rule of (rules$ | async)">
+  <mat-card-content class="rules-container">
+    <div class="header-row">
+      <div class="cell-drag-handle"></div>
+      <div class="cell-trigger">Trigger</div>
+      <div class="cell-filter">Filter</div>
+      <div class="cell-actions">Actions</div>
+    </div>
+    <div
+        *ngIf="rules$ | async as currentRules; else rulesEmpty"
+        cdkDropList
+        cdkDropListLockAxis="y"
+        (cdkDropListDropped)="drop(currentRules, $event)">
+      <div
+          class="data-row"
+          *ngFor="let rule of currentRules"
+          cdkDrag>
+        <div class="cell-drag-handle" title="Drag to reorder" cdkDragHandle>
+          <mat-icon>drag_indicator</mat-icon>
+        </div>
         <div class="cell-trigger">
-          Trigger: {{rule.triggers}}
+          <mat-icon class="trigger" [class.active]="rule.triggers.includes(TRIGGER_ADDED)">add</mat-icon>
+          <mat-icon class="trigger" [class.active]="rule.triggers.includes(TRIGGER_IMPORTED)">attachment</mat-icon>
+          <mat-icon class="trigger" [class.active]="rule.triggers.includes(TRIGGER_MODIFIED)">edit</mat-icon>
         </div>
         <div class="cell-filter">
-          Filter: {{rule.filter}}
+          <mat-icon class="filter-icon">filter_list</mat-icon>
+          <span class="filter-text">{{rule.filter}}</span>
         </div>
         <div class="cell-actions">
-          Actions: {{rule.actions.length}}
+          <div class="action" *ngFor="let action of rule.actions" [ngSwitch]="action.type">
+            <span *ngSwitchCase="'addLabel'">
+              Add label <app-label inline>{{action.addLabel}}</app-label>.
+            </span>
+            <span *ngSwitchCase="'removeLabel'">
+              Remove label <app-label inline>{{action.removeLabel}}</app-label>.
+            </span>
+            <span *ngSwitchCase="'setField'">
+              Set field <span class="field-name">{{formatFieldName(action.setField.fieldName)}}</span>
+              to <span class="field-value">{{action.setField.value}}</span>.
+            </span>
+            <span *ngSwitchDefault>Unknown action.</span>
+          </div>
         </div>
+      </div>
     </div>
+    <ng-template #rulesEmpty>
+      <div class="data-row">
+        <div>No rules have been created yet.</div>
+      </div>
+    </ng-template>
   </mat-card-content>
 </mat-card>
