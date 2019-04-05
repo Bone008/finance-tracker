@@ -52,6 +52,7 @@
   cursor: pointer;
 }
 
+
 /* ## Cell: trigger */
 .cell-trigger {
   flex: 0 0 100px;
@@ -71,6 +72,7 @@
   color: rgba(0,0,0, 0.8);
 }
 
+
 /* ## Cell: filter */
 .cell-filter {
   flex: 1 1 40%;
@@ -82,6 +84,7 @@
 .data-row .cell-filter .filter-icon {
   display: none;
 }
+
 
 /* ## Cell: actions */
 .cell-actions {
@@ -110,6 +113,13 @@
   font-family: monospace;
 }
 
+/** ## Cell: buttons */
+.data-row .cell-buttons {
+  display: flex;
+  flex-direction: row;
+}
+
+
 
 @media screen and (max-width: 959px) {
   .rules-container {
@@ -128,14 +138,15 @@
     padding-right: 0;
   }
 
-  .cell-drag-handle {
+  .data-row .cell-drag-handle {
     position: absolute;
     left: 0;
   }
 
-  .cell-trigger {
-    order: 3;
+  .data-row .cell-trigger {
+    order: 4;
     flex-basis: 88px;
+    align-self: flex-end;
   }
   .data-row .cell-trigger .trigger {
     padding: 2px;
@@ -143,7 +154,6 @@
 
   .data-row .cell-filter {
     order: 1;
-    flex-basis: 100%;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -158,8 +168,15 @@
     min-width: 0;
   }
 
-  .cell-actions {
-    order: 2;
+  .data-row .cell-actions {
+    order: 3;
     flex-grow: 1;
+  }
+
+  .data-row .cell-buttons {
+    order: 2;
+    margin-top: -8px;
+    margin-bottom: 5px;
+    padding-right: 0;
   }
 }

@@ -1,6 +1,11 @@
 <mat-card class="main-card">
   <mat-card-title fxLayout="row" fxLayoutGap="10px">
-    Rules
+    <span fxFlex>Rules</span>
+    <button
+        mat-fab
+        matTooltip="Add rule">
+        <mat-icon>add</mat-icon>
+    </button>
   </mat-card-title>
 
   <mat-card-content class="rules-container">
@@ -11,7 +16,7 @@
       <div class="cell-actions">Actions</div>
     </div>
     <div
-        *ngIf="rules$ | async as currentRules; else rulesEmpty"
+        *ngIf="rules$ | async as currentRules"
         cdkDropList
         cdkDropListLockAxis="y"
         (cdkDropListDropped)="drop(currentRules, $event)">
@@ -22,15 +27,18 @@
         <div class="cell-drag-handle" title="Drag to reorder" cdkDragHandle>
           <mat-icon>drag_indicator</mat-icon>
         </div>
+
         <div class="cell-trigger">
           <mat-icon class="trigger" [class.active]="rule.triggers.includes(TRIGGER_ADDED)">add</mat-icon>
           <mat-icon class="trigger" [class.active]="rule.triggers.includes(TRIGGER_IMPORTED)">attachment</mat-icon>
           <mat-icon class="trigger" [class.active]="rule.triggers.includes(TRIGGER_MODIFIED)">edit</mat-icon>
         </div>
+
         <div class="cell-filter">
           <mat-icon class="filter-icon">filter_list</mat-icon>
           <span class="filter-text">{{rule.filter}}</span>
         </div>
+
         <div class="cell-actions">
           <div class="action" *ngFor="let action of rule.actions" [ngSwitch]="action.type">
             <span *ngSwitchCase="'addLabel'">
@@ -46,12 +54,22 @@
             <span *ngSwitchDefault>Unknown action.</span>
           </div>
         </div>
+
+        <div class="cell-buttons">
+          <button
+              mat-icon-button
+              color="primary"
+              matTooltip="Edit rule">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button
+              mat-icon-button
+              color="primary"
+              matTooltip="Delete rule">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
       </div>
     </div>
-    <ng-template #rulesEmpty>
-      <div class="data-row">
-        <div>No rules have been created yet.</div>
-      </div>
-    </ng-template>
   </mat-card-content>
 </mat-card>
