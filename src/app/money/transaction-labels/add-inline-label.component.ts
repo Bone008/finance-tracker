@@ -46,6 +46,8 @@ export class AddInlineLabelComponent implements OnInit {
           // Update set of available labels whenever the control is opened,
           // because it can change long after ngOnInit.
           this.allLabels = this.dataService.getAllLabels().sort();
+        } else {
+          this.confirmAdd();
         }
       });
 
