@@ -96,7 +96,7 @@ export class RuleService {
           // for how this constructor treats different formats.
           const m = moment(resolvedValue, moment.ISO_8601);
           if (!m.isValid()) {
-            this.logger.warn('Invalid date format in setField:', resolvedValue, transaction.toJSON());
+            this.logger.warn('Date has to be ISO 8601 formatted in setField:', resolvedValue, transaction.toJSON());
             return false;
           }
 

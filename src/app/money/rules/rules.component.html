@@ -1,0 +1,19 @@
+<mat-card class="main-card">
+  <mat-card-title fxLayout="row" fxLayoutGap="10px">
+    Rules
+  </mat-card-title>
+
+  <mat-card-content>
+    <div class="data-row" *ngFor="let rule of (rules$ | async)">
+        <div class="cell-trigger">
+          Trigger: {{rule.triggers}}
+        </div>
+        <div class="cell-filter">
+          Filter: {{rule.filter}}
+        </div>
+        <div class="cell-actions">
+          Actions: {{rule.actions.length}}
+        </div>
+    </div>
+  </mat-card-content>
+</mat-card>

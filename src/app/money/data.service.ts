@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
-import { DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
+import { DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingAction, ProcessingRule, ProcessingTrigger, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { pluralizeArgument } from "../core/util";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
@@ -12,17 +12,48 @@ export class DataService {
   private data = new DataContainer();
   private highestImportedRowId = 0;
   private readonly transactionsSubject = new BehaviorSubject<Transaction[]>([]);
+  private readonly processingRulesSubject = new BehaviorSubject<ProcessingRule[]>([]);
   private readonly globalCommentsSubject = new BehaviorSubject<GlobalComment[]>([]);
   private readonly userSettingsSubject = new BehaviorSubject<UserSettings>(new UserSettings());
 
   readonly transactions$ = this.transactionsSubject.asObservable();
+  readonly processingRules$ = this.processingRulesSubject.asObservable();
   readonly globalComments$ = this.globalCommentsSubject.asObservable();
   readonly userSettings$ = this.userSettingsSubject.asObservable();
 
   setDataContainer(data: DataContainer) {
     this.data = data;
+
+    this.data.processingRules = [
+      new ProcessingRule({
+        triggers: [ProcessingTrigger.ADDED],
+        filter: 'reason:brot',
+        actions: [new ProcessingAction({ addLabel: 'food/groceries' })],
+      }),
+      new ProcessingRule({
+        triggers: [ProcessingTrigger.ADDED, ProcessingTrigger.MODIFIED],
+        filter: 'who:^amazon',
+        actions: [
+          new ProcessingAction({ addLabel: 'todo/add-details' }),
+          new ProcessingAction({
+            setField: new ProcessingAction.SetFieldData({
+              fieldName: 'who',
+              value: 'Amazon',
+            })
+          }),
+          new ProcessingAction({
+            setField: new ProcessingAction.SetFieldData({
+              fieldName: 'date',
+              value: '06.04.2019',
+            })
+          }),
+        ],
+      })
+    ];
+
     this.updateHighestImportedRowId();
     this.notifyTransactions();
+    this.notifyProcessingRules();
     this.notifyGlobalComments();
     this.notifyUserSettings();
   }
@@ -147,6 +178,10 @@ export class DataService {
 
   private notifyTransactions() {
     this.transactionsSubject.next(this.data.transactions);
+  }
+
+  private notifyProcessingRules() {
+    this.processingRulesSubject.next(this.data.processingRules);
   }
 
   private notifyGlobalComments() {

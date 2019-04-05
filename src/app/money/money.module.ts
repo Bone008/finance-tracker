@@ -21,6 +21,7 @@ import { FilterInputComponent } from './filter-input/filter-input.component';
 import { FormImportComponent } from './form-import/form-import.component';
 import { LabelsComponent } from './labels/labels.component';
 import { MoneyComponent } from './money.component';
+import { RulesComponent } from './rules/rules.component';
 import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
 import { AddInlineLabelComponent } from './transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transaction-labels/transaction-labels.component';
@@ -29,6 +30,7 @@ import { TransactionListComponent } from './transaction-list/transaction-list.co
 const appRoutes: Routes = [
   { path: 'transactions', component: TransactionListComponent },
   { path: 'labels', component: LabelsComponent },
+  { path: 'rules', component: RulesComponent },
   { path: 'analytics', component: AnalyticsComponent },
   { path: 'comments', component: CommentsComponent },
   { path: '', pathMatch: 'full', redirectTo: 'transactions' }
@@ -64,6 +66,7 @@ const appRoutes: Routes = [
     BillingInfoComponent,
     BucketBreakdownComponent,
     DialogStaleDataComponent,
+    RulesComponent,
   ],
   entryComponents: [
     FormImportComponent,
