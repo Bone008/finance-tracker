@@ -6,10 +6,10 @@ import { coerceBooleanProperty } from 'src/app/core/util';
  */
 @Component({
   selector: 'app-label',
-  templateUrl: './label-box.component.html',
-  styleUrls: ['./label-box.component.css']
+  templateUrl: './label-chip.component.html',
+  styleUrls: ['./label-chip.component.css']
 })
-export class LabelBoxComponent {
+export class LabelChipComponent {
   private _inline = false;
   private _canClick = false;
   private _canDelete = false;

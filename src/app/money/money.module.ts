@@ -19,6 +19,7 @@ import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.
 import { FilterFormatValidatorDirective } from './filter-input/filter-format-validator.directive';
 import { FilterInputComponent } from './filter-input/filter-input.component';
 import { FormImportComponent } from './form-import/form-import.component';
+import { LabelChipComponent } from './label-chip/label-chip.component';
 import { LabelsComponent } from './labels/labels.component';
 import { MoneyComponent } from './money.component';
 import { RulesComponent } from './rules/rules.component';
@@ -26,7 +27,6 @@ import { TransactionEditComponent } from './transaction-edit/transaction-edit.co
 import { AddInlineLabelComponent } from './transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transaction-labels/transaction-labels.component';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
-import { LabelBoxComponent } from './label-box/label-box.component';
 
 const appRoutes: Routes = [
   { path: 'transactions', component: TransactionListComponent },
@@ -68,7 +68,7 @@ const appRoutes: Routes = [
     BucketBreakdownComponent,
     DialogStaleDataComponent,
     RulesComponent,
-    LabelBoxComponent,
+    LabelChipComponent,
   ],
   entryComponents: [
     FormImportComponent,
