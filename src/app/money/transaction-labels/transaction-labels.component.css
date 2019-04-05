@@ -11,11 +11,3 @@
   width: 75px;
   flex-grow: 1;
 }
-
-@media screen and (max-width: 959px) {
-  .label-button,
-  .label-delete-button {
-    padding-top: 1px;
-    padding-bottom: 1px;
-  }
-}

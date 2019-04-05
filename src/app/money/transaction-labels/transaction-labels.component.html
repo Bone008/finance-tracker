@@ -2,7 +2,7 @@
   <app-label
       *ngFor="let label of labels"
       canClick canDelete
-      [tooltip]="labelTitle"
+      [title]="labelTitle"
       (click)="$event.stopPropagation(); emitLabelClick(label, $event)"
       (delete)="labelDelete.emit(label)">
     {{label}}

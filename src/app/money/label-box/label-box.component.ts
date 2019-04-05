@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostBinding, HostListener, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostBinding, HostListener, Input, Output } from '@angular/core';
 import { coerceBooleanProperty } from 'src/app/core/util';
 
 /**
@@ -9,7 +9,7 @@ import { coerceBooleanProperty } from 'src/app/core/util';
   templateUrl: './label-box.component.html',
   styleUrls: ['./label-box.component.css']
 })
-export class LabelBoxComponent implements OnInit {
+export class LabelBoxComponent {
   private _inline = false;
   private _canClick = false;
   private _canDelete = false;
@@ -23,9 +23,6 @@ export class LabelBoxComponent implements OnInit {
   @Input()
   get canDelete() { return this._canDelete; }
   set canDelete(value: boolean) { this._canDelete = coerceBooleanProperty(value); }
-
-  /** The tooltip (title attribute) to display when hovering the label text. */
-  @Input() tooltip = "";
 
   //@Output() click = new EventEmitter<MouseEvent>();
   /** Emitted when the user requests deletion of the label. */
@@ -41,9 +38,5 @@ export class LabelBoxComponent implements OnInit {
   @HostListener('keydown.delete')
   onDelete(event: KeyboardEvent) {
     this.delete.emit(event);
-  }
-
-  ngOnInit() {
-    console.log("inline:", this.inline, "canClick:", this.canClick, "canDelete", this.canDelete, "tooltip:", this.tooltip);
   }
 }
