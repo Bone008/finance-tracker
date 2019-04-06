@@ -3,7 +3,8 @@
     <span fxFlex>Rules</span>
     <button
         mat-fab
-        matTooltip="Add rule">
+        matTooltip="Add rule"
+        (click)="startAdd()">
         <mat-icon>add</mat-icon>
     </button>
   </mat-card-title>
@@ -59,13 +60,15 @@
           <button
               mat-icon-button
               color="primary"
-              matTooltip="Edit rule">
+              matTooltip="Edit rule"
+              (click)="startEdit(rule)">
             <mat-icon>edit</mat-icon>
           </button>
           <button
               mat-icon-button
               color="primary"
-              matTooltip="Delete rule">
+              matTooltip="Delete rule"
+              (click)="delete(rule)">
             <mat-icon>delete</mat-icon>
           </button>
         </div>

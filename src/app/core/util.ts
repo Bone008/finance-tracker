@@ -5,6 +5,16 @@ export function coerceBooleanProperty(value: any): boolean {
   return value != null && `${value}` !== 'false';
 }
 
+/**
+ * Adds `element` to the end of `array` if it is not yet contained.
+ * @returns true if the element was added.
+ */
+export function pushDeduplicate<T>(array: T[], element: T): boolean {
+  if (array.includes(element)) return false;
+  array.push(element);
+  return true;
+}
+
 /** Wraps a function so its return value is always a single instance to comply with Angular's change detection. */
 export function makeShared<TReturn, TShared = TReturn>(
   shared: TShared,

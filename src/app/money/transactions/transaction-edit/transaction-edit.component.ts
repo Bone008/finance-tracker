@@ -2,7 +2,7 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { BillingInfo, Money, Transaction, TransactionData } from '../../../../proto/model';
 import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
-import { makeSharedDate } from '../../../core/util';
+import { makeSharedDate, pushDeduplicate } from '../../../core/util';
 
 export const MODE_ADD = 'add';
 export const MODE_EDIT = 'edit';
@@ -80,9 +80,7 @@ export class TransactionEditComponent implements OnInit {
   }
 
   addLabel(newLabel: string) {
-    if (this.transaction.labels.indexOf(newLabel) === -1) {
-      this.transaction.labels.push(newLabel);
-    }
+    pushDeduplicate(this.transaction.labels, newLabel);
   }
 
   deleteLabel(label: string) {
@@ -101,7 +99,6 @@ export class TransactionEditComponent implements OnInit {
   });
 
   onSubmit() {
-    //console.log(this.transaction);
     this.matDialogRef.close(true);
   }
 

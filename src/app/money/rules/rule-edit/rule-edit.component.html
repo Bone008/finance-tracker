@@ -1,0 +1,97 @@
+<form #editForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
+  <div class="title-container" fxLayout="row" fxLayoutAlign="stretch start">
+    <h2 mat-dialog-title fxFlex>{{editMode==='edit' ? 'Edit' : 'Add'}} rule</h2>
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
+  </div>
+
+  <mat-dialog-content fxLayout="column">
+    <fieldset fxLayout="column">
+      <legend class="custom-field-label">Triggers</legend>
+      <mat-checkbox
+          name="triggerAdded"
+          [(ngModel)]="triggerAdded">
+        Transaction is manually added.
+      </mat-checkbox>
+      <mat-checkbox
+          name="triggerImported"
+          [(ngModel)]="triggerImported">
+        Transaction is imported from a CSV file.
+      </mat-checkbox>
+      <mat-checkbox
+          name="triggerModified"
+          [(ngModel)]="triggerModified">
+        Transaction is modified in any way.
+      </mat-checkbox>
+    </fieldset>
+
+    <app-filter-input [state]="filterState"></app-filter-input>
+    
+    <fieldset fxLayout="column">
+      <legend class="custom-field-label">Actions</legend>
+
+      <div
+          *ngFor="let action of rule.actions; let i = index"
+          class="action"
+          fxLayout="row"
+          fxLayoutGap="10px">
+        <mat-form-field fxFlex="120px">
+          <mat-select
+              name="actionType-{{i}}"
+              [ngModel]="action.type"
+              (ngModelChange)="setActionType(action, $event)"
+              placeholder="Type">
+            <mat-option value="addLabel">Add label</mat-option>
+            <mat-option value="removeLabel">Remove label</mat-option>
+            <mat-option value="setField">Set field</mat-option>
+          </mat-select>
+        </mat-form-field>
+        
+        <div *ngIf="action.type === 'addLabel'" fxLayout="row" fxLayoutAlign="start center">
+          <app-label
+              #addChip
+              [hidden]="!action.addLabel"    
+              canClick canDelete
+              (delete)="action.addLabel = ''; focusDelayed(addInline)">
+            {{action.addLabel}}
+          </app-label>
+          <app-add-inline-label
+              #addInline
+              [hidden]="!!action.addLabel"
+              (addRequested)="action.addLabel = $event; addInline.isOpen ? focusDelayed(addChip) : 0">
+          </app-add-inline-label>
+        </div>
+        
+        <mat-form-field *ngIf="action.type === 'setField'" fxFlex="120px">
+          <mat-select
+              name="actionFieldName-{{i}}"
+              [(ngModel)]="action.setField.fieldName"
+              placeholder="Field">
+            <mat-option value="date">Date</mat-option>
+            <mat-option value="amount">Amount</mat-option>
+            <mat-option value="reason">Reason</mat-option>
+            <mat-option value="who">Who</mat-option>
+            <mat-option value="comment">Comment</mat-option>
+            <mat-option value="whoIdentifier">IBAN</mat-option>
+            <mat-option value="bookingText">Booking text</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field *ngIf="action.type === 'setField'" fxFlex>
+          <input
+              matInput
+              name="actionFieldValue-{{i}}"
+              [(ngModel)]="action.setField.value"
+              placeholder="Value">
+          <mat-icon matSuffix matTooltip="Use $1, $2, ... for regex capture groups of the filter.">
+            help
+          </mat-icon>
+        </mat-form-field>
+      </div>
+    </fieldset>
+  </mat-dialog-content>
+  
+  <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
+  </mat-dialog-actions>
+</form>

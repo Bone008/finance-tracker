@@ -19,6 +19,7 @@ import { FilterInputComponent } from './filter-input/filter-input.component';
 import { LabelChipComponent } from './label-chip/label-chip.component';
 import { LabelsComponent } from './labels/labels.component';
 import { MoneyComponent } from './money.component';
+import { RuleEditComponent } from './rules/rule-edit/rule-edit.component';
 import { RulesComponent } from './rules/rules.component';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
@@ -69,10 +70,12 @@ const appRoutes: Routes = [
     DialogStaleDataComponent,
     RulesComponent,
     LabelChipComponent,
+    RuleEditComponent,
   ],
   entryComponents: [
     FormImportComponent,
     TransactionEditComponent,
+    RuleEditComponent,
     DialogDeleteWithOrphansComponent,
     DialogSplitTransactionComponent,
     DialogSettingsComponent,

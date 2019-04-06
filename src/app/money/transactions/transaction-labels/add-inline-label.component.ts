@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
 import { filterFuzzyOptions } from '../../../core/util';
@@ -7,7 +7,7 @@ import { DataService } from '../../data.service';
 @Component({
   selector: 'app-add-inline-label',
   templateUrl: './add-inline-label.component.html',
-  styleUrls: ['./add-inline-label.component.css']
+  styleUrls: ['./add-inline-label.component.css'],
 })
 export class AddInlineLabelComponent implements OnInit {
   @Input() excludedLabels: string[] | undefined;
@@ -34,7 +34,9 @@ export class AddInlineLabelComponent implements OnInit {
 
   private isOpenSubject = new Subject<boolean>();
 
-  constructor(private readonly dataService: DataService) {
+  constructor(
+    private readonly dataService: DataService,
+    private readonly element: ElementRef<HTMLElement>) {
   }
 
   ngOnInit() {
@@ -69,6 +71,11 @@ export class AddInlineLabelComponent implements OnInit {
 
   requestDelete() {
     this.deleteLastRequested.next();
+  }
+
+  // Necessary to programmatically focus this element from the outside a template reference.
+  focus() {
+    this.element.nativeElement.querySelector('input')!.focus();
   }
 
   private filterLabelsByInput(input: string): string[] {

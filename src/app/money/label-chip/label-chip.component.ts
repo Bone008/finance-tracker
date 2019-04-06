@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostBinding, HostListener, Input, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostBinding, HostListener, Input, Output } from '@angular/core';
 import { coerceBooleanProperty } from 'src/app/core/util';
 
 /**
@@ -28,6 +28,7 @@ export class LabelChipComponent {
   /** Emitted when the user requests deletion of the label. */
   @Output() delete = new EventEmitter<MouseEvent | KeyboardEvent>();
 
+  constructor(private readonly element: ElementRef<HTMLElement>) { }
 
   @HostBinding('attr.tabindex')
   get tabindex(): number | null {
@@ -35,8 +36,16 @@ export class LabelChipComponent {
   }
 
 
-  @HostListener('keydown.delete')
+  @HostListener('keydown.delete', ['$event'])
+  @HostListener('keydown.backspace', ['$event'])
   onDelete(event: KeyboardEvent) {
+    event.stopPropagation();
+    event.preventDefault();
     this.delete.emit(event);
+  }
+
+  // Necessary to programmatically focus this element from the outside a template reference.
+  focus() {
+    this.element.nativeElement.focus();
   }
 }

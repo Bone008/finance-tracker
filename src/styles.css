@@ -22,6 +22,15 @@ body {
   margin: 20px;
 }
 
+/* Mimics default style of mat-form-field label,
+   for inputs where it is not supported. */
+.custom-field-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 75%;
+  color: rgba(0,0,0,.54);
+}
+
 .negative {
   color: #e74c3c;
 }

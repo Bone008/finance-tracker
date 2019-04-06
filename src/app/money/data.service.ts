@@ -111,9 +111,11 @@ export class DataService {
 
   removeTransactions(toRemove: Transaction | Transaction[]) {
     const transactions = pluralizeArgument(toRemove);
-    for (let transaction of transactions) {
+    for (const transaction of transactions) {
       const index = this.data.transactions.indexOf(transaction);
-      this.data.transactions.splice(index, 1);
+      if (index >= 0) {
+        this.data.transactions.splice(index, 1);
+      }
     }
     this.notifyTransactions();
   }
@@ -192,6 +194,22 @@ export class DataService {
 
   getTransactionDataReferringToImportedRow(importedRowId: number): TransactionData[] {
     return extractTransactionData(this.data.transactions).filter(data => data.importedRowId === importedRowId);
+  }
+
+  addProcessingRules(toAdd: ProcessingRule | ProcessingRule[]) {
+    const rules = pluralizeArgument(toAdd);
+    this.data.processingRules.push(...rules);
+    this.notifyProcessingRules();
+  }
+
+  removeProcessingRules(toRemove: ProcessingRule | ProcessingRule[]) {
+    for (const rule of pluralizeArgument(toRemove)) {
+      const index = this.data.processingRules.indexOf(rule);
+      if (index >= 0) {
+        this.data.processingRules.splice(index, 1);
+      }
+    }
+    this.notifyProcessingRules();
   }
 
   addGlobalComment(comment: GlobalComment) {

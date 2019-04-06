@@ -3,10 +3,11 @@ import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
 import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
-import { Transaction, TransactionData } from '../../proto/model';
+import { ProcessingRule, Transaction, TransactionData } from '../../proto/model';
 import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
+import { RuleEditComponent, RuleEditConfig } from './rules/rule-edit/rule-edit.component';
 import { StorageSettings } from './storage-settings.service';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
@@ -66,6 +67,12 @@ export class DialogService {
     return this.matDialog.open(DialogDeleteWithOrphansComponent, {
       data: { numTransactions, numOrphans },
     });
+  }
+
+  openRuleEdit(rule: ProcessingRule, editMode: 'add' | 'edit')
+    : ConfirmableDialogRef<RuleEditComponent> {
+    const config: RuleEditConfig = { rule, editMode };
+    return this.openConfirmable(RuleEditComponent, { data: config });
   }
 
   openAnalyticsLabelDominance(dominanceOrder: LabelDominanceOrder)
