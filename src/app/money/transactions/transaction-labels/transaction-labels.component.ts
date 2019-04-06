@@ -9,7 +9,7 @@ export type LabelMouseEvent = MouseEvent & { label: string };
 })
 export class TransactionLabelsComponent implements OnInit {
   @Input() labels: string[] = [];
-  @Input() labelTitle: string | undefined = undefined;
+  @Input() labelTitle: string = '';
   @Input() alwaysOpen = false;
 
   @Output() readonly labelClick = new EventEmitter<LabelMouseEvent>();

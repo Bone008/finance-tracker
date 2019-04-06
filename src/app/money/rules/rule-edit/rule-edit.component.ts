@@ -105,9 +105,9 @@ export class RuleEditComponent implements OnInit {
    * Label distributions are reported as one of the following options:
       - all currently unlabeled
       - all exactly labeled `foobar`
-      - with label sets {foo, foo bar, <unlabeled>}
-      - with various label sets, but all including `foo`.
-      - with various label sets
+      - labeled one of {foo, foo bar, <unlabeled>}
+      - with x different label sets, but all including `foo`.
+      - with x different label sets
    */
   getMatchingTransactionsInfo(): { description: string, labelSets: string[][] } {
     if (this.isAllMatchingTransactions) {
@@ -161,7 +161,7 @@ export class RuleEditComponent implements OnInit {
 
     // List label sets explicitly if they are below threshold.
     if (allLabelSets.length <= PREVIEW_MAX_LABEL_SETS) {
-      description += 'with label sets';
+      description += 'labeled one of';
       return {
         description,
         labelSets: allLabelSets.getValues().map(set => Array.from(set).sort())
@@ -185,6 +185,10 @@ export class RuleEditComponent implements OnInit {
   }
 
   onSubmit() {
+    if (this.editMode === 'add' && this.rule.triggers.length === 0
+      && !confirm('You have not selected any triggers. This rule will never be executed.\n\nAre you sure?')) {
+      return;
+    }
     this.matDialogRef.close(true);
   }
 
