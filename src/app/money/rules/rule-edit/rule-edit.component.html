@@ -32,15 +32,6 @@
         <span fxFlex>Actions</span>
       </legend>
 
-      <button
-          class="add-action-button"
-          type="button"
-          mat-mini-fab
-          matTooltip="Add action"
-          (click)="addAction()">
-        <mat-icon>add</mat-icon>
-      </button>
-
       <div
           *ngFor="let action of rule.actions; let i = index"
           class="action-row"
@@ -125,6 +116,15 @@
           <mat-icon>delete</mat-icon>
         </button>
       </div>
+
+      <button
+          class="add-action-button"
+          type="button"
+          mat-mini-fab
+          matTooltip="Add action"
+          (click)="addAction()">
+        <mat-icon>add</mat-icon>
+      </button>
     </fieldset>
 
     <mat-checkbox
