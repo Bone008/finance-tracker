@@ -26,10 +26,10 @@ import { RulesComponent } from './rules/rules.component';
 import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
 import { AddInlineLabelComponent } from './transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transaction-labels/transaction-labels.component';
-import { TransactionListComponent } from './transaction-list/transaction-list.component';
+import { TransactionsComponent } from './transactions/transactions.component';
 
 const appRoutes: Routes = [
-  { path: 'transactions', component: TransactionListComponent },
+  { path: 'transactions', component: TransactionsComponent },
   { path: 'labels', component: LabelsComponent },
   { path: 'rules', component: RulesComponent },
   { path: 'analytics', component: AnalyticsComponent },
@@ -51,7 +51,7 @@ const appRoutes: Routes = [
     AnalyticsComponent,
     FormImportComponent,
     TransactionEditComponent,
-    TransactionListComponent,
+    TransactionsComponent,
     TransactionLabelsComponent,
     AddInlineLabelComponent,
     DialogDeleteWithOrphansComponent,

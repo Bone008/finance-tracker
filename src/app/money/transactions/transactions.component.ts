@@ -17,14 +17,14 @@ import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.compon
 import { TransactionFilterService } from '../transaction-filter.service';
 
 @Component({
-  selector: 'app-transaction-list',
-  templateUrl: './transaction-list.component.html',
-  styleUrls: ['./transaction-list.component.css'],
+  selector: 'app-transactions',
+  templateUrl: './transactions.component.html',
+  styleUrls: ['./transactions.component.css'],
 })
-export class TransactionListComponent implements AfterViewInit {
+export class TransactionsComponent implements AfterViewInit {
   private static lastFilterValue = "";
 
-  readonly filterState = new FilterState(TransactionListComponent.lastFilterValue);
+  readonly filterState = new FilterState(TransactionsComponent.lastFilterValue);
   readonly transactionsDataSource = new MatTableDataSource<Transaction>();
   transactionsSubject = of<Transaction[]>([]);
   selection = new SelectionModel<Transaction>(true);
@@ -57,7 +57,7 @@ export class TransactionListComponent implements AfterViewInit {
 
     const filterValue$ = this.filterState.value$.pipe(
       // Remember last received value.
-      tap(value => TransactionListComponent.lastFilterValue = value),
+      tap(value => TransactionsComponent.lastFilterValue = value),
       // Reset to first page whenever filter is changed.
       tap(() => this.transactionsDataSource.paginator!.firstPage())
     );
