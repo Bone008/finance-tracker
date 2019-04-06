@@ -26,6 +26,17 @@
     </fieldset>
 
     <app-filter-input class="filter-input" [state]="filterState"></app-filter-input>
+
+    <div class="filter-preview" *ngIf="getMatchingTransactionsInfo() as txInfo">
+      <span>This filter currently matches {{txInfo.description}}</span>
+      <ng-container *ngFor="let labelSet of txInfo.labelSets; let first = first; let last = last">
+        <span *ngIf="first" class="set-bracket"> {{ txInfo.labelSets.length > 1 ? '{' : '' }}&nbsp;</span>
+        <app-label *ngFor="let label of labelSet" inline>{{label}}</app-label>
+        <span *ngIf="!last">,&nbsp; </span>
+        <span *ngIf="last && txInfo.labelSets.length > 1" class="set-bracket">{{ '}' }}</span>
+      </ng-container>
+      <span>.</span>
+    </div>
     
     <fieldset class="actions-container" fxLayout="column">
       <legend class="custom-field-label" fxLayout="row">
@@ -127,12 +138,12 @@
       </button>
     </fieldset>
 
-    <mat-checkbox
-        class="is-last-checkbox"
-        name="isLast"
-        [(ngModel)]="rule.isLast">
-      Do not execute subsequent rules on the same transaction.
-    </mat-checkbox>
+    <!-- See https://github.com/angular/material2/issues/8798 for why this wrapper is necessary. -->
+    <div class="is-last-checkbox">
+      <mat-checkbox name="isLast" [(ngModel)]="rule.isLast">
+        Do not execute subsequent rules on the same transaction.
+      </mat-checkbox>
+    </div>
   </mat-dialog-content>
   
   <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">

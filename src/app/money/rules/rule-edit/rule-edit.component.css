@@ -3,6 +3,16 @@
   margin-top: 1em;
 }
 
+.filter-preview {
+  font-size: 80%;
+  color: rgba(0,0,0, 0.75);
+  margin-bottom: 1.8em;
+}
+
+.filter-preview .set-bracket {
+  font-size: 130%;
+}
+
 .actions-container {
   position: relative;
 }
@@ -39,6 +49,10 @@
 .set-field-value .mat-icon {
   color: rgba(0,0,0, 0.66);
   vertical-align: bottom;
+}
+
+.is-last-checkbox {
+  overflow: hidden;
 }
 
 @media screen and (max-width: 599px) {
