@@ -15,6 +15,7 @@
       <div class="cell-trigger">Trigger</div>
       <div class="cell-filter">Filter</div>
       <div class="cell-actions">Actions</div>
+      <div class="cell-buttons"></div>
     </div>
     <div
         *ngIf="rules$ | async as currentRules"
@@ -53,6 +54,9 @@
               to <span class="field-value">{{action.setField.value}}</span>.
             </span>
             <span *ngSwitchDefault>Unknown action.</span>
+          </div>
+          <div class="action" *ngIf="rule.isLast">
+            <span>Do not execute subsequent rules on the same transaction.</span>
           </div>
         </div>
 

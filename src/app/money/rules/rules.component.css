@@ -49,7 +49,11 @@
   flex: 0 0 30px;
 }
 .data-row .cell-drag-handle {
-  cursor: pointer;
+  align-self: stretch;
+  cursor: move;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 
@@ -114,6 +118,10 @@
 }
 
 /** ## Cell: buttons */
+.cell-buttons {
+  flex: 0 0 80px;
+  justify-content: end;
+}
 .data-row .cell-buttons {
   display: flex;
   flex-direction: row;

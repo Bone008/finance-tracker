@@ -1,10 +1,10 @@
-.filter-input {
+.filter-input,
+.is-last-checkbox {
   margin-top: 1em;
 }
 
 .actions-container {
   position: relative;
-  margin-bottom: 1em;
 }
 
 /** Weird hacks because in FF, absolute positioning in fieldsets is broken (affected by legend height). */

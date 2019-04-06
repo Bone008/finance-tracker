@@ -126,6 +126,13 @@
         </button>
       </div>
     </fieldset>
+
+    <mat-checkbox
+        class="is-last-checkbox"
+        name="isLast"
+        [(ngModel)]="rule.isLast">
+      Do not execute subsequent rules on the same transaction.
+    </mat-checkbox>
   </mat-dialog-content>
   
   <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
