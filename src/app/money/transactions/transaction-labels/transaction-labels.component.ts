@@ -1,6 +1,6 @@
-import { Component, OnInit, Output, EventEmitter, Input } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 
-export type LabelMouseEvent = MouseEvent & {label: string};
+export type LabelMouseEvent = MouseEvent & { label: string };
 
 @Component({
   selector: 'app-transaction-labels',

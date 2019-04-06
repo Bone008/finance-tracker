@@ -1,4 +1,4 @@
-import { ITransactionData } from "../../../proto/model";
+import { ITransactionData } from "../../../../proto/model";
 
 /**
  * Stores config that describes how to map the columns of a file format to

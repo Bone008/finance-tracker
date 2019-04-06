@@ -12,20 +12,20 @@ import { DialogLabelDominanceComponent } from './analytics/dialog-label-dominanc
 import { LabelBreakdownComponent } from './analytics/label-breakdown.component';
 import { BillingInfoComponent } from './billing-info/billing-info.component';
 import { CommentsComponent } from './comments/comments.component';
-import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
-import { DialogSplitTransactionComponent } from './dialog-split-transaction/dialog-split-transaction.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
 import { FilterFormatValidatorDirective } from './filter-input/filter-format-validator.directive';
 import { FilterInputComponent } from './filter-input/filter-input.component';
-import { FormImportComponent } from './form-import/form-import.component';
 import { LabelChipComponent } from './label-chip/label-chip.component';
 import { LabelsComponent } from './labels/labels.component';
 import { MoneyComponent } from './money.component';
 import { RulesComponent } from './rules/rules.component';
-import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
-import { AddInlineLabelComponent } from './transaction-labels/add-inline-label.component';
-import { TransactionLabelsComponent } from './transaction-labels/transaction-labels.component';
+import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
+import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
+import { FormImportComponent } from './transactions/form-import/form-import.component';
+import { TransactionEditComponent } from './transactions/transaction-edit/transaction-edit.component';
+import { AddInlineLabelComponent } from './transactions/transaction-labels/add-inline-label.component';
+import { TransactionLabelsComponent } from './transactions/transaction-labels/transaction-labels.component';
 import { TransactionsComponent } from './transactions/transactions.component';
 
 const appRoutes: Routes = [

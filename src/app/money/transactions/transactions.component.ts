@@ -13,8 +13,8 @@ import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
 import { addLabelToTransaction, extractTransactionData, forEachTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
 import { RuleService } from '../rule.service';
-import { MODE_ADD, MODE_EDIT } from '../transaction-edit/transaction-edit.component';
 import { TransactionFilterService } from '../transaction-filter.service';
+import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
 
 @Component({
   selector: 'app-transactions',

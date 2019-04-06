@@ -1,8 +1,8 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-import { BillingInfo, Money, Transaction, TransactionData } from '../../../proto/model';
-import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../core/proto-util';
-import { makeSharedDate } from '../../core/util';
+import { BillingInfo, Money, Transaction, TransactionData } from '../../../../proto/model';
+import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
+import { makeSharedDate } from '../../../core/util';
 
 export const MODE_ADD = 'add';
 export const MODE_EDIT = 'edit';

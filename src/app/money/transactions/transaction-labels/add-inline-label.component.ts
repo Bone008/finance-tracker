@@ -1,8 +1,8 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
-import { filterFuzzyOptions } from '../../core/util';
-import { DataService } from '../data.service';
+import { filterFuzzyOptions } from '../../../core/util';
+import { DataService } from '../../data.service';
 
 @Component({
   selector: 'app-add-inline-label',

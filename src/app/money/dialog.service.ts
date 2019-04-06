@@ -5,13 +5,13 @@ import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { Transaction, TransactionData } from '../../proto/model';
 import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
-import { DialogDeleteWithOrphansComponent } from './dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
-import { DialogSplitTransactionComponent } from './dialog-split-transaction/dialog-split-transaction.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
-import { FormImportComponent } from './form-import/form-import.component';
 import { StorageSettings } from './storage-settings.service';
-import { TransactionEditComponent } from './transaction-edit/transaction-edit.component';
+import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
+import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
+import { FormImportComponent } from './transactions/form-import/form-import.component';
+import { TransactionEditComponent } from './transactions/transaction-edit/transaction-edit.component';
 
 export type ConfirmableDialogRef<T> =
   MatDialogRef<T, boolean> & {
