@@ -25,14 +25,24 @@
       </mat-checkbox>
     </fieldset>
 
-    <app-filter-input [state]="filterState"></app-filter-input>
+    <app-filter-input class="filter-input" [state]="filterState"></app-filter-input>
     
-    <fieldset fxLayout="column">
-      <legend class="custom-field-label">Actions</legend>
+    <fieldset class="actions-container" fxLayout="column">
+      <legend class="custom-field-label" fxLayout="row">
+        <span fxFlex>Actions</span>
+      </legend>
+
+      <button
+          class="add-action-button"
+          type="button"
+          mat-mini-fab
+          matTooltip="Add action"
+          (click)="addAction()">
+        <mat-icon>add</mat-icon>
+      </button>
 
       <div
           *ngFor="let action of rule.actions; let i = index"
-          class="action"
           fxLayout="row"
           fxLayoutGap="10px">
         <mat-form-field fxFlex="120px">
@@ -47,7 +57,7 @@
           </mat-select>
         </mat-form-field>
         
-        <div *ngIf="action.type === 'addLabel'" fxLayout="row" fxLayoutAlign="start center">
+        <div *ngIf="action.type === 'addLabel'" fxFlex fxLayout="row" fxLayoutAlign="start center">
           <app-label
               #addChip
               [hidden]="!action.addLabel"    
@@ -57,8 +67,24 @@
           </app-label>
           <app-add-inline-label
               #addInline
-              [hidden]="!!action.addLabel"
+              [hidden]="!!action.addLabel" fxFlex
               (addRequested)="action.addLabel = $event; addInline.isOpen ? focusDelayed(addChip) : 0">
+          </app-add-inline-label>
+        </div>
+        
+        <!-- direct copy if addLabel counterpart, make sure to keep in sync -->
+        <div *ngIf="action.type === 'removeLabel'" fxFlex fxLayout="row" fxLayoutAlign="start center">
+          <app-label
+              #removeChip
+              [hidden]="!action.removeLabel"    
+              canClick canDelete
+              (delete)="action.removeLabel = ''; focusDelayed(removeInline)">
+            {{action.removeLabel}}
+          </app-label>
+          <app-add-inline-label
+              #removeInline
+              [hidden]="!!action.removeLabel" fxFlex
+              (addRequested)="action.removeLabel = $event; removeInline.isOpen ? focusDelayed(removeChip) : 0">
           </app-add-inline-label>
         </div>
         

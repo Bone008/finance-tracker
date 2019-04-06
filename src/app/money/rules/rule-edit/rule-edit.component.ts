@@ -1,4 +1,4 @@
-import { Component, ElementRef, Inject, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { pushDeduplicate } from 'src/app/core/util';
 import { ProcessingAction, ProcessingRule, ProcessingTrigger } from 'src/proto/model';
@@ -19,9 +19,6 @@ export class RuleEditComponent implements OnInit {
   readonly editMode: 'add' | 'edit';
   readonly filterState = new FilterState();
 
-  @ViewChildren('app-label', { read: ElementRef })
-  addChipElements: QueryList<ElementRef>;
-
   constructor(
     @Inject(MAT_DIALOG_DATA) data: RuleEditConfig,
     private readonly matDialogRef: MatDialogRef<RuleEditComponent>,
@@ -31,6 +28,11 @@ export class RuleEditComponent implements OnInit {
 
     this.filterState.setValueNow(this.rule.filter);
     this.filterState.value$.subscribe(value => this.rule.filter = value.trim());
+
+    // Initialize with at least 1 action.
+    if (this.rule.actions.length === 0) {
+      this.addAction();
+    }
   }
 
   ngOnInit() {
@@ -52,6 +54,10 @@ export class RuleEditComponent implements OnInit {
         this.rule.triggers.splice(index, 1);
       }
     }
+  }
+
+  addAction() {
+    this.rule.actions.push(new ProcessingAction({ addLabel: '' }));
   }
 
   /** Helper to initialize the oneof field of an action. */
