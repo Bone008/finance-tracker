@@ -13,6 +13,37 @@
   top: -2em;
 }
 
+.set-field-name {
+  flex: 0 1 120px;
+  min-width: 0;
+}
+
+.set-field-value {
+  /* I have no idea what I'm doing, but this apparently fixes weird flexbox scrolling thing,
+     where the value text box just won't shrink beyond some ludicrous size -.- */
+  min-width: 0;
+  width: 80px; /* Somehow makes it up to 140px wide, because reasons. */
+  flex: 1 0 0%;
+  overflow: hidden;
+}
+
+.set-field-value .mat-icon {
+  color: rgba(0,0,0, 0.66);
+  vertical-align: bottom;
+}
+
+@media screen and (max-width: 599px) {
+  .action-row {
+    flex-wrap: wrap;
+  }
+
+  .set-field-value {
+    flex-basis: 100%;
+    padding-left: 3em;
+    box-sizing: border-box;
+  }
+}
+
 @media screen and (min-width: 960px) {
   .mat-dialog-content {
     width: 760px;

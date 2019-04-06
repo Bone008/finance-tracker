@@ -43,6 +43,7 @@
 
       <div
           *ngFor="let action of rule.actions; let i = index"
+          class="action-row"
           fxLayout="row"
           fxLayoutGap="10px">
         <mat-form-field fxFlex="120px">
@@ -88,7 +89,7 @@
           </app-add-inline-label>
         </div>
         
-        <mat-form-field *ngIf="action.type === 'setField'" fxFlex="120px">
+        <mat-form-field *ngIf="action.type === 'setField'" class="set-field-name">
           <mat-select
               name="actionFieldName-{{i}}"
               [(ngModel)]="action.setField.fieldName"
@@ -102,7 +103,7 @@
             <mat-option value="bookingText">Booking text</mat-option>
           </mat-select>
         </mat-form-field>
-        <mat-form-field *ngIf="action.type === 'setField'" fxFlex>
+        <mat-form-field *ngIf="action.type === 'setField'" class="set-field-value">
           <input
               matInput
               name="actionFieldValue-{{i}}"
