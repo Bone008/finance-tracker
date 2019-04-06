@@ -67,7 +67,7 @@
   color: rgba(128,0,0, 0.2);
 }
 .data-row .cell-trigger .trigger.active {
-  background-color: #79cb86;
+  background-color: #b1dbb7;
   border-radius: 2px;
   color: rgba(0,0,0, 0.8);
 }
@@ -129,6 +129,10 @@
 
   .header-row {
     display: none;
+  }
+
+  .data-row:first-of-type {
+    border-top: 1px solid rgba(0,0,0,.12);
   }
 
   .data-row {

@@ -50,6 +50,18 @@ export class DataService {
         ],
       }),
       new ProcessingRule({
+        triggers: [ProcessingTrigger.IMPORTED],
+        filter: 'bookingtext:KARTENZAHLUNG reason:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})',
+        actions: [
+          new ProcessingAction({
+            setField: new ProcessingAction.SetFieldData({
+              fieldName: 'date',
+              value: '$1',
+            })
+          }),
+        ],
+      }),
+      new ProcessingRule({
         triggers: [ProcessingTrigger.IMPORTED, ProcessingTrigger.MODIFIED],
         filter: 'amount<0 is:bank who:^(rewe|edeka|aldi|netto|lidl) -label:.',
         actions: [
