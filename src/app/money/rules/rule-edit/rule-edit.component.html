@@ -113,6 +113,17 @@
             help
           </mat-icon>
         </mat-form-field>
+
+        <button
+            type="button"
+            color="accent"
+            fxFlexAlign="center"
+            mat-icon-button
+            matTooltip="Delete action"
+            [disabled]="rule.actions.length <= 1"
+            (click)="removeAction(action)">
+          <mat-icon>delete</mat-icon>
+        </button>
       </div>
     </fieldset>
   </mat-dialog-content>

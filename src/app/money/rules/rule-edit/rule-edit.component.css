@@ -7,10 +7,19 @@
   margin-bottom: 1em;
 }
 
+/** Weird hacks because in FF, absolute positioning in fieldsets is broken (affected by legend height). */
+.actions-container legend {
+  margin-top: -1em;
+  margin-bottom: -1em;
+}
+.actions-container .action-row:first-of-type {
+  margin-top: 2em;
+}
+
 .add-action-button {
   position: absolute;
   right: 1em;
-  top: -2em;
+  top: -1em;
 }
 
 .set-field-name {
@@ -38,6 +47,7 @@
   }
 
   .set-field-value {
+    order: 1; /* Move behind delete button */
     flex-basis: 100%;
     padding-left: 3em;
     box-sizing: border-box;

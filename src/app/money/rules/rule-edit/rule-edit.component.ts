@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-import { pushDeduplicate } from 'src/app/core/util';
+import { pushDeduplicate, removeByValue } from 'src/app/core/util';
 import { ProcessingAction, ProcessingRule, ProcessingTrigger } from 'src/proto/model';
 import { FilterState } from '../../filter-input/filter-state';
 
@@ -58,6 +58,10 @@ export class RuleEditComponent implements OnInit {
 
   addAction() {
     this.rule.actions.push(new ProcessingAction({ addLabel: '' }));
+  }
+
+  removeAction(action: ProcessingAction) {
+    removeByValue(this.rule.actions, action);
   }
 
   /** Helper to initialize the oneof field of an action. */

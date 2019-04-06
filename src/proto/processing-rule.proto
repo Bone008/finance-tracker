@@ -15,6 +15,13 @@ message ProcessingRule {
 
   // Whether to stop processing further rules after this one.
   bool is_last = 4;
+
+  // Automatic, readonly value that keeps track of when this rule was created.
+  Timestamp created = 10;
+
+  // Automatic, mutable, optional value that is updated whenever this rule is changed.
+  // Initially unset.
+  Timestamp modified = 11;
 }
 
 enum ProcessingTrigger {

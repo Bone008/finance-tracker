@@ -1,7 +1,7 @@
 import * as moment from 'moment';
 import { BillingInfo, BillingType, Date as ProtoDate, GroupData, Transaction, TransactionData } from "../../proto/model";
 import { momentToProtoDate, moneyToNumber, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from "../core/proto-util";
-import { maxBy, pushDeduplicate } from '../core/util';
+import { maxBy, pushDeduplicate, removeByValue } from '../core/util';
 import { DataService } from './data.service';
 
 /** Type guard to check if a transaction has dataType 'single'. */
@@ -128,11 +128,7 @@ export function addLabelToTransaction(transaction: Transaction, label: string): 
  */
 export function removeLabelFromTransaction(transaction: Transaction, label: string): boolean {
   label = label.toLowerCase();
-  const index = transaction.labels.indexOf(label);
-  if (index !== -1) {
-    transaction.labels.splice(index, 1);
-  }
-  return index !== -1;
+  return removeByValue(transaction.labels, label);
 }
 
 /**

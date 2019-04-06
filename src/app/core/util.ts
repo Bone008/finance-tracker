@@ -15,6 +15,19 @@ export function pushDeduplicate<T>(array: T[], element: T): boolean {
   return true;
 }
 
+/**
+ * Removes first occurrence of `element` from `array` if it is contained.
+ * @returns true if the element was removed, false if it wasn't contained
+ */
+export function removeByValue<T>(array: T[], element: T): boolean {
+  const index = array.indexOf(element);
+  if (index !== -1) {
+    array.splice(index, 1);
+    return true;
+  }
+  return false;
+}
+
 /** Wraps a function so its return value is always a single instance to comply with Angular's change detection. */
 export function makeShared<TReturn, TShared = TReturn>(
   shared: TShared,
