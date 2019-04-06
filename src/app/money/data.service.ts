@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
-import { DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingAction, ProcessingRule, ProcessingTrigger, Transaction, TransactionData, UserSettings } from "../../proto/model";
+import { DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { pluralizeArgument } from "../core/util";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
@@ -23,66 +23,6 @@ export class DataService {
 
   setDataContainer(data: DataContainer) {
     this.data = data;
-
-    this.data.processingRules = [
-      new ProcessingRule({
-        triggers: [ProcessingTrigger.ADDED],
-        filter: 'reason:brot',
-        actions: [new ProcessingAction({ addLabel: 'food/groceries' })],
-      }),
-      new ProcessingRule({
-        triggers: [ProcessingTrigger.ADDED, ProcessingTrigger.MODIFIED],
-        filter: 'who:^amazon',
-        actions: [
-          new ProcessingAction({ addLabel: 'todo/add-details' }),
-          new ProcessingAction({
-            setField: new ProcessingAction.SetFieldData({
-              fieldName: 'who',
-              value: 'Amazon',
-            })
-          }),
-          new ProcessingAction({
-            setField: new ProcessingAction.SetFieldData({
-              fieldName: 'date',
-              value: '06.04.2019',
-            })
-          }),
-        ],
-      }),
-      new ProcessingRule({
-        triggers: [ProcessingTrigger.IMPORTED],
-        filter: 'bookingtext:KARTENZAHLUNG reason:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})',
-        actions: [
-          new ProcessingAction({
-            setField: new ProcessingAction.SetFieldData({
-              fieldName: 'date',
-              value: '$1',
-            })
-          }),
-        ],
-      }),
-      new ProcessingRule({
-        triggers: [ProcessingTrigger.IMPORTED, ProcessingTrigger.MODIFIED],
-        filter: 'amount<0 is:bank who:^(rewe|edeka|aldi|netto|lidl) -label:.',
-        actions: [
-          new ProcessingAction({ addLabel: 'food/groceries' }),
-        ],
-      }),
-      new ProcessingRule({
-        triggers: [ProcessingTrigger.IMPORTED],
-        filter: 'amount<0 reason:Netflix',
-        actions: [new ProcessingAction({ addLabel: 'movies/streaming' })],
-      }),
-      new ProcessingRule({
-        triggers: [ProcessingTrigger.IMPORTED],
-        filter: 'bookingtext:BARGELDAUSZAHLUNG',
-        actions: [
-          new ProcessingAction({ addLabel: 'atm' }),
-          new ProcessingAction({ addLabel: 'todo/group' }),
-        ],
-      }),
-    ];
-
     this.updateHighestImportedRowId();
     this.notifyTransactions();
     this.notifyProcessingRules();
