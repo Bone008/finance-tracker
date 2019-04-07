@@ -77,6 +77,12 @@
           </button>
         </div>
       </div>
+
+      <p *ngIf="currentRules.length === 0" style="text-align: center;">
+        You have not created any processing rules yet. Set up rules in order to automatically apply
+        labels to transactions based on various criteria.<br>
+        Click the button on the top right to create your first rule.
+      </p>
     </div>
   </mat-card-content>
 </mat-card>

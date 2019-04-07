@@ -106,7 +106,7 @@ export class RuleEditComponent implements OnInit {
    * Analyzes matching transactions and their label distribution.
    * Label distributions are reported as one of the following options:
       - all currently unlabeled
-      - all exactly labeled `foobar`
+      - all labeled exactly `foobar`
       - labeled one of {foo, foo bar, <unlabeled>}
       - with x different label sets, but all including `foo`.
       - with x different label sets
@@ -142,7 +142,7 @@ export class RuleEditComponent implements OnInit {
       .filter(label => countsByLabel.get(label) === matchingTransactions.length);
     // Check if all known labels occur in all transactions.
     if (labelsInAll.length === countsByLabel.length) {
-      description += 'all exactly labeled';
+      description += 'all labeled exactly';
       return { description, labelSets: [labelsInAll] };
     }
 
