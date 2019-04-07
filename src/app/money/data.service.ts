@@ -1,5 +1,6 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
+import { debounceTime } from "rxjs/operators";
 import { DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { pluralizeArgument } from "../core/util";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
@@ -16,7 +17,7 @@ export class DataService {
   private readonly globalCommentsSubject = new BehaviorSubject<GlobalComment[]>([]);
   private readonly userSettingsSubject = new BehaviorSubject<UserSettings>(new UserSettings());
 
-  readonly transactions$ = this.transactionsSubject.asObservable();
+  readonly transactions$ = this.transactionsSubject.asObservable().pipe(debounceTime(0));
   readonly processingRules$ = this.processingRulesSubject.asObservable();
   readonly globalComments$ = this.globalCommentsSubject.asObservable();
   readonly userSettings$ = this.userSettingsSubject.asObservable();
