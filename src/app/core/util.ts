@@ -49,6 +49,10 @@ export function makeSharedDate(fn: () => Date | null): () => Date | null {
   }, fn);
 }
 
+export function makeSharedObject<TObject>(fn: () => TObject): () => TObject {
+  return makeShared<TObject, {}>({}, Object.assign, fn);
+}
+
 /** Escapes a string so it is safe to use as a literal in a regular expression. */
 export function escapeRegex(input: string): string {
   // Source: https://stackoverflow.com/a/3561711

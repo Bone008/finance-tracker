@@ -17,6 +17,10 @@ export interface RuleEditConfig {
   rule: ProcessingRule;
   editMode: 'add' | 'edit';
 }
+interface MatchingTxsDescription {
+  description: string;
+  labelSets: string[][];
+}
 
 @Component({
   selector: 'app-rule-edit',
@@ -28,9 +32,8 @@ export class RuleEditComponent implements OnInit {
   readonly editMode: 'add' | 'edit';
   readonly filterState = new FilterState();
 
-  /** How many transactions currently pass the given filter. -1 means all. */
-  private matchingTransactions: Transaction[] = [];
-  private isAllMatchingTransactions = true;
+  /** Analysis result of the set of transactions that currently match the filter. */
+  matchingTxsInfo: MatchingTxsDescription;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) data: RuleEditConfig,
@@ -49,8 +52,7 @@ export class RuleEditComponent implements OnInit {
       // Update preview of matching transactions.
       const txs = this.dataService.getCurrentTransactionList();
       const filteredTxs = this.filterService.applyFilter(txs, value);
-      this.matchingTransactions = filteredTxs;
-      this.isAllMatchingTransactions = filteredTxs.length === txs.length;
+      this.matchingTxsInfo = this.analyzeMatchingTransactions(filteredTxs, filteredTxs.length === txs.length);
     });
 
     // Initialize with at least 1 action.
@@ -109,20 +111,20 @@ export class RuleEditComponent implements OnInit {
       - with x different label sets, but all including `foo`.
       - with x different label sets
    */
-  getMatchingTransactionsInfo(): { description: string, labelSets: string[][] } {
-    if (this.isAllMatchingTransactions) {
+  private analyzeMatchingTransactions(matchingTransactions: Transaction[], isAll: boolean): MatchingTxsDescription {
+    if (isAll) {
       return { description: 'all transactions', labelSets: [] };
     }
 
     let description = '';
 
-    description += pluralize(this.matchingTransactions.length, 'transaction');
+    description += pluralize(matchingTransactions.length, 'transaction');
     description += ', ';
 
     // For each label, count how many times it appears.
     const countsByLabel = new KeyedNumberAggregate();
     let numUnlabeled = 0;
-    for (const tx of this.matchingTransactions) {
+    for (const tx of matchingTransactions) {
       for (const label of tx.labels) {
         countsByLabel.add(label, 1);
       }
@@ -137,7 +139,7 @@ export class RuleEditComponent implements OnInit {
     }
 
     const labelsInAll = countsByLabel.getKeys()
-      .filter(label => countsByLabel.get(label) === this.matchingTransactions.length);
+      .filter(label => countsByLabel.get(label) === matchingTransactions.length);
     // Check if all known labels occur in all transactions.
     if (labelsInAll.length === countsByLabel.length) {
       description += 'all exactly labeled';
@@ -146,7 +148,7 @@ export class RuleEditComponent implements OnInit {
 
     // Compute set of each label combination per transaction.
     const allLabelSets = new KeyedSetAggregate<string>();
-    for (const tx of this.matchingTransactions) {
+    for (const tx of matchingTransactions) {
       if (tx.labels.length > 0) {
         const setKey = tx.labels.slice().sort().join(',A,');
         // Kinda abusing the aggregate mechanic here, we just want each value to be the label set,
@@ -156,8 +158,6 @@ export class RuleEditComponent implements OnInit {
         allLabelSets.add('<unlabeled>', '<unlabeled>');
       }
     }
-
-    console.log(allLabelSets.getEntries());
 
     // List label sets explicitly if they are below threshold.
     if (allLabelSets.length <= PREVIEW_MAX_LABEL_SETS) {
