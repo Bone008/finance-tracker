@@ -1,8 +1,8 @@
 import { MediaMatcher } from '@angular/cdk/layout';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import * as moment from 'moment';
-import { fromEvent, merge, of, timer } from 'rxjs';
-import { catchError, filter, switchMap, takeWhile } from 'rxjs/operators';
+import { fromEvent, merge, timer } from 'rxjs';
+import { filter, switchMap, takeWhile } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { DataContainer } from '../../proto/model';
 import { LoggerService } from '../core/logger.service';
@@ -53,11 +53,10 @@ export class MoneyComponent implements OnInit, OnDestroy {
 
     // Keep checking freshness of data.
     onFocusAndPeriodically.pipe(
-      switchMap(() => this.storageService.checkIsDataStale()),
-      catchError(error => {
+      switchMap(() => this.storageService.checkIsDataStale().catch(error => {
         this.loggerService.error("Could not check for staleness of data!", error);
-        return of(false);
-      })
+        return false;
+      }))
     ).subscribe(value => this.notifyStaleData(value));
 
     // Update relative time display.

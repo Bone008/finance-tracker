@@ -34,7 +34,7 @@ export class StorageService {
   ) {
   }
 
-  private rethrowHttpErrors(error: HttpErrorResponse, friendlyError: string): Observable<never> {
+  private logAndRethrowAs(error: HttpErrorResponse, friendlyError: string): Observable<never> {
     if (error.error instanceof ErrorEvent) {
       // A client-side or network error occurred.
       this.loggerService.error("A network error occurred:", error.error.message);
@@ -116,7 +116,7 @@ export class StorageService {
         if (error.status === 404) return of(null);
         else return throwError(error);
       }))
-      .pipe(catchError(e => this.rethrowHttpErrors(e, "Error loading data!")));
+      .pipe(catchError(e => this.logAndRethrowAs(e, "Error loading data!")));
   }
 
   saveData(data: DataContainer): Promise<void> {
@@ -138,7 +138,7 @@ export class StorageService {
     }
 
     return this.httpClient.post<SaveStorageResponse>('/api/storage/' + settings.dataKey, formData)
-      .pipe(catchError(e => this.rethrowHttpErrors(e, "Saving failed!")))
+      .pipe(catchError(e => this.logAndRethrowAs(e, "Saving failed!")))
       .pipe(mergeMap(response => {
         if (!response.success) {
           this.loggerService.error("Server error while saving:", response.error);
