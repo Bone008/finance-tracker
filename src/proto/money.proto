@@ -12,6 +12,6 @@ message Money {
   // For example -3.75 € is represented as `units` = -3 and `subunits` = -75.
   int32 subunits = 2;
 
-  // Whether the represented amount is an estimate or a known value.
-  bool is_estimate = 3;
+  // Removed fields: is_estimate
+  reserved 3;
 }

@@ -49,7 +49,12 @@ message TransactionData {
 
   // The "Buchungstext" of an associated bank statement, if applicable.
   string booking_text = 6;
+
+  // The id of the Account that this transaction belongs to.
+  // A value of 0 means that the transaction is linked to the default account.
+  uint32 account_id = 7;
   
+  // DEPRECATED. This value is now represented by the account association.
   // Whether the transaction happened through cash or a bank statement (or equivalent).
   bool is_cash = 9;
 

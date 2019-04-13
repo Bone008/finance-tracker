@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+import "date.proto";
+
+message Account {
+  // Unique identifier of this account. Must be > 0.
+  uint32 id = 1;
+  
+  // ISO 4217 currency code (https://www.iban.com/currency-codes) of all transactions belonging
+  // to this account.
+  string currency = 2;
+
+  // All user supplied known balances.
+  repeated KnownBalance known_balances = 3;
+
+  // User visible name, can be changed at any time.
+  string name = 4;
+
+  // Name of the icon to use when representing this account.
+  string icon = 5;
+
+  // User supplied comment.
+  string comment = 6;
+
+  // Optional.
+  string iban = 7;
+}
+
+// Represents a recorded balance at the *end* of some day. The currency is inferred to be the same
+// as the currency of the account which this entry belongs to.
+message KnownBalance {
+  // Date at the end of which the respective account contained this balance.
+  Date date = 1;
+
+  // Monetary value.
+  Money balance = 2;
+}

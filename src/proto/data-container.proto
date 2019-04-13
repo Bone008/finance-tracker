@@ -7,6 +7,7 @@ import "global-comment.proto";
 import "user-settings.proto";
 import "label-config.proto";
 import "processing-rule.proto";
+import "account.proto";
 
 message DataContainer {
   Timestamp last_modified = 1;
@@ -22,4 +23,6 @@ message DataContainer {
   map<string, LabelConfig> label_configs = 6;
 
   repeated ProcessingRule processing_rules = 7;
+
+  repeated Account accounts = 8;
 }
