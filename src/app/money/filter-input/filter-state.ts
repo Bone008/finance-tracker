@@ -5,7 +5,10 @@ import { debounceTime, distinctUntilChanged, map, startWith } from "rxjs/operato
 const FILTER_DEBOUNCE_TIME = 500;
 
 export class FilterState {
+  /** Observable that emits debounced changes to the filter value. */
   readonly value$: Observable<string>;
+  /** Observable that immediately emits any changes to the filter value. */
+  readonly immediateValue$: Observable<string>;
 
   private _currentValue: string;
   /** Emits events whenever the value softly changes. */
@@ -22,6 +25,13 @@ export class FilterState {
     this.value$ = merge(debouncedSoftChange, this.immediateChangeSubject).pipe(
       // Make it initially emit an event. Note that this has to be before the
       // map() operation, so new subscribers always receive the current value.
+      startWith(void (0)),
+      map(() => this._currentValue),
+      distinctUntilChanged()
+    );
+
+    this.immediateValue$ = merge(this.softChangeSubject, this.immediateChangeSubject).pipe(
+      // Same as above.
       startWith(void (0)),
       map(() => this._currentValue),
       distinctUntilChanged()

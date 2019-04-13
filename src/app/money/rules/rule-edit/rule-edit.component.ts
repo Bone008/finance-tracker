@@ -45,10 +45,11 @@ export class RuleEditComponent implements OnInit {
     this.editMode = data.editMode;
 
     this.filterState.setValueNow(this.rule.filter);
-    this.filterState.value$.subscribe(value => {
+    this.filterState.immediateValue$.subscribe(value => {
       // Update entity.
       this.rule.filter = value.trim();
-
+    })
+    this.filterState.value$.subscribe(value => {
       // Update preview of matching transactions.
       const txs = this.dataService.getCurrentTransactionList();
       const filteredTxs = this.filterService.applyFilter(txs, value);
