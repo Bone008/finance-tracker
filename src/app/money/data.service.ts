@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, of } from "rxjs";
 import { debounceTime } from "rxjs/operators";
-import { DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
+import { Account, DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { pluralizeArgument } from "../core/util";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
@@ -16,6 +16,12 @@ export class DataService {
   private readonly processingRulesSubject = new BehaviorSubject<ProcessingRule[]>([]);
   private readonly globalCommentsSubject = new BehaviorSubject<GlobalComment[]>([]);
   private readonly userSettingsSubject = new BehaviorSubject<UserSettings>(new UserSettings());
+
+  // TODO implement accounts access
+  readonly accounts$ = of([
+    new Account({ id: 1, name: "Cash", icon: "money", currency: "EUR" }),
+    new Account({ id: 2, name: "Bank account", icon: "assignment", currency: "EUR" }),
+  ]);
 
   readonly transactions$ = this.transactionsSubject.asObservable().pipe(debounceTime(0));
   readonly processingRules$ = this.processingRulesSubject.asObservable();

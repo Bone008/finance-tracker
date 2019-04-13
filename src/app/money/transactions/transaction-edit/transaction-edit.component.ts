@@ -1,8 +1,10 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-import { BillingInfo, Money, Transaction, TransactionData } from '../../../../proto/model';
+import { Observable } from 'rxjs';
+import { Account, BillingInfo, Money, Transaction, TransactionData } from '../../../../proto/model';
 import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
 import { makeSharedDate, pushDeduplicate } from '../../../core/util';
+import { DataService } from '../../data.service';
 
 export const MODE_ADD = 'add';
 export const MODE_EDIT = 'edit';
@@ -13,6 +15,8 @@ export const MODE_EDIT = 'edit';
   styleUrls: ['./transaction-edit.component.css']
 })
 export class TransactionEditComponent implements OnInit {
+  readonly allAccounts$: Observable<Account[]>;
+
   transaction: Transaction;
   /** the value of transaction.single for easier access */
   singleData: TransactionData;
@@ -28,11 +32,13 @@ export class TransactionEditComponent implements OnInit {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) data: { transaction: Transaction, editMode: typeof MODE_ADD | typeof MODE_EDIT },
+    private readonly dataService: DataService,
     private readonly matDialogRef: MatDialogRef<TransactionEditComponent>,
   ) {
     if (data.transaction.dataType !== "single") {
       throw new Error("cannot edit group transactions yet");
     }
+    this.allAccounts$ = this.dataService.accounts$;
 
     this.transaction = data.transaction;
     this.singleData = data.transaction.single!;

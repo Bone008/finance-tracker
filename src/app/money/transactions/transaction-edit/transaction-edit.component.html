@@ -16,6 +16,18 @@
 
     <div fxFlex="none" fxLayout="row" fxLayoutGap="1em" fxLayout.lt-md="column" fxLayoutGap.lt-md="0">
       <div fxFlex="none" fxFlex.gt-sm="60" fxLayout="column">
+        <mat-form-field>
+          <mat-select
+              name="accountId"
+              [(ngModel)]="singleData.accountId"
+              placeholder="Account">
+            <mat-option
+                *ngFor="let account of allAccounts$ | async"
+                [value]="account.id">
+              <mat-icon matSuffix>{{account.icon}}</mat-icon>&nbsp;{{account.name}}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
         <div fxLayout="row" fxLayoutGap="10px" fxLayout.xs="column" fxLayoutGap.xs="0">
           <mat-form-field fxFlex="none" fxFlex.gt-xs="50">
             <input
@@ -99,7 +111,7 @@
             <mat-checkbox
                 name="isCash"
                 [(ngModel)]="singleData.isCash">
-              Cash
+              Cash (obsolete)
             </mat-checkbox>
         </div>
       </div>
