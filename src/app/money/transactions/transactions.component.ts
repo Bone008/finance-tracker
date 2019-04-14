@@ -8,10 +8,11 @@ import { map, tap } from 'rxjs/operators';
 import { google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
+import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, forEachTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
@@ -37,6 +38,7 @@ export class TransactionsComponent implements AfterViewInit {
     private readonly dataService: DataService,
     private readonly filterService: TransactionFilterService,
     private readonly ruleService: RuleService,
+    private readonly currencyService: CurrencyService,
     private readonly loggerService: LoggerService,
     private readonly dialogService: DialogService,
     private readonly route: ActivatedRoute,
@@ -373,18 +375,37 @@ export class TransactionsComponent implements AfterViewInit {
     return timestampToDate(extractTransactionData(transaction)[0].date);
   }
 
-  isTransactionCash(transaction: Transaction): boolean | null {
-    let anyFalse = false;
-    let anyTrue = false;
-    forEachTransactionData(transaction, data => {
-      if (data.isCash) anyTrue = true;
-      else anyFalse = true;
-    });
+  getTransactionCurrencySymbol(transaction: Transaction): string {
+    let uniqueCurrency: string | null = null;
+    for (const data of extractTransactionData(transaction)) {
+      const account = this.dataService.getAccountById(data.accountId);
+      const currency = account && account.currency;
+      if (uniqueCurrency === null) {
+        uniqueCurrency = currency;
+      } else if (uniqueCurrency !== currency) {
+        uniqueCurrency = null;
+        break;
+      }
+    }
+    if (uniqueCurrency === null) {
+      return '??';
+    }
+    return this.currencyService.getSymbol(uniqueCurrency);
+  }
 
-    // Both or none present --> indeterminate.
-    if (anyFalse === anyTrue) return null;
-    // Either all true or all false.
-    return anyTrue;
+  getTransactionIcon(transaction: Transaction): string {
+    let uniqueIcon: string | null = null;
+    for (const data of extractTransactionData(transaction)) {
+      const account = this.dataService.getAccountById(data.accountId);
+      const icon = account && account.icon;
+      if (uniqueIcon === null) {
+        uniqueIcon = icon;
+      } else if (uniqueIcon !== icon) {
+        uniqueIcon = null;
+        break;
+      }
+    }
+    return uniqueIcon || 'list';
   }
 
   /** Returns array of lines. */

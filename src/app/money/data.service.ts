@@ -18,10 +18,13 @@ export class DataService {
   private readonly userSettingsSubject = new BehaviorSubject<UserSettings>(new UserSettings());
 
   // TODO implement accounts access
-  readonly accounts$ = of([
+  private readonly dummyAccounts = [
     new Account({ id: 1, name: "Cash", icon: "money", currency: "EUR" }),
     new Account({ id: 2, name: "Bank account", icon: "assignment", currency: "EUR" }),
-  ]);
+    new Account({ id: 3, name: "Bank account (Swiss)", icon: "assignment", currency: "CHF" }),
+    new Account({ id: 4, name: "Cash (Israeli)", icon: "money", currency: "ILS" }),
+  ];
+  readonly accounts$ = of(this.dummyAccounts);
 
   readonly transactions$ = this.transactionsSubject.asObservable().pipe(debounceTime(0));
   readonly processingRules$ = this.processingRulesSubject.asObservable();
@@ -48,12 +51,16 @@ export class DataService {
     return this.data.userSettings;
   }
 
+  getAccountById(accountId: number): Account | null {
+    return this.dummyAccounts[accountId - 1] || null;
+  }
+
   getProcessingRules(): ProcessingRule[] {
     return this.data.processingRules;
   }
 
   getCurrentTransactionList(): Transaction[] {
-    return this.data.transactions || [];
+    return this.data.transactions;
   }
 
   removeTransactions(toRemove: Transaction | Transaction[]) {
