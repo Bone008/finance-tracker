@@ -20,6 +20,22 @@
       <mat-option value="windows-1252">Windows-1252</mat-option>
     </mat-select>
   </mat-form-field>
+  
+  <mat-form-field floatLabel="always">
+    <mat-select
+        name="account"
+        [(ngModel)]="targetAccount"
+        placeholder="Target account">
+      <mat-select-trigger>
+        <mat-icon>{{targetAccount?.icon}}</mat-icon>&nbsp;{{targetAccount?.name}}
+      </mat-select-trigger>
+      <mat-option
+          *ngFor="let account of allAccounts$ | async"
+          [value]="account">
+        <mat-icon>{{account.icon}}</mat-icon>&nbsp;{{account.name}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
 
   <p *ngIf="duplicateCount > 0">
     Skipped {{duplicateCount}} transactions that have already been imported.

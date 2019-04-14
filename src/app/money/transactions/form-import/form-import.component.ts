@@ -1,6 +1,7 @@
 import { Component, EventEmitter, OnInit } from '@angular/core';
 import { PapaParseResult, PapaParseService } from 'ngx-papaparse';
-import { ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../../proto/model';
+import { Observable } from 'rxjs';
+import { Account, ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../../proto/model';
 import { LoggerService } from '../../../core/logger.service';
 import { timestampNow, timestampToWholeSeconds } from '../../../core/proto-util';
 import { DataService } from '../../data.service';
@@ -16,10 +17,13 @@ type FileEncoding = 'windows-1252' | 'utf-8';
   styleUrls: ['./form-import.component.css']
 })
 export class FormImportComponent implements OnInit {
+  readonly allAccounts$: Observable<Account[]>;
+
   // Form data.
   private _file: File | null = null;
   private _fileFormat: FileFormat = 'ksk_camt';
   private _fileEncoding: FileEncoding = 'windows-1252';
+  private _account: Account | null = null;
   private readonly formInputChange = new EventEmitter<void>();
 
   get file() { return this._file; }
@@ -28,6 +32,8 @@ export class FormImportComponent implements OnInit {
   set fileFormat(value: FileFormat) { this._fileFormat = value; this.formInputChange.emit(); }
   get fileEncoding() { return this._fileEncoding; }
   set fileEncoding(value: FileEncoding) { this._fileEncoding = value; this.formInputChange.emit(); }
+  get targetAccount() { return this._account; }
+  set targetAccount(value: Account | null) { this._account = value; this.formInputChange.emit(); }
 
   /**
    * Contains parsed transactions and raw row data to preview.
@@ -46,7 +52,9 @@ export class FormImportComponent implements OnInit {
     private readonly dataService: DataService,
     private readonly loggerService: LoggerService,
     private readonly papaService: PapaParseService
-  ) { }
+  ) {
+    this.allAccounts$ = this.dataService.accounts$;
+  }
 
   ngOnInit() {
     this.formInputChange.subscribe(() => this.updateFilePreview());
@@ -112,6 +120,11 @@ export class FormImportComponent implements OnInit {
       return;
     }
 
+    if (!this.targetAccount) {
+      this.reportError("Please select an account!");
+      return;
+    }
+
     const existingRows = this.dataService.getImportedRows();
 
     // Process rows.
@@ -135,6 +148,7 @@ export class FormImportComponent implements OnInit {
 
       const transactionProperties: ITransactionData = {};
       transactionProperties.created = timestampNow();
+      transactionProperties.accountId = this.targetAccount ? this.targetAccount.id : 0;
 
       let hasErrors = false;
       for (let [key, mapperCallback] of Object.entries(mapping.mappings)) {

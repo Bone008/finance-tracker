@@ -45,6 +45,12 @@ body {
     -webkit-appearance: none;
 }
 
+/* Apply icon style of mat-option also to mat-select-trigger. */
+.mat-select-trigger .mat-icon {
+  margin-right: 16px;
+  vertical-align: middle;
+}
+
 @media screen and (max-width: 599px) {
   .main-card {
     margin: 0;
