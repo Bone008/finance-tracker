@@ -18,6 +18,8 @@ export class AccountEditComponent implements OnInit {
   readonly editMode: 'add' | 'edit';
   readonly account: Account;
 
+  private readonly initialCurrency: string;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) data: AccountEditConfig,
     private readonly currencyService: CurrencyService,
@@ -27,6 +29,7 @@ export class AccountEditComponent implements OnInit {
 
     this.account = data.account;
     this.editMode = data.editMode;
+    this.initialCurrency = this.account.currency;
   }
 
   ngOnInit() {
@@ -37,6 +40,13 @@ export class AccountEditComponent implements OnInit {
   }
 
   onSubmit() {
+    if (this.editMode == 'edit' && this.account.currency !== this.initialCurrency) {
+      if (!confirm('By changing this account\'s currency, all associated transactions and balances '
+        + 'will be treated as the new currency without changing their numeric values.\n\n'
+        + 'Are you sure you want to continue?')) {
+        return;
+      }
+    }
     this.matDialogRef.close(true);
   }
 }
