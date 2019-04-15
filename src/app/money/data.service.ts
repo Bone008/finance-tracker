@@ -6,6 +6,7 @@ import { numberToMoney } from "../core/proto-util";
 import { pluralizeArgument, removeByValue } from "../core/util";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
+const DEFAULT_MAIN_CURRENCY = 'EUR';
 const DEFAULT_ACCOUNT = new Account({
   id: 0,
   icon: 'error',
@@ -31,6 +32,18 @@ export class DataService {
   readonly processingRules$ = this.processingRulesSubject.asObservable();
   readonly globalComments$ = this.globalCommentsSubject.asObservable();
   readonly userSettings$ = this.userSettingsSubject.asObservable();
+
+  private accountsById: Account[] = [];
+
+  constructor() {
+    // Maintain account id cache.
+    this.accounts$.subscribe(accounts => {
+      this.accountsById = [];
+      for (const account of accounts) {
+        this.accountsById[account.id] = account;
+      }
+    });
+  }
 
   setDataContainer(data: DataContainer) {
     this.data = data;
@@ -67,6 +80,10 @@ export class DataService {
     return this.data.userSettings;
   }
 
+  getMainCurrency(): string {
+    return this.getUserSettings().mainCurrency || DEFAULT_MAIN_CURRENCY;
+  }
+
   getProcessingRules(): ProcessingRule[] {
     return this.data.processingRules;
   }
@@ -80,9 +97,9 @@ export class DataService {
   readonly currencyFromTxDataFn = (data: TransactionData) => this.getAccountById(data.accountId).currency;
   readonly currencyFromAccountIdFn = (accountId: number) => this.getAccountById(accountId).currency;
 
+  /** Returns the account with the given id, or a static default account with id 0 if not found. */
   getAccountById(accountId: number): Account {
-    // TODO: Fix access by id.
-    return this.data.accounts[accountId - 1] || DEFAULT_ACCOUNT;
+    return this.accountsById[accountId] || DEFAULT_ACCOUNT;
   }
 
   addAccounts(toAdd: Account | Account[]) {

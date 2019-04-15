@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { Account, BillingInfo, Money, Transaction, TransactionData } from '../../../../proto/model';
 import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
 import { makeSharedDate, pushDeduplicate } from '../../../core/util';
+import { CurrencyService } from '../../currency.service';
 import { DataService } from '../../data.service';
 
 export const MODE_ADD = 'add';
@@ -33,6 +34,7 @@ export class TransactionEditComponent implements OnInit {
   constructor(
     @Inject(MAT_DIALOG_DATA) data: { transaction: Transaction, editMode: typeof MODE_ADD | typeof MODE_EDIT },
     private readonly dataService: DataService,
+    private readonly currencyService: CurrencyService,
     private readonly matDialogRef: MatDialogRef<TransactionEditComponent>,
   ) {
     if (data.transaction.dataType !== "single") {
@@ -95,6 +97,10 @@ export class TransactionEditComponent implements OnInit {
 
   getAbsoluteAmount(): number {
     return Math.abs(moneyToNumber(this.singleData.amount));
+  }
+
+  getCurrencySymbol(): string {
+    return this.currencyService.getSymbol(this.getAccount().currency);
   }
 
   addLabel(newLabel: string) {

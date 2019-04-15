@@ -18,6 +18,7 @@
       <div fxFlex="none" fxFlex.gt-sm="60" fxLayout="column">
         <mat-form-field>
           <mat-select
+              required
               name="accountId"
               [(ngModel)]="singleData.accountId"
               placeholder="Account">
@@ -66,7 +67,7 @@
                 [ngModelOptions]="{updateOn: 'blur'}"
                 placeholder="Amount"
                 required>
-            <span matSuffix>&nbsp;€</span>
+            <span matSuffix>&nbsp;{{getCurrencySymbol()}}</span>
           </mat-form-field>
         </div>
         <mat-form-field>
