@@ -104,6 +104,10 @@ export class DataService {
 
   removeAccounts(toRemove: Account | Account[]) {
     for (const account of pluralizeArgument(toRemove)) {
+      // Reset default-on-add account if it is being deleted.
+      if (this.getUserSettings().defaultAccountIdOnAdd === account.id) {
+        this.getUserSettings().defaultAccountIdOnAdd = 0;
+      }
       removeByValue(this.data.accounts, account);
     }
     this.notifyAccounts();

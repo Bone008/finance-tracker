@@ -61,6 +61,14 @@ export class TransactionEditComponent implements OnInit {
     return this.dataService.getAccountById(this.singleData.accountId);
   }
 
+  isAccountDefault(): boolean {
+    return this.singleData.accountId === this.dataService.getUserSettings().defaultAccountIdOnAdd;
+  }
+
+  setAccountDefault() {
+    this.dataService.getUserSettings().defaultAccountIdOnAdd = this.singleData.accountId;
+  }
+
   setDate(dateString: string) {
     if (dateString) {
       this.singleData.date = dateToTimestamp(new Date(dateString));

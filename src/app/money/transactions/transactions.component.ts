@@ -131,6 +131,7 @@ export class TransactionsComponent implements AfterViewInit {
       single: new TransactionData({
         date: timestampNow(),
         isCash: true,
+        accountId: this.dataService.getUserSettings().defaultAccountIdOnAdd,
       }),
     }));
   }

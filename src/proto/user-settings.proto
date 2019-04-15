@@ -8,4 +8,8 @@ message UserSettings {
 
   // Last known dominance order of labels for analytics. Values are signed!
   map<string, int32> label_dominance_order = 2;
+
+  // Which account to select by default when manually adding a transaction.
+  // The default value 0 indicates that the user has not selected a default account.
+  uint32 default_account_id_on_add = 3;
 }

@@ -29,6 +29,14 @@
               <mat-icon>{{account.icon}}</mat-icon>&nbsp;{{account.name}}
             </mat-option>
           </mat-select>
+          <button
+              type="button"
+              matSuffix
+              mat-button
+              [hidden]="editMode==='edit' || !singleData.accountId || isAccountDefault()"
+              (click)="setAccountDefault(); $event.stopPropagation()">
+            Set default
+          </button>
         </mat-form-field>
         <div fxLayout="row" fxLayoutGap="10px" fxLayout.xs="column" fxLayoutGap.xs="0">
           <mat-form-field fxFlex="none" fxFlex.gt-xs="50">
