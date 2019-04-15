@@ -21,6 +21,8 @@
               name="accountId"
               [(ngModel)]="singleData.accountId"
               placeholder="Account">
+            <mat-select-trigger><mat-icon>{{getAccount().icon}}</mat-icon>&nbsp;{{getAccount().name}}</mat-select-trigger>
+            <mat-option disabled hidden [value]="0">Default</mat-option>
             <mat-option
                 *ngFor="let account of allAccounts$ | async"
                 [value]="account.id">

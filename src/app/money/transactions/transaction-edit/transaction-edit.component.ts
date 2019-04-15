@@ -57,6 +57,10 @@ export class TransactionEditComponent implements OnInit {
   ngOnInit() {
   }
 
+  getAccount(): Account {
+    return this.dataService.getAccountById(this.singleData.accountId);
+  }
+
   setDate(dateString: string) {
     if (dateString) {
       this.singleData.date = dateToTimestamp(new Date(dateString));
