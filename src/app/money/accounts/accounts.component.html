@@ -17,6 +17,7 @@
       <div class="cell-last-known-date">Last known balance</div>
       <div class="cell-buttons"></div>
     </div>
+
     <div
         class="data-row"
         *ngFor="let account of currentAccounts">
@@ -52,6 +53,28 @@
           <mat-icon>delete</mat-icon>
         </button>
       </div>
+    </div>
+
+    <div class="footer-row">
+        <div class="cell-icon"></div>
+        <div class="cell-name">All accounts:</div>
+        <div class="cell-balance">TODO&nbsp;{{getCurrencySymbol(getMainCurrency())}}</div>
+        <div class="cell-last-known-date"></div>
+        <div class="cell-buttons" fxLayout="row" fxLayoutAlign="stretch center">
+          <mat-form-field fxFlex>
+            <mat-select
+                [ngModel]="getMainCurrency()"
+                (ngModelChange)="setMainCurrency($event)"
+                placeholder="Main currency">
+              <mat-option
+                  *ngFor="let curr of (usedCurrencies$ | async)"
+                  [value]="curr">
+                {{curr}}
+              </mat-option>
+            </mat-select>
+            <mat-hint>All foreign currencies will be converted to this throughout the app.</mat-hint>
+          </mat-form-field>
+        </div>
     </div>
   </mat-card-content>
 </mat-card>

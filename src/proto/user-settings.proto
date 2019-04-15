@@ -12,4 +12,8 @@ message UserSettings {
   // Which account to select by default when manually adding a transaction.
   // The default value 0 indicates that the user has not selected a default account.
   uint32 default_account_id_on_add = 3;
+
+  // Main currency used throughout the app. Should automatically fall back to a sensible default
+  // value if unset.
+  string main_currency = 4;
 }

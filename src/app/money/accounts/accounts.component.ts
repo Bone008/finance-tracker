@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 import { cloneMessage, moneyToNumber, protoDateToMoment } from 'src/app/core/proto-util';
 import { maxBy } from 'src/app/core/util';
 import { Account, KnownBalance, TransactionData } from 'src/proto/model';
@@ -15,9 +15,13 @@ import { extractTransactionData } from '../model-util';
   styleUrls: ['./accounts.component.css']
 })
 export class AccountsComponent implements OnInit {
+  // Observable of all accounts in the db.
   readonly accounts$: Observable<Account[]>;
+  // Observable of all unique used currencies of the accounts.
+  readonly usedCurrencies$: Observable<string[]>;
 
   private cachedBalances: number[] = [];
+  private accountEditSubject = new BehaviorSubject<void>(void (0));
 
   constructor(
     private readonly dataService: DataService,
@@ -26,14 +30,27 @@ export class AccountsComponent implements OnInit {
   ) {
     this.accounts$ = this.dataService.accounts$.pipe(
       tap(accounts => {
+        this.cachedBalances = [];
         for (const account of accounts) {
           this.cachedBalances[account.id] = this.computeAccountBalance(account);
         }
       })
     );
+
+    this.usedCurrencies$ = combineLatest(this.dataService.accounts$, this.accountEditSubject).pipe(
+      map(([accounts, _]) => Array.from(new Set<string>(accounts.map(a => a.currency))).sort())
+    );
   }
 
   ngOnInit() {
+  }
+
+  getMainCurrency(): string {
+    return this.dataService.getMainCurrency();
+  }
+
+  setMainCurrency(value: string) {
+    this.dataService.getUserSettings().mainCurrency = value;
   }
 
   /** Opens dialog to create a new account. */
@@ -55,6 +72,7 @@ export class AccountsComponent implements OnInit {
       .afterConfirmed().subscribe(() => {
         Object.assign(account, temp);
         //account.modified = timestampNow();
+        this.accountEditSubject.next(void (0));
       });
   }
 

@@ -1,58 +1,45 @@
 
-.header-row {
-  position: sticky;
-  top: 56px;
-  z-index: 100;
-  display: flex;
-  flex-direction: row;
-  padding: 10px 14px;
-  align-items: center;
-  border-bottom: 1px solid rgba(0,0,0,.12);
-  background: white;
-  color: rgba(0, 0, 0, 0.54);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.data-row {
+.header-row,
+.data-row,
+.footer-row {
   display: flex;
   flex-direction: row;
   align-items: center;
   padding: 10px 14px;
   border-bottom: 1px solid rgba(0,0,0,.12);
-  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
 
 .header-row > *,
-.data-row > * {
+.data-row > *,
+.footer-row > * {
   /* Note: Don't use combined notation, we override top and bottom later. */
   padding-left: 10px;
   padding-right: 10px;
   min-width: 0;
 }
 
+.header-row {
+  position: sticky;
+  top: 56px;
+  z-index: 100;
+  background: white;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.footer-row {
+  border-top: 4px double rgba(0,0,0,.24);
+  font-weight: bold;
+}
+
 .cell-icon {
   flex: 0 0 24px;
 }
+
 .cell-name {
   flex: 0 1 300px;
 }
-.cell-balance {
-  flex: 0 0 110px;
-  text-align: right;
-  font-size: 120%;
-  white-space: nowrap;
-}
-.cell-last-known-date {
-  flex: 0 2 150px;
-}
-.cell-buttons {
-  flex: 1 1 210px;
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-}
-
 .cell-name .account-iban {
   display: block;
   margin-top: .5em;
@@ -64,4 +51,25 @@
   margin-top: .5em;
   color: rgba(0,0,0, .5);
   white-space: pre-wrap;
+}
+.footer-row .cell-name {
+  text-align: right;
+}
+
+.cell-balance {
+  flex: 0 0 110px;
+  text-align: right;
+  font-size: 120%;
+  white-space: nowrap;
+}
+
+.cell-last-known-date {
+  flex: 0 2 150px;
+}
+
+.cell-buttons {
+  flex: 1 1 210px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
 }
