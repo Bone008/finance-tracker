@@ -72,7 +72,9 @@ export function momentToProtoDate(m: moment.Moment): ProtoDate {
   });
 }
 
-export function protoDateToMoment(date: ProtoDate): moment.Moment {
+export function protoDateToMoment(date: ProtoDate | null | undefined): moment.Moment {
+  if (!date) return moment.invalid();
+
   if (date.year === 0) {
     throw new Error('cannot convert date without year to moment');
   }

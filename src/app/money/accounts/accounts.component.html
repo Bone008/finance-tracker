@@ -1,0 +1,51 @@
+<mat-card class="main-card">
+  <mat-card-title fxLayout="row" fxLayoutGap="10px">
+    <span fxFlex>Accounts</span>
+    <button
+        mat-fab
+        matTooltip="Add account">
+        <mat-icon>add</mat-icon>
+    </button>
+  </mat-card-title>
+
+  <mat-card-content class="accounts-container" *ngIf="accounts$ | async as currentAccounts">
+    <div class="header-row">
+      <div class="cell-name">Name</div>
+      <div class="cell-balance">Balance</div>
+      <div class="cell-last-known-date">Last known balance</div>
+      <div class="cell-buttons"></div>
+    </div>
+    <div
+        class="data-row"
+        *ngFor="let account of currentAccounts">
+      <div class="cell-name">
+        <mat-icon>{{account.icon}}</mat-icon>&nbsp;{{account.name}}
+        <span class="account-iban" *ngIf="account.iban">{{account.iban}}</span>
+      </div>
+      <div
+          class="cell-balance amount"
+          [class.negative]="getBalance(account) < 0">
+        {{formatBalance(account)}}
+      </div>
+      <div class="cell-last-known-date">
+        {{(getLastKnownBalanceDate(account) | date) || '-'}}
+      </div>
+      <div class="cell-buttons">
+        <button
+            mat-button>
+          Record balance
+        </button>
+        <button
+            mat-icon-button
+            color="primary">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            color="primary">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
+import { AccountsComponent } from './accounts/accounts.component';
 import { AnalyticsComponent } from './analytics/analytics.component';
 import { BucketBreakdownComponent } from './analytics/bucket-breakdown.component';
 import { ChartComponent } from './analytics/chart.component';
@@ -30,12 +31,13 @@ import { TransactionLabelsComponent } from './transactions/transaction-labels/tr
 import { TransactionsComponent } from './transactions/transactions.component';
 
 const appRoutes: Routes = [
+  { path: 'overview', component: AccountsComponent },
   { path: 'transactions', component: TransactionsComponent },
   { path: 'labels', component: LabelsComponent },
   { path: 'rules', component: RulesComponent },
   { path: 'analytics', component: AnalyticsComponent },
   { path: 'comments', component: CommentsComponent },
-  { path: '', pathMatch: 'full', redirectTo: 'transactions' }
+  { path: '', pathMatch: 'full', redirectTo: 'overview' }
 ];
 
 @NgModule({
@@ -71,6 +73,7 @@ const appRoutes: Routes = [
     RulesComponent,
     LabelChipComponent,
     RuleEditComponent,
+    AccountsComponent,
   ],
   entryComponents: [
     FormImportComponent,

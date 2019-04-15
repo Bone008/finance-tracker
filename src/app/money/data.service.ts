@@ -1,9 +1,17 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, of } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
-import { Account, DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
+import { Account, DataContainer, Date, GlobalComment, ImportedRow, KnownBalance, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
+import { numberToMoney } from "../core/proto-util";
 import { pluralizeArgument } from "../core/util";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
+
+const DEFAULT_ACCOUNT = new Account({
+  id: 0,
+  icon: 'error',
+  name: 'Default',
+  currency: 'EUR',
+});
 
 // TODO: Split this up into multiple services responsible for individual entities.
 @Injectable({
@@ -12,20 +20,13 @@ import { extractAllLabels, extractTransactionData, forEachTransactionData, isSin
 export class DataService {
   private data = new DataContainer();
   private highestImportedRowId = 0;
+  private readonly accountsSubject = new BehaviorSubject<Account[]>([]);
   private readonly transactionsSubject = new BehaviorSubject<Transaction[]>([]);
   private readonly processingRulesSubject = new BehaviorSubject<ProcessingRule[]>([]);
   private readonly globalCommentsSubject = new BehaviorSubject<GlobalComment[]>([]);
   private readonly userSettingsSubject = new BehaviorSubject<UserSettings>(new UserSettings());
 
-  // TODO implement accounts access
-  private readonly dummyAccounts = [
-    new Account({ id: 1, name: "Cash", icon: "money", currency: "EUR" }),
-    new Account({ id: 2, name: "Bank account", icon: "assignment", currency: "EUR" }),
-    new Account({ id: 3, name: "Bank account (Swiss)", icon: "assignment", currency: "CHF" }),
-    new Account({ id: 4, name: "Cash (Israeli)", icon: "money", currency: "ILS" }),
-  ];
-  readonly accounts$ = of(this.dummyAccounts);
-
+  readonly accounts$ = this.accountsSubject.asObservable();
   readonly transactions$ = this.transactionsSubject.asObservable().pipe(debounceTime(0));
   readonly processingRules$ = this.processingRulesSubject.asObservable();
   readonly globalComments$ = this.globalCommentsSubject.asObservable();
@@ -33,7 +34,22 @@ export class DataService {
 
   setDataContainer(data: DataContainer) {
     this.data = data;
+
+    this.data.accounts = [
+      new Account({ id: 1, name: "Cash", icon: "money", currency: "EUR" }),
+      new Account({
+        id: 2, name: "Bank account", icon: "assignment", currency: "EUR", iban: 'DE98 7654 3210 7654 3210',
+        knownBalances: [
+          new KnownBalance({ date: new Date({ year: 2019, month: 1, day: 20 }), balance: numberToMoney(600) }),
+          new KnownBalance({ date: new Date({ year: 2018, month: 12, day: 30 }), balance: numberToMoney(10000) }),
+        ],
+      }),
+      new Account({ id: 3, name: "Bank account (Swiss)", icon: "assignment", currency: "CHF", iban: 'CH12 3456 7890' }),
+      new Account({ id: 4, name: "Cash (Israeli)", icon: "money", currency: "ILS" }),
+    ];
+
     this.updateHighestImportedRowId();
+    this.notifyAccounts();
     this.notifyTransactions();
     this.notifyProcessingRules();
     this.notifyGlobalComments();
@@ -51,8 +67,14 @@ export class DataService {
     return this.data.userSettings;
   }
 
-  getAccountById(accountId: number): Account | null {
-    return this.dummyAccounts[accountId - 1] || null;
+  readonly accountFromTxDataFn = (data: TransactionData) => this.getAccountById(data.accountId);
+  readonly accountFromIdFn = (accountId: number) => this.getAccountById(accountId);
+  readonly currencyFromTxDataFn = (data: TransactionData) => this.getAccountById(data.accountId).currency;
+  readonly currencyFromAccountIdFn = (accountId: number) => this.getAccountById(accountId).currency;
+
+  getAccountById(accountId: number): Account {
+    // TODO: Fix access by id.
+    return this.data.accounts[accountId - 1] || DEFAULT_ACCOUNT;
   }
 
   getProcessingRules(): ProcessingRule[] {
@@ -178,6 +200,10 @@ export class DataService {
     }
     this.data.globalComments.splice(index, 1);
     this.notifyGlobalComments();
+  }
+
+  private notifyAccounts() {
+    this.accountsSubject.next(this.data.accounts);
   }
 
   private notifyTransactions() {

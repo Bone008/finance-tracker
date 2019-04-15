@@ -29,6 +29,9 @@
       <h1>Finance Tracker</h1>
     </div>
     <mat-nav-list>
+      <a mat-list-item routerLink="/overview" routerLinkActive="active" (click)="mobileQuery.matches && sidenav.close()">
+        <mat-icon>account_balance</mat-icon>&nbsp;Overview
+      </a>
       <a mat-list-item routerLink="/transactions" routerLinkActive="active" (click)="mobileQuery.matches && sidenav.close()">
         <mat-icon>list</mat-icon>&nbsp;Transactions
       </a>

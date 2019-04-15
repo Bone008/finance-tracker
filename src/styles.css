@@ -45,6 +45,11 @@ body {
     -webkit-appearance: none;
 }
 
+/* Middle align icons by default. */
+.mat-icon {
+  vertical-align: middle;
+}
+
 /* Apply icon style of mat-option also to mat-select-trigger. */
 .mat-select-trigger .mat-icon {
   margin-right: 16px;

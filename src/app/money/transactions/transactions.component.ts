@@ -12,7 +12,7 @@ import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionData, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
@@ -377,9 +377,8 @@ export class TransactionsComponent implements AfterViewInit {
 
   getTransactionCurrencySymbol(transaction: Transaction): string {
     let uniqueCurrency: string | null = null;
-    for (const data of extractTransactionData(transaction)) {
-      const account = this.dataService.getAccountById(data.accountId);
-      const currency = account && account.currency;
+    const currencies = mapTransactionData(transaction, this.dataService.currencyFromTxDataFn);
+    for (const currency of currencies) {
       if (uniqueCurrency === null) {
         uniqueCurrency = currency;
       } else if (uniqueCurrency !== currency) {
