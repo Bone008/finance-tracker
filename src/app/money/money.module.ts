@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
+import { AccountEditComponent } from './accounts/account-edit/account-edit.component';
 import { AccountsComponent } from './accounts/accounts.component';
 import { AnalyticsComponent } from './analytics/analytics.component';
 import { BucketBreakdownComponent } from './analytics/bucket-breakdown.component';
@@ -74,9 +75,11 @@ const appRoutes: Routes = [
     LabelChipComponent,
     RuleEditComponent,
     AccountsComponent,
+    AccountEditComponent,
   ],
   entryComponents: [
     FormImportComponent,
+    AccountEditComponent,
     TransactionEditComponent,
     RuleEditComponent,
     DialogDeleteWithOrphansComponent,

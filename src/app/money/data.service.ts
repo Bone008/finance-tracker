@@ -3,7 +3,7 @@ import { BehaviorSubject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
 import { Account, DataContainer, Date, GlobalComment, ImportedRow, KnownBalance, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { numberToMoney } from "../core/proto-util";
-import { pluralizeArgument } from "../core/util";
+import { pluralizeArgument, removeByValue } from "../core/util";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
 const DEFAULT_ACCOUNT = new Account({
@@ -67,6 +67,14 @@ export class DataService {
     return this.data.userSettings;
   }
 
+  getProcessingRules(): ProcessingRule[] {
+    return this.data.processingRules;
+  }
+
+  getCurrentTransactionList(): Transaction[] {
+    return this.data.transactions;
+  }
+
   readonly accountFromTxDataFn = (data: TransactionData) => this.getAccountById(data.accountId);
   readonly accountFromIdFn = (accountId: number) => this.getAccountById(accountId);
   readonly currencyFromTxDataFn = (data: TransactionData) => this.getAccountById(data.accountId).currency;
@@ -77,21 +85,33 @@ export class DataService {
     return this.data.accounts[accountId - 1] || DEFAULT_ACCOUNT;
   }
 
-  getProcessingRules(): ProcessingRule[] {
-    return this.data.processingRules;
+  addAccounts(toAdd: Account | Account[]) {
+    // Find highest id in data.
+    let highestAccountId = (this.data.accounts.length > 0
+      ? Math.max(...this.data.accounts.map(a => a.id))
+      : 0);
+
+    const accounts = pluralizeArgument(toAdd);
+    for (const account of accounts) {
+      if (account.id !== 0) {
+        throw new Error('Can only add accounts with unassigned ids!');
+      }
+      account.id = ++highestAccountId;
+    }
+    this.data.accounts.push(...accounts);
+    this.notifyAccounts();
   }
 
-  getCurrentTransactionList(): Transaction[] {
-    return this.data.transactions;
+  removeAccounts(toRemove: Account | Account[]) {
+    for (const account of pluralizeArgument(toRemove)) {
+      removeByValue(this.data.accounts, account);
+    }
+    this.notifyAccounts();
   }
 
   removeTransactions(toRemove: Transaction | Transaction[]) {
-    const transactions = pluralizeArgument(toRemove);
-    for (const transaction of transactions) {
-      const index = this.data.transactions.indexOf(transaction);
-      if (index >= 0) {
-        this.data.transactions.splice(index, 1);
-      }
+    for (const transaction of pluralizeArgument(toRemove)) {
+      removeByValue(this.data.transactions, transaction);
     }
     this.notifyTransactions();
   }
@@ -180,10 +200,7 @@ export class DataService {
 
   removeProcessingRules(toRemove: ProcessingRule | ProcessingRule[]) {
     for (const rule of pluralizeArgument(toRemove)) {
-      const index = this.data.processingRules.indexOf(rule);
-      if (index >= 0) {
-        this.data.processingRules.splice(index, 1);
-      }
+      removeByValue(this.data.processingRules, rule);
     }
     this.notifyProcessingRules();
   }

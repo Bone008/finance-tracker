@@ -3,7 +3,8 @@ import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
 import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
-import { ProcessingRule, Transaction, TransactionData } from '../../proto/model';
+import { Account, ProcessingRule, Transaction, TransactionData } from '../../proto/model';
+import { AccountEditComponent, AccountEditConfig } from './accounts/account-edit/account-edit.component';
 import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
@@ -46,6 +47,12 @@ export class DialogService {
 
   openFormImport(): ConfirmableDialogRef<FormImportComponent> {
     return this.openConfirmable(FormImportComponent);
+  }
+
+  openAccountEdit(account: Account, editMode: 'add' | 'edit')
+    : ConfirmableDialogRef<AccountEditComponent> {
+    const config: AccountEditConfig = { account, editMode };
+    return this.openConfirmable(AccountEditComponent, { data: config });
   }
 
   openTransactionEdit(transaction: Transaction, editMode: typeof TransactionEditComponent.prototype.editMode)

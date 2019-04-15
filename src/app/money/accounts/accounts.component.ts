@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { moneyToNumber, protoDateToMoment } from 'src/app/core/proto-util';
+import { cloneMessage, moneyToNumber, protoDateToMoment } from 'src/app/core/proto-util';
 import { maxBy } from 'src/app/core/util';
 import { Account, KnownBalance } from 'src/proto/model';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
+import { DialogService } from '../dialog.service';
 import { extractTransactionData } from '../model-util';
 
 @Component({
@@ -20,7 +21,8 @@ export class AccountsComponent implements OnInit {
 
   constructor(
     private readonly dataService: DataService,
-    private readonly currencyService: CurrencyService
+    private readonly currencyService: CurrencyService,
+    private readonly dialogService: DialogService,
   ) {
     this.accounts$ = this.dataService.accounts$.pipe(
       tap(accounts => {
@@ -33,6 +35,34 @@ export class AccountsComponent implements OnInit {
 
   ngOnInit() {
   }
+
+  /** Opens dialog to create a new account. */
+  startAdd() {
+    const account = new Account({
+    });
+
+    this.dialogService.openAccountEdit(account, 'add')
+      .afterConfirmed().subscribe(() => {
+        //account.created = timestampNow();
+        this.dataService.addAccounts(account);
+      });
+  }
+
+  /** Opens dialog to edit an existing account. */
+  startEdit(account: Account) {
+    const temp = cloneMessage(Account, account);
+    this.dialogService.openAccountEdit(temp, 'edit')
+      .afterConfirmed().subscribe(() => {
+        Object.assign(account, temp);
+        //account.modified = timestampNow();
+      });
+  }
+
+  delete(account: Account) {
+    // TODO: check for references
+    this.dataService.removeAccounts(account);
+  }
+
 
   getCurrencySymbol(currencyCode: string): string {
     return this.currencyService.getSymbol(currencyCode);

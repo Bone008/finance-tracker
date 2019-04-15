@@ -3,7 +3,8 @@
     <span fxFlex>Accounts</span>
     <button
         mat-fab
-        matTooltip="Add account">
+        matTooltip="Add account"
+        (click)="startAdd()">
         <mat-icon>add</mat-icon>
     </button>
   </mat-card-title>
@@ -21,6 +22,7 @@
       <div class="cell-name">
         <mat-icon>{{account.icon}}</mat-icon>&nbsp;{{account.name}}
         <span class="account-iban" *ngIf="account.iban">{{account.iban}}</span>
+        <span class="account-comment" *ngIf="account.comment">{{account.comment}}</span>
       </div>
       <div
           class="cell-balance amount"
@@ -37,12 +39,14 @@
         </button>
         <button
             mat-icon-button
-            color="primary">
+            color="primary"
+            (click)="startEdit(account)">
           <mat-icon>edit</mat-icon>
         </button>
         <button
             mat-icon-button
-            color="primary">
+            color="primary"
+            (click)="delete(account)">
           <mat-icon>delete</mat-icon>
         </button>
       </div>

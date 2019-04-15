@@ -50,11 +50,20 @@
   justify-content: flex-end;
 }
 
+.cell-name .mat-icon {
+  margin-right: 16px;
+}
 .cell-name .account-iban {
   display: block;
   margin-left: 2em;
   margin-top: .5em;
-  color: rgba(0,0,0,.5);
-  font-size: 100%;
+  color: rgba(0,0,0, .66);
   user-select: all;
+}
+.cell-name .account-comment {
+  display: block;
+  margin-left: 2em;
+  margin-top: .5em;
+  color: rgba(0,0,0, .5);
+  white-space: pre-wrap;
 }
