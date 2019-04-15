@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { cloneMessage, moneyToNumber, protoDateToMoment } from 'src/app/core/proto-util';
 import { maxBy } from 'src/app/core/util';
-import { Account, KnownBalance } from 'src/proto/model';
+import { Account, KnownBalance, TransactionData } from 'src/proto/model';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
@@ -59,7 +59,11 @@ export class AccountsComponent implements OnInit {
   }
 
   delete(account: Account) {
-    // TODO: check for references
+    const numReferring = this.getTxDataForAccount(account).length;
+    if (numReferring > 0) {
+      alert(`This account is associated with ${numReferring} individual transactions and cannot be deleted.`);
+      return;
+    }
     this.dataService.removeAccounts(account);
   }
 
@@ -89,8 +93,12 @@ export class AccountsComponent implements OnInit {
     const known = this.getLastKnownBalance(account) || new KnownBalance();
     const startBalance = moneyToNumber(known.balance);
 
-    return extractTransactionData(this.dataService.getCurrentTransactionList())
-      .filter(data => data.accountId === account.id)
+    return this.getTxDataForAccount(account)
       .reduce((acc, data) => acc + moneyToNumber(data.amount), startBalance);
+  }
+
+  private getTxDataForAccount(account: Account): TransactionData[] {
+    return extractTransactionData(this.dataService.getCurrentTransactionList())
+      .filter(data => data.accountId === account.id);
   }
 }
