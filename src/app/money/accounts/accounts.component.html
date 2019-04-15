@@ -11,6 +11,7 @@
 
   <mat-card-content class="accounts-container" *ngIf="accounts$ | async as currentAccounts">
     <div class="header-row">
+      <div class="cell-icon"></div>
       <div class="cell-name">Name</div>
       <div class="cell-balance">Balance</div>
       <div class="cell-last-known-date">Last known balance</div>
@@ -19,8 +20,9 @@
     <div
         class="data-row"
         *ngFor="let account of currentAccounts">
+      <mat-icon class="cell-icon">{{account.icon}}</mat-icon>
       <div class="cell-name">
-        <mat-icon>{{account.icon}}</mat-icon>&nbsp;{{account.name}}
+        {{account.name}}
         <span class="account-iban" *ngIf="account.iban">{{account.iban}}</span>
         <span class="account-comment" *ngIf="account.comment">{{account.comment}}</span>
       </div>
