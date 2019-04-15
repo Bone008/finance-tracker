@@ -11,7 +11,7 @@ import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { CanonicalBillingInfo, extractAllLabels, getTransactionAmount, resolveTransactionCanonicalBilling } from '../model-util';
+import { CanonicalBillingInfo, extractAllLabels, getTransactionAmount, mapTransactionData, resolveTransactionCanonicalBilling } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
 
@@ -233,6 +233,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     const displayUnit = 'month';
     const keyFormat = 'YYYY-MM';
 
+    const mainCurrency = this.dataService.getUserSettings().mainCurrency;
     const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
     const billedBuckets = new KeyedArrayAggregate<BilledTransaction>();
 
@@ -275,6 +276,13 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       }
 
       debugContribHistogram.add(contributingKeys.length + "", 1);
+
+      // TODO: Support converting currencies to main currency.
+      const currencies = mapTransactionData(transaction, this.dataService.currencyFromTxDataFn);
+      if (currencies.some(curr => curr !== mainCurrency)) {
+        // Skip for now.
+        continue;
+      }
 
       // TODO: For DAY billing granularity, we may want to consider proportional contributions to the months.
       const amountPerBucket = getTransactionAmount(transaction) / contributingKeys.length;
@@ -341,5 +349,6 @@ export interface LabelGroup {
 /** Contains data about a transcation billed to a specific date bucket. */
 export interface BilledTransaction {
   source: Transaction;
+  /** Contribution amount of transaction in main currency. */
   amount: number;
 }
