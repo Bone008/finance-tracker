@@ -1,61 +1,61 @@
 <form #editForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
-    <div class="title-container" fxLayout="row" fxLayoutAlign="stretch start">
-      <h2 mat-dialog-title fxFlex>{{editMode==='edit' ? 'Edit' : 'Add'}} account</h2>
-      <button mat-button mat-dialog-close>Cancel</button>
-      <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
-    </div>
+  <div class="title-container" fxLayout="row" fxLayoutAlign="stretch start">
+    <h2 mat-dialog-title fxFlex>{{editMode==='edit' ? 'Edit' : 'Add'}} account</h2>
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
+  </div>
+
+  <mat-dialog-content fxLayout="column">
+    <mat-form-field>
+      <input
+          matInput
+          required
+          name="name"
+          [(ngModel)]="account.name"
+          placeholder="Name">
+    </mat-form-field>
+    <mat-form-field>
+      <input
+          matInput
+          required
+          name="icon"
+          [(ngModel)]="account.icon"
+          placeholder="Icon name">
+      <mat-icon class="preview-icon" matSuffix>{{account.icon}}</mat-icon>
+      <mat-hint>See <a href="https://material.io/tools/icons/" target="_blank">icon names</a>.</mat-hint>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-select
+          required
+          name="currency"
+          [(ngModel)]="account.currency"
+          (ngModelChange)="false"
+          placeholder="Currency">
+        <mat-option *ngFor="let curr of allCurrencyCodes" [value]="curr">{{curr}}</mat-option>
+      </mat-select>
+      <span matSuffix>&nbsp;&nbsp;{{getCurrencySymbol(account.currency)}}</span>
+    </mat-form-field>
+    <mat-form-field>
+      <input
+          matInput
+          name="iban"
+          [(ngModel)]="account.iban"
+          placeholder="IBAN / Account number">
+      <mat-hint>Optional, only for display purposes.</mat-hint>
+    </mat-form-field>
+    <mat-form-field>
+      <textarea
+          matInput
+          name="comment"
+          [(ngModel)]="account.comment"
+          placeholder="Comment">
+      </textarea>
+    </mat-form-field>
+  </mat-dialog-content>
   
-    <mat-dialog-content fxLayout="column">
-      <mat-form-field>
-        <input
-            matInput
-            required
-            name="name"
-            [(ngModel)]="account.name"
-            placeholder="Name">
-      </mat-form-field>
-      <mat-form-field>
-        <input
-            matInput
-            required
-            name="icon"
-            [(ngModel)]="account.icon"
-            placeholder="Icon name">
-        <mat-icon class="preview-icon" matSuffix>{{account.icon}}</mat-icon>
-        <mat-hint>See <a href="https://material.io/tools/icons/" target="_blank">icon names</a>.</mat-hint>
-      </mat-form-field>
-      <mat-form-field>
-        <mat-select
-            required
-            name="currency"
-            [(ngModel)]="account.currency"
-            (ngModelChange)="false"
-            placeholder="Currency">
-          <mat-option *ngFor="let curr of allCurrencyCodes" [value]="curr">{{curr}}</mat-option>
-        </mat-select>
-        <span matSuffix>&nbsp;&nbsp;{{getCurrencySymbol(account.currency)}}</span>
-      </mat-form-field>
-      <mat-form-field>
-        <input
-            matInput
-            name="iban"
-            [(ngModel)]="account.iban"
-            placeholder="IBAN / Account number">
-        <mat-hint>Optional, only for display purposes.</mat-hint>
-      </mat-form-field>
-      <mat-form-field>
-        <textarea
-            matInput
-            name="comment"
-            [(ngModel)]="account.comment"
-            placeholder="Comment">
-        </textarea>
-      </mat-form-field>
-    </mat-dialog-content>
-    
-    <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
-      <button mat-button mat-dialog-close>Cancel</button>
-      <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
-    </mat-dialog-actions>
+  <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
+  </mat-dialog-actions>
   </form>
   
