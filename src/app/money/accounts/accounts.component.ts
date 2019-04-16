@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
-import { cloneMessage, moneyToNumber, protoDateToMoment, timestampToMoment } from 'src/app/core/proto-util';
+import { cloneMessage, moneyToNumber, protoDateToMoment, timestampToMilliseconds, timestampToMoment } from 'src/app/core/proto-util';
 import { maxBy } from 'src/app/core/util';
 import { Account, KnownBalance, TransactionData } from 'src/proto/model';
 import { CurrencyService } from '../currency.service';
@@ -12,6 +12,7 @@ import { extractTransactionData } from '../model-util';
 
 export interface AccountInfo {
   balance: number;
+  lastTransactionMoment: moment.Moment | null;
   lastKnownBalanceMoment: moment.Moment | null;
   numTransactionsSinceLastKnown: number;
 }
@@ -122,21 +123,26 @@ export class AccountsComponent implements OnInit {
   private computeInfo(account: Account): AccountInfo {
     const lastKnown = this.getLastKnownBalance(account);
 
-    let txDatas = this.getTxDataForAccount(account);
+    const txDatas = this.getTxDataForAccount(account);
+    const lastTransaction = maxBy(txDatas, data => timestampToMilliseconds(data.date));
+
+    let dataSinceKnown;
     if (lastKnown) {
       // Restrict to transactions that happened AFTER the last known balance.
       const startMoment = protoDateToMoment(lastKnown.date);
-      txDatas = txDatas
+      dataSinceKnown = txDatas
         .filter(data => timestampToMoment(data.date).isAfter(startMoment, 'day'));
+    } else {
+      dataSinceKnown = txDatas;
     }
-
     const startBalance = lastKnown ? moneyToNumber(lastKnown.balance) : 0;
-    const balance = txDatas.reduce((acc, data) => acc + moneyToNumber(data.amount), startBalance);
+    const balance = dataSinceKnown.reduce((acc, data) => acc + moneyToNumber(data.amount), startBalance);
 
     return {
       balance,
+      lastTransactionMoment: lastTransaction ? timestampToMoment(lastTransaction.date) : null,
       lastKnownBalanceMoment: lastKnown ? protoDateToMoment(lastKnown.date) : null,
-      numTransactionsSinceLastKnown: txDatas.length,
+      numTransactionsSinceLastKnown: dataSinceKnown.length,
     };
   }
 

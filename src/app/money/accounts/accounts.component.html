@@ -14,6 +14,7 @@
       <div class="cell-icon"></div>
       <div class="cell-name">Name</div>
       <div class="cell-balance">Balance</div>
+      <div class="cell-last-transaction">Last transaction</div>
       <div class="cell-last-known-date">Last known balance</div>
       <div class="cell-buttons"></div>
     </div>
@@ -34,6 +35,9 @@
             class="amount-link"
             matTooltip="Click to record new known balance"
             (click)="$event.preventDefault(); openBalances(account)">{{formatBalance(account)}}</a>
+      </div>
+      <div class="cell-last-transaction">
+        {{getAccountInfo(account).lastTransactionMoment?.format('ll') || '-'}}
       </div>
       <div class="cell-last-known-date">
         {{getAccountInfo(account).lastKnownBalanceMoment?.format('ll') || '-'}}
@@ -64,6 +68,7 @@
         <div class="cell-icon"></div>
         <div class="cell-name">All accounts:</div>
         <div class="cell-balance">TODO&nbsp;{{getCurrencySymbol(getMainCurrency())}}</div>
+        <div class="cell-last-transaction"></div>
         <div class="cell-last-known-date"></div>
         <div class="cell-buttons" fxLayout="row" fxLayoutAlign="stretch center">
           <mat-form-field fxFlex>

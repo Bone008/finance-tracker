@@ -68,6 +68,10 @@
   border-bottom: 1px dotted rgba(0,0,0, .66);
 }
 
+.cell-last-transaction {
+  flex: 0 0 105px;
+}
+
 .cell-last-known-date {
   flex: 0 2 185px;
 }
