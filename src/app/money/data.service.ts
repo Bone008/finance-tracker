@@ -1,9 +1,9 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
-import { Account, DataContainer, Date, GlobalComment, ImportedRow, KnownBalance, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
-import { numberToMoney } from "../core/proto-util";
+import { Account, DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { pluralizeArgument, removeByValue } from "../core/util";
+import { MigrationsService } from "./migrations.service";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
 const DEFAULT_MAIN_CURRENCY = 'EUR';
@@ -35,7 +35,7 @@ export class DataService {
 
   private accountsById: Account[] = [];
 
-  constructor() {
+  constructor(private readonly migrationsService: MigrationsService) {
     // Maintain account id cache.
     this.accounts$.subscribe(accounts => {
       this.accountsById = [];
@@ -46,21 +46,8 @@ export class DataService {
   }
 
   setDataContainer(data: DataContainer) {
+    this.migrationsService.preprocessDataContainer(data);
     this.data = data;
-
-    this.data.accounts = [
-      new Account({ id: 1, name: "Cash", icon: "money", currency: "EUR" }),
-      new Account({
-        id: 2, name: "Bank account", icon: "assignment", currency: "EUR", iban: 'DE98 7654 3210 7654 3210',
-        knownBalances: [
-          new KnownBalance({ date: new Date({ year: 2019, month: 1, day: 20 }), balance: numberToMoney(600) }),
-          new KnownBalance({ date: new Date({ year: 2018, month: 12, day: 30 }), balance: numberToMoney(10000) }),
-        ],
-      }),
-      new Account({ id: 3, name: "Bank account (Swiss)", icon: "assignment", currency: "CHF", iban: 'CH12 3456 7890' }),
-      new Account({ id: 4, name: "Cash (Israeli)", icon: "money", currency: "ILS" }),
-    ];
-
     this.updateHighestImportedRowId();
     this.notifyAccounts();
     this.notifyTransactions();
