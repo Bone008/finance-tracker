@@ -17,7 +17,7 @@ const TOKEN_REGEX = /^(\w+)(:|=|<=?|>=?)(.*)$/;
 // List of valid filter keywords used for autocomplete.
 // Note: Alphabetically sorted by calling sort() immediately after initializer.
 const TOKEN_KEYWORDS = [
-  'is', 'billing', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'iban', 'bookingtext', 'comment', 'label'
+  'is', 'billing', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'iban', 'bookingtext', 'comment', 'label', 'account'
 ].sort();
 const TOKEN_IS_KEYWORDS = [
   'cash', 'bank', 'mixed', 'single', 'group', 'expense', 'income'
@@ -38,6 +38,7 @@ const TOKEN_OPERATORS_BY_KEYWORD: { [keyword: string]: MatcherOperator[] } = {
   'bookingtext': [':', '='],
   'comment': [':', '='],
   'label': [':', '='],
+  'account': [':', '='],
 };
 
 const MOMENT_YEAR_REGEX = /^\d{4}$/;
@@ -256,6 +257,11 @@ export class TransactionFilterService {
       case 'label':
         return this.makeRegexMatcher(value, operator, (test, transaction) =>
           transaction.labels.some(label => test(label))
+        );
+
+      case 'account':
+        return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
+          dataList.some(data => test(this.dataService.getAccountById(data.accountId).name))
         );
 
       case null:
