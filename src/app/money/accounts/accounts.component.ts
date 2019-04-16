@@ -1,13 +1,20 @@
 import { Component, OnInit } from '@angular/core';
+import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
-import { cloneMessage, moneyToNumber, protoDateToMoment } from 'src/app/core/proto-util';
+import { cloneMessage, moneyToNumber, protoDateToMoment, timestampToMoment } from 'src/app/core/proto-util';
 import { maxBy } from 'src/app/core/util';
 import { Account, KnownBalance, TransactionData } from 'src/proto/model';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { extractTransactionData } from '../model-util';
+
+export interface AccountInfo {
+  balance: number;
+  lastKnownBalanceMoment: moment.Moment | null;
+  numTransactionsSinceLastKnown: number;
+}
 
 @Component({
   selector: 'app-accounts',
@@ -20,7 +27,7 @@ export class AccountsComponent implements OnInit {
   // Observable of all unique used currencies of the accounts.
   readonly usedCurrencies$: Observable<string[]>;
 
-  private balancesById: number[] = [];
+  private accountInfosById: AccountInfo[] = [];
   private accountEditSubject = new BehaviorSubject<void>(void (0));
 
   constructor(
@@ -33,14 +40,8 @@ export class AccountsComponent implements OnInit {
       .pipe(map(([accounts, _]) => accounts));
 
     this.accounts$ = accountsObservable.pipe(
-      tap(accounts => {
-        this.balancesById = [];
-        for (const account of accounts) {
-          this.balancesById[account.id] = this.computeAccountBalance(account);
-        }
-      })
+      tap(accounts => this.computeAccountInfos(accounts))
     );
-
     this.usedCurrencies$ = accountsObservable.pipe(
       map(accounts => Array.from(new Set<string>(accounts.map(a => a.currency))).sort())
     );
@@ -91,6 +92,7 @@ export class AccountsComponent implements OnInit {
 
   openBalances(account: Account) {
     this.dialogService.openBalances(account).afterClosed().subscribe(() => {
+      // Note: Don't subscribe the subject directly, as it will be completed otherwise.
       this.accountEditSubject.next();
     });
   }
@@ -100,29 +102,46 @@ export class AccountsComponent implements OnInit {
     return this.currencyService.getSymbol(currencyCode);
   }
 
-  getBalance(account: Account): number {
-    return this.balancesById[account.id] || 0;
-  }
-
   formatBalance(account: Account): string {
-    return this.currencyService.format(this.getBalance(account), account.currency);
+    return this.currencyService.format(this.accountInfosById[account.id].balance, account.currency);
   }
 
-  getLastKnownBalanceDate(account: Account): Date | null {
-    const lastBalance = this.getLastKnownBalance(account);
-    return lastBalance ? protoDateToMoment(lastBalance.date).toDate() : null;
+  getAccountInfo(account: Account): AccountInfo {
+    return this.accountInfosById[account.id];
+  }
+
+  /** Updates the accountInfosById field with new calculations. */
+  private computeAccountInfos(accounts: Account[]) {
+    this.accountInfosById = [];
+    for (const account of accounts) {
+      this.accountInfosById[account.id] = this.computeInfo(account);
+    }
+  }
+
+  /** Calculates view model data for a specific account. */
+  private computeInfo(account: Account): AccountInfo {
+    const lastKnown = this.getLastKnownBalance(account);
+
+    let txDatas = this.getTxDataForAccount(account);
+    if (lastKnown) {
+      // Restrict to transactions that happened AFTER the last known balance.
+      const startMoment = protoDateToMoment(lastKnown.date);
+      txDatas = txDatas
+        .filter(data => timestampToMoment(data.date).isAfter(startMoment, 'day'));
+    }
+
+    const startBalance = lastKnown ? moneyToNumber(lastKnown.balance) : 0;
+    const balance = txDatas.reduce((acc, data) => acc + moneyToNumber(data.amount), startBalance);
+
+    return {
+      balance,
+      lastKnownBalanceMoment: lastKnown ? protoDateToMoment(lastKnown.date) : null,
+      numTransactionsSinceLastKnown: txDatas.length,
+    };
   }
 
   private getLastKnownBalance(account: Account): KnownBalance | null {
     return maxBy(account.knownBalances, known => protoDateToMoment(known.date).valueOf());
-  }
-
-  private computeAccountBalance(account: Account): number {
-    const known = this.getLastKnownBalance(account) || new KnownBalance();
-    const startBalance = moneyToNumber(known.balance);
-
-    return this.getTxDataForAccount(account)
-      .reduce((acc, data) => acc + moneyToNumber(data.amount), startBalance);
   }
 
   private getTxDataForAccount(account: Account): TransactionData[] {
