@@ -10,7 +10,7 @@ const DEFAULT_MAIN_CURRENCY = 'EUR';
 const DEFAULT_ACCOUNT = new Account({
   id: 0,
   icon: 'error',
-  name: 'Default',
+  name: 'Unknown',
   currency: 'EUR',
 });
 
