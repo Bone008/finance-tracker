@@ -233,7 +233,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     const displayUnit = 'month';
     const keyFormat = 'YYYY-MM';
 
-    const mainCurrency = this.dataService.getUserSettings().mainCurrency;
+    const mainCurrency = this.dataService.getMainCurrency();
     const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
     const billedBuckets = new KeyedArrayAggregate<BilledTransaction>();
 

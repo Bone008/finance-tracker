@@ -51,7 +51,7 @@ export class AccountsComponent implements OnInit {
   }
 
   getMainCurrency(): string {
-    return this.dataService.getMainCurrency();
+    return this.dataService.getUserSettings().mainCurrency;
   }
 
   setMainCurrency(value: string) {
