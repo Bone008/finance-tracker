@@ -9,7 +9,7 @@
       (keydown.enter)="newLabel==='' ? 0 : $event.preventDefault()"
       (keyup.enter)="confirmAdd()"
       (keydown.backspace)="newLabel==='' ? requestDelete() : 0"
-      (keydown.escape)="labelAutocomplete.isOpen ? 0 : labelInput.blur()"
+      (keydown.escape)="newLabel=''; labelInput.blur()"
       (keydown.arrowup)="labelAutocomplete.isOpen ? $event.stopPropagation() : 0"
       (keydown.arrowdown)="labelAutocomplete.isOpen ? $event.stopPropagation() : 0"
       [(ngModel)]="newLabel"
