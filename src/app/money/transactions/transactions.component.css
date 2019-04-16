@@ -60,6 +60,14 @@
   vertical-align: middle;
   color: rgba(0, 0, 0, 0.54);
 }
+.transactions-container .cell-amount .transfer {
+  color: rgba(0,0,128, .5);
+}
+.transactions-container .cell-amount .transfer .mat-icon {
+  color: rgba(0,0,128, .5);
+  height: 18px;
+  margin: -1px 0;
+}
 
 .transactions-container .cell-notes {
   flex: 1 1 60%;

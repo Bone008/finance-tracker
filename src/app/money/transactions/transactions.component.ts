@@ -408,6 +408,34 @@ export class TransactionsComponent implements AfterViewInit {
     return uniqueIcon || 'list';
   }
 
+  getTransferInfo(transaction: Transaction): object | null {
+    if (!isGroup(transaction) || transaction.group.children.length !== 2
+      || transaction.group.children[0].accountId === transaction.group.children[1].accountId) {
+      return null;
+    }
+
+    const amounts = transaction.group.children.map(child => moneyToNumber(child.amount));
+    if (Math.sign(amounts[0]) === Math.sign(amounts[1])) {
+      // No opposing signs.
+      return null;
+    }
+    const currencies = transaction.group.children.map(this.dataService.currencyFromTxDataFn);
+    if (currencies[0] !== currencies[1]) {
+      // TODO: Cross-currency not supported yet.
+      return null;
+    }
+
+    const fromIndex = amounts[0] < 0 ? 0 : 1;
+    const from = transaction.group.children[fromIndex];
+    const to = transaction.group.children[1 - fromIndex];
+
+    return {
+      fromAccount: this.dataService.getAccountById(from.accountId),
+      toAccount: this.dataService.getAccountById(to.accountId),
+      amount: Math.min(-amounts[fromIndex], amounts[1 - fromIndex]),
+    }
+  }
+
   /** Returns array of lines. */
   formatTransactionNotes(transaction: Transaction): [string, string][] {
     return extractTransactionData(transaction)

@@ -110,6 +110,17 @@
           <span>{{getTransactionAmount(transaction) | number:'1.2-2'}}</span>
           <span>&nbsp;{{getTransactionCurrencySymbol(transaction)}}</span>
           <mat-icon>{{getTransactionIcon(transaction)}}</mat-icon>
+          <div
+              *ngIf="getTransferInfo(transaction) as transfer"
+              class="transfer"
+              fxLayout="column" fxLayoutAlign="center end">
+            <mat-icon [matTooltip]="transfer.fromAccount.name">{{transfer.fromAccount.icon}}</mat-icon>
+            <span>
+              <span>{{transfer.amount | number:'1.2-2'}}</span>&nbsp;€
+              <mat-icon>arrow_downward</mat-icon>
+            </span>
+            <mat-icon [matTooltip]="transfer.toAccount.name">{{transfer.toAccount.icon}}</mat-icon>
+          </div>
         </div>
 
         <div class="cell-notes">
