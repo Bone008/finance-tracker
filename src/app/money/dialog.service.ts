@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { Account, ProcessingRule, Transaction, TransactionData } from '../../proto/model';
 import { AccountEditComponent, AccountEditConfig } from './accounts/account-edit/account-edit.component';
+import { BalancesComponent } from './accounts/balances/balances.component';
 import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
 import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
@@ -53,6 +54,12 @@ export class DialogService {
     : ConfirmableDialogRef<AccountEditComponent> {
     const config: AccountEditConfig = { account, editMode };
     return this.openConfirmable(AccountEditComponent, { data: config });
+  }
+
+  openBalances(account: Account): MatDialogRef<BalancesComponent> {
+    return this.matDialog.open(BalancesComponent, {
+      data: { account },
+    });
   }
 
   openTransactionEdit(transaction: Transaction, editMode: typeof TransactionEditComponent.prototype.editMode)

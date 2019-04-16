@@ -1,0 +1,56 @@
+<h2 mat-dialog-title>Balance history for {{account.name}}</h2>
+
+<mat-dialog-content fxLayout="column">
+  <form #addForm="ngForm" (ngSubmit)="addNew()"
+      fxLayout="row" fxLayoutAlign="stretch center" fxLayoutGap="10px"
+      fxLayout.xs="row wrap" fxLayoutGap.xs="0px">
+    <mat-form-field fxFlex.xs="100%">
+      <input
+          matInput
+          type="date"
+          name="date"
+          [ngModel]="newDate | date:'yyyy-MM-dd'"
+          (ngModelChange)="newDate = $event"
+          placeholder="Date"
+          required>
+    </mat-form-field>
+    <mat-form-field class="amount-field" [class.negative]="newBalance < 0">
+      <input
+          cdkFocusInitial
+          matInput
+          type="number"
+          name="amount"
+          min="0"
+          step="0.01"
+          [ngModel]="newBalance || null"
+          (ngModelChange)="newBalance = $event"
+          placeholder="Balance"
+          required>
+      <span matSuffix>&nbsp;{{getCurrencySymbol()}}</span>
+    </mat-form-field>
+    <span fxFlex></span>
+    <button
+        mat-button
+        type="submit"
+        color="primary"
+        [disabled]="!addForm.valid">Record</button>
+  </form>
+    
+  <div class="balances-container">
+    <div class="data-row" *ngFor="let balance of displayedBalances">
+      <div class="cell-date">{{balance.date | date}}</div>
+      <div class="cell-balance" [class.negative]="balance.isNegative">
+        {{balance.formattedBalance}}
+      </div>
+      <div class="cell-buttons">
+        <button mat-icon-button type="button" (click)="delete(balance.original)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions fxLayout="column" fxLayoutAlign="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

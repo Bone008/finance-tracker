@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { Money } from 'src/proto/model';
+import { moneyToNumber } from '../core/proto-util';
 
 // TODO: Load from (cached) JSON file.
 const NBSP = '\xA0';
@@ -27,8 +29,14 @@ export class CurrencyService {
     return symbol || currencyCode;
   }
 
-  /** Formats the given amount with the respective currency symbol. */
-  format(amount: number, currencyCode: string): string {
+  /** Formats the given amount (number or Money object) with the respective currency symbol. */
+  format(amount: number | Money | null | undefined, currencyCode: string): string {
+    if (amount instanceof Money) {
+      amount = moneyToNumber(amount);
+    } else if (amount === null || amount === undefined) {
+      amount = 0;
+    }
+
     // Note: not using style:'currency', because it does not allow individual control over the
     // placement of the currency symbol and the separator chars.
     return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

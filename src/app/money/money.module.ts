@@ -7,6 +7,7 @@ import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
 import { AccountEditComponent } from './accounts/account-edit/account-edit.component';
 import { AccountsComponent } from './accounts/accounts.component';
+import { BalancesComponent } from './accounts/balances/balances.component';
 import { AnalyticsComponent } from './analytics/analytics.component';
 import { BucketBreakdownComponent } from './analytics/bucket-breakdown.component';
 import { ChartComponent } from './analytics/chart.component';
@@ -76,10 +77,12 @@ const appRoutes: Routes = [
     RuleEditComponent,
     AccountsComponent,
     AccountEditComponent,
+    BalancesComponent,
   ],
   entryComponents: [
     FormImportComponent,
     AccountEditComponent,
+    BalancesComponent,
     TransactionEditComponent,
     RuleEditComponent,
     DialogDeleteWithOrphansComponent,

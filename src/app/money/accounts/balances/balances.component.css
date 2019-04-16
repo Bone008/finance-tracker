@@ -1,0 +1,31 @@
+.amount-field {
+  min-width: 0;
+  flex-basis: 120px;
+  width: 120px;
+}
+
+.balances-container {
+  margin-top: 1em;
+  border-top: 1px solid rgba(0,0,0, .2);
+  border-bottom: 1px solid rgba(0,0,0, .2);
+  display: flex;
+  flex-direction: column;
+}
+
+.balances-container .data-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.balances-container .data-row .cell-date {
+  flex: 1 1 50%;
+  margin-right: 24px;
+}
+
+.balances-container .data-row .cell-balance {
+  flex: 1 1 50%;
+  text-align: right;
+  font-size: 120%;
+  white-space: nowrap;
+}

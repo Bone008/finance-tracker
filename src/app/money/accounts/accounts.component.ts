@@ -20,7 +20,7 @@ export class AccountsComponent implements OnInit {
   // Observable of all unique used currencies of the accounts.
   readonly usedCurrencies$: Observable<string[]>;
 
-  private cachedBalances: number[] = [];
+  private balancesById: number[] = [];
   private accountEditSubject = new BehaviorSubject<void>(void (0));
 
   constructor(
@@ -28,17 +28,21 @@ export class AccountsComponent implements OnInit {
     private readonly currencyService: CurrencyService,
     private readonly dialogService: DialogService,
   ) {
-    this.accounts$ = this.dataService.accounts$.pipe(
+    // Observable that updates whenever account list or individual accounts are updated.
+    const accountsObservable = combineLatest(this.dataService.accounts$, this.accountEditSubject)
+      .pipe(map(([accounts, _]) => accounts));
+
+    this.accounts$ = accountsObservable.pipe(
       tap(accounts => {
-        this.cachedBalances = [];
+        this.balancesById = [];
         for (const account of accounts) {
-          this.cachedBalances[account.id] = this.computeAccountBalance(account);
+          this.balancesById[account.id] = this.computeAccountBalance(account);
         }
       })
     );
 
-    this.usedCurrencies$ = combineLatest(this.dataService.accounts$, this.accountEditSubject).pipe(
-      map(([accounts, _]) => Array.from(new Set<string>(accounts.map(a => a.currency))).sort())
+    this.usedCurrencies$ = accountsObservable.pipe(
+      map(accounts => Array.from(new Set<string>(accounts.map(a => a.currency))).sort())
     );
   }
 
@@ -85,13 +89,19 @@ export class AccountsComponent implements OnInit {
     this.dataService.removeAccounts(account);
   }
 
+  openBalances(account: Account) {
+    this.dialogService.openBalances(account).afterClosed().subscribe(() => {
+      this.accountEditSubject.next();
+    });
+  }
+
 
   getCurrencySymbol(currencyCode: string): string {
     return this.currencyService.getSymbol(currencyCode);
   }
 
   getBalance(account: Account): number {
-    return this.cachedBalances[account.id] || 0;
+    return this.balancesById[account.id] || 0;
   }
 
   formatBalance(account: Account): string {
