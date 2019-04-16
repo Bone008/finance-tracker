@@ -235,6 +235,14 @@ export class TransactionsComponent implements AfterViewInit {
    * of all labels of its children.
    */
   groupTransactions(transactions: Transaction[]) {
+    // TODO Remove this temporary check for grouping mixed currency transactions.
+    const currencies =
+      new Set<string>(mapTransactionData(transactions, this.dataService.currencyFromTxDataFn));
+    if (currencies.size > 1) {
+      alert('Cannot group transactions with mixed currencies yet!\nComing soon ...');
+      return;
+    }
+
     const newChildren = extractTransactionData(transactions);
     const newLabelsSet = new Set<string>();
     for (let transaction of transactions) {
