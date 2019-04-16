@@ -3,7 +3,7 @@
 <mat-dialog-content fxLayout="column">
   <form #addForm="ngForm" (ngSubmit)="addNew()"
       fxLayout="row" fxLayoutAlign="stretch center" fxLayoutGap="10px"
-      fxLayout.xs="row wrap" fxLayoutGap.xs="0px">
+      fxLayout.xs="row wrap">
     <mat-form-field fxFlex.xs="100%">
       <input
           matInput
@@ -28,13 +28,19 @@
           required>
       <span matSuffix>&nbsp;{{getCurrencySymbol()}}</span>
     </mat-form-field>
-    <span fxFlex></span>
     <button
-        mat-button
+        mat-stroked-button
+        fxFlex
         type="submit"
         color="primary"
         [disabled]="!addForm.valid">Record</button>
   </form>
+
+  <div class="explanation">
+    Please enter the balance at the <strong>end</strong> of the given day, including all
+    transactions that happened on that day. The account's current balance is calculated relative to
+    the most recent known balance.
+  </div>
     
   <div class="balances-container">
     <div class="data-row" *ngFor="let balance of displayedBalances">
@@ -43,7 +49,7 @@
         {{balance.formattedBalance}}
       </div>
       <div class="cell-buttons">
-        <button mat-icon-button type="button" (click)="delete(balance.original)">
+        <button mat-icon-button color="primary" type="button" (click)="delete(balance.original)">
           <mat-icon>delete</mat-icon>
         </button>
       </div>
@@ -51,6 +57,6 @@
   </div>
 </mat-dialog-content>
 
-<mat-dialog-actions fxLayout="column" fxLayoutAlign="end">
+<mat-dialog-actions fxLayout="column" fxLayoutAlign="stretch end">
   <button mat-button mat-dialog-close>Close</button>
 </mat-dialog-actions>

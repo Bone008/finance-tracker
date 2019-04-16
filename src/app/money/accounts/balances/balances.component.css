@@ -1,7 +1,15 @@
+.mat-dialog-content {
+  max-width: 500px;
+}
+
 .amount-field {
   min-width: 0;
   flex-basis: 120px;
   width: 120px;
+}
+
+.explanation {
+  font-size: 80%;
 }
 
 .balances-container {

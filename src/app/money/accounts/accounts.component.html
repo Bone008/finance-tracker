@@ -30,17 +30,15 @@
       <div
           class="cell-balance amount"
           [class.negative]="getBalance(account) < 0">
-        {{formatBalance(account)}}
+        <a href
+            class="amount-link"
+            matTooltip="Click to record new known balance"
+            (click)="$event.preventDefault(); openBalances(account)">{{formatBalance(account)}}</a>
       </div>
       <div class="cell-last-known-date">
         {{(getLastKnownBalanceDate(account) | date) || '-'}}
       </div>
       <div class="cell-buttons">
-        <button
-            mat-button
-            (click)="openBalances(account)">
-          Record balance
-        </button>
         <button
             mat-icon-button
             color="primary"
