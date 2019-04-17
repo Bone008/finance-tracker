@@ -10,6 +10,9 @@ const SUPPORTED_CURRENCIES = {
   'CHF': 'Fr',
   'ILS': '₪',
   'BGN': 'лв',
+  'RON': 'lei',
+  'HUF': 'Ft',
+  'CZK': 'Kč',
 };
 
 @Injectable({
