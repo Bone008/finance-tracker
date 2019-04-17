@@ -38,7 +38,9 @@ export class BalancesComponent implements OnInit {
   }
 
   addNew() {
-    if (!isNumber(this.newBalance) || !isFinite(this.newBalance) || !this.newDate) {
+    // Note that the type assertion is needed because for some reason, the type narrowing does not
+    // work within the Angular compilation.
+    if (!isNumber(this.newBalance) || !isFinite(this.newBalance!) || !this.newDate) {
       return;
     }
 
@@ -49,7 +51,7 @@ export class BalancesComponent implements OnInit {
 
     this.account.knownBalances.push(new KnownBalance({
       date: protoDate,
-      balance: numberToMoney(this.newBalance),
+      balance: numberToMoney(this.newBalance!),
     }));
     this.newDate = null;
     this.newBalance = null;
