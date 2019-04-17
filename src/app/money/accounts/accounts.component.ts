@@ -28,6 +28,7 @@ export class AccountsComponent implements OnInit {
   // Observable of all unique used currencies of the accounts.
   readonly usedCurrencies$: Observable<string[]>;
 
+  private totalBalance: number | null = null;
   private accountInfosById: AccountInfo[] = [];
   private accountEditSubject = new BehaviorSubject<void>(void (0));
 
@@ -57,6 +58,7 @@ export class AccountsComponent implements OnInit {
 
   setMainCurrency(value: string) {
     this.dataService.getUserSettings().mainCurrency = value;
+    this.accountEditSubject.next();
   }
 
   /** Opens dialog to create a new account. */
@@ -78,7 +80,7 @@ export class AccountsComponent implements OnInit {
       .afterConfirmed().subscribe(() => {
         Object.assign(account, temp);
         //account.modified = timestampNow();
-        this.accountEditSubject.next(void (0));
+        this.accountEditSubject.next();
       });
   }
 
@@ -103,6 +105,14 @@ export class AccountsComponent implements OnInit {
     return this.currencyService.getSymbol(currencyCode);
   }
 
+  isTotalBalanceNegative(): boolean { return !!this.totalBalance && this.totalBalance < 0; }
+  formatTotalBalance(): string | null {
+    if (this.totalBalance === null || !this.getMainCurrency()) {
+      return null;
+    }
+    return this.currencyService.format(this.totalBalance, this.getMainCurrency());
+  }
+
   formatBalance(account: Account): string {
     return this.currencyService.format(this.accountInfosById[account.id].balance, account.currency);
   }
@@ -111,11 +121,19 @@ export class AccountsComponent implements OnInit {
     return this.accountInfosById[account.id];
   }
 
-  /** Updates the accountInfosById field with new calculations. */
+  /** Updates the accountInfosById and totalBalance field with new calculations. */
   private computeAccountInfos(accounts: Account[]) {
+    this.totalBalance = 0;
     this.accountInfosById = [];
     for (const account of accounts) {
-      this.accountInfosById[account.id] = this.computeInfo(account);
+      const info = this.computeInfo(account);
+
+      // TODO: Convert non-main currencies when calculating total balance.
+      if (account.currency === this.getMainCurrency()) {
+        this.totalBalance += info.balance;
+      }
+
+      this.accountInfosById[account.id] = info;
     }
   }
 
