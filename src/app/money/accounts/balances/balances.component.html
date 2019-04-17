@@ -14,7 +14,7 @@
           placeholder="Date"
           required>
     </mat-form-field>
-    <mat-form-field class="amount-field" [class.negative]="newBalance < 0">
+    <mat-form-field class="amount-field" [class.negative]="newBalance && newBalance < 0">
       <input
           cdkFocusInitial
           matInput

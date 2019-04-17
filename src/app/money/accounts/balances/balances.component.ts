@@ -91,7 +91,7 @@ export class BalancesComponent implements OnInit {
           date: protoDateToMoment(balance.date).toDate(),
           isNegative: moneyToNumber(balance.balance) < 0,
           formattedBalance: this.currencyService.format(balance.balance, this.account.currency),
-          hasDiscrepancy: !!discrepancy,
+          hasDiscrepancy: discrepancy && Math.abs(discrepancy) > 0.005,
           isDiscrepancyNegative: discrepancy && discrepancy < 0,
           formattedDiscrepancy: discrepancy && this.currencyService.format(discrepancy, this.account.currency, true),
         };
