@@ -480,6 +480,14 @@ export class TransactionsComponent implements AfterViewInit {
     if (this.selection.selected.length < 2) {
       return null;
     }
+
+    // Do not show summary for multiple currencies.
+    const currencies =
+      new Set<string>(mapTransactionData(this.selection.selected, this.dataService.currencyFromTxDataFn));
+    if (currencies.size > 1) {
+      return null;
+    }
+
     const selected = this.selection.selected;
 
     let minTimestamp = new google.protobuf.Timestamp({ seconds: Infinity });
@@ -513,6 +521,7 @@ export class TransactionsComponent implements AfterViewInit {
       dateFirst: minMoment.toDate(), dateLast: maxMoment.toDate(), datesAreSame,
       diffDays, diffMonths,
       sum, sumPositive, sumNegative,
+      currencySymbol: this.currencyService.getSymbol(currencies.values().next().value),
     };
   }
 
