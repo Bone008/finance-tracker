@@ -37,3 +37,20 @@
   font-size: 120%;
   white-space: nowrap;
 }
+
+
+.balances-container .missing-row {
+  align-self: center;
+  padding: 2px 10px;
+  background-color: rgba(0,0,0, .1);
+  color: rgba(0,0,0, .8);
+}
+.balances-container .missing-row .discrepancy {
+  border-bottom: 1px dotted rgba(0,0,0, .66);
+  font-size: 120%;
+  white-space: nowrap;
+  cursor: help;
+}
+.balances-container .missing-row .discrepancy:not(.negative) {
+  color: green;
+}

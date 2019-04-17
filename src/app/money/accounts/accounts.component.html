@@ -42,7 +42,7 @@
       <div class="cell-last-known-date">
         {{getAccountInfo(account).lastKnownBalanceMoment?.format('ll') || '-'}}
         <br>
-        <span *ngIf="getAccountInfo(account).lastKnownBalanceMoment">
+        <span class="secondary" *ngIf="getAccountInfo(account).lastKnownBalanceMoment">
           {{getAccountInfo(account).numTransactionsSinceLastKnown}}
           transaction{{getAccountInfo(account).numTransactionsSinceLastKnown === 1 ? '' : 's'}}
           since then

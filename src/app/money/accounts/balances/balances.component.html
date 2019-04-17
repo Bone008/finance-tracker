@@ -43,17 +43,27 @@
   </div>
     
   <div class="balances-container">
-    <div class="data-row" *ngFor="let balance of displayedBalances">
-      <div class="cell-date">{{balance.date | date}}</div>
-      <div class="cell-balance" [class.negative]="balance.isNegative">
-        {{balance.formattedBalance}}
+    <ng-container *ngFor="let balance of displayedBalances">
+      <div class="data-row">
+        <div class="cell-date">{{balance.date | date}}</div>
+        <div class="cell-balance" [class.negative]="balance.isNegative">
+          {{balance.formattedBalance}}
+        </div>
+        <div class="cell-buttons">
+          <button mat-icon-button color="primary" type="button" (click)="delete(balance.original)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
       </div>
-      <div class="cell-buttons">
-        <button mat-icon-button color="primary" type="button" (click)="delete(balance.original)">
-          <mat-icon>delete</mat-icon>
-        </button>
+      <div class="missing-row" *ngIf="balance.hasDiscrepancy">
+        <mat-icon>warning</mat-icon> Missing:
+        <span class="discrepancy" [class.negative]="balance.isDiscrepancyNegative"
+            matTooltip="Between the known balances below and above, a transaction with this amount
+                        is missing in the database for the balances to add up consistently.">
+          {{balance.formattedDiscrepancy}}
+        </span>
       </div>
-    </div>
+    </ng-container>
   </div>
 </mat-dialog-content>
 
