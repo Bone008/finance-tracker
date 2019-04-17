@@ -82,3 +82,20 @@
   flex-direction: row;
   justify-content: flex-end;
 }
+
+@media screen and (max-width: 959px) {
+  .accounts-container {
+    margin-left: -10px;
+    margin-right: -10px;
+  }
+
+  .header-row {
+    top: 0; /* Because main toolbar is no longer sticky. */
+  }
+
+  .header-row,
+  .data-row,
+  .footer-row {
+    flex-wrap: wrap;
+  }
+}
