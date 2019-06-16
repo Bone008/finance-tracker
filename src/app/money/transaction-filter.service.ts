@@ -4,7 +4,7 @@ import { BillingType, ITransactionData, Transaction, TransactionData } from "../
 import { protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
 import { filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
 import { DataService } from "./data.service";
-import { extractTransactionData, getTransactionAmount, isGroup, isSingle, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
+import { extractTransactionData, getTransactionAmount___deprecated, isGroup, isSingle, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
 
 type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
 interface FilterToken {
@@ -211,8 +211,8 @@ export class TransactionFilterService {
           case 'mixed': return (_, dataList) => dataList.some(data => data.isCash) && dataList.some(data => !data.isCash);
           case 'single': return isSingle;
           case 'group': return isGroup;
-          case 'expense': return transaction => getTransactionAmount(transaction) < -0.005;
-          case 'income': return transaction => getTransactionAmount(transaction) > 0.005;
+          case 'expense': return transaction => getTransactionAmount___deprecated(transaction) < -0.005;
+          case 'income': return transaction => getTransactionAmount___deprecated(transaction) > 0.005;
           default:
             // invalid 'is' keyword
             return null;
@@ -227,7 +227,7 @@ export class TransactionFilterService {
         return this.makeDateMatcher(value, operator, 'modified');
 
       case 'amount':
-        return this.makeNumericMatcher(value, operator, getTransactionAmount);
+        return this.makeNumericMatcher(value, operator, getTransactionAmount___deprecated);
 
       case 'reason':
         return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
@@ -273,7 +273,7 @@ export class TransactionFilterService {
             || test(data.reason)
             || test(data.bookingText)
             || test(data.comment)
-            || test(getTransactionAmount(transaction).toFixed(2))
+            || test(getTransactionAmount___deprecated(transaction).toFixed(2))
             || test(timestampToMoment(data.date).format('YYYY-MM-DD'))
             || transaction.labels.some(label => test(label))));
 

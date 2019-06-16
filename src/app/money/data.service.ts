@@ -67,6 +67,7 @@ export class DataService {
     return this.data.userSettings;
   }
 
+  /** Returns the main currency of the database, defaulting to EUR if unset. */
   getMainCurrency(): string {
     return this.getUserSettings().mainCurrency || DEFAULT_MAIN_CURRENCY;
   }

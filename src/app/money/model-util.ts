@@ -2,6 +2,7 @@ import * as moment from 'moment';
 import { BillingInfo, BillingType, Date as ProtoDate, GroupData, Transaction, TransactionData } from "../../proto/model";
 import { momentToProtoDate, moneyToNumber, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from "../core/proto-util";
 import { maxBy, pushDeduplicate, removeByValue } from '../core/util';
+import { CurrencyService } from './currency.service';
 import { DataService } from './data.service';
 
 /** Type guard to check if a transaction has dataType 'single'. */
@@ -92,9 +93,50 @@ export function mapTransactionDataField<K extends keyof TransactionData>(
 /**
  * Returns the combined amount of a transaction (the sum of its children).
  */
-export function getTransactionAmount(transaction: Transaction): number {
+export function getTransactionAmount___deprecated(transaction: Transaction): number {
   return mapTransactionData(transaction, data => moneyToNumber(data.amount))
     .reduce((a, b) => a + b, 0);
+}
+
+/** Returns the summed amount of any transaction, converted to the given (or main) currency. */
+export function getTransactionAmount(transaction: Transaction,
+  dataService: DataService,
+  currencyService: CurrencyService,
+  optTargetCurrency?: string
+): number {
+  const targetCurrency = optTargetCurrency || dataService.getMainCurrency();
+  return mapTransactionData(transaction, data => {
+    const currency = getTransactionDataCurrency(data, dataService);
+    const amount = currencyService.convertAmount(data.amount, currency, targetCurrency);
+    if (amount === null) {
+      console.warn(`Failed to convert currency while summing transaction amount: ${amount} ${currency} --> ${targetCurrency}`);
+      return 0;
+    }
+    return amount;
+  })
+    .reduce((a, b) => a + b, 0);
+}
+
+/**
+ * Returns the currency code of the given TransactionData based on its account.
+ * Nnote that as a mapper function, this can also be accessed as `dataService.currencyFromTxDataFn`.
+ */
+export function getTransactionDataCurrency(data: TransactionData, dataService: DataService): string {
+  return dataService.getAccountById(data.accountId).currency;
+}
+
+/** If only one currency appears in the given transaction, returns its code, otherwise returns null. */
+export function getTransactionUniqueCurrency(transaction: Transaction, dataService: DataService): string | null {
+  let uniqueCurrency: string | null = null;
+  const currencies = mapTransactionData(transaction, dataService.currencyFromTxDataFn);
+  for (const currency of currencies) {
+    if (uniqueCurrency === null) {
+      uniqueCurrency = currency;
+    } else if (uniqueCurrency !== currency) {
+      return null; // more than 1 currency
+    }
+  }
+  return uniqueCurrency;
 }
 
 /** Returns an unordered list of all labels that occur in any of the given transactions. */

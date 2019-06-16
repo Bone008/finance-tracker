@@ -11,7 +11,7 @@ import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { CanonicalBillingInfo, extractAllLabels, getTransactionAmount, mapTransactionData, resolveTransactionCanonicalBilling } from '../model-util';
+import { CanonicalBillingInfo, extractAllLabels, getTransactionAmount___deprecated, mapTransactionData, resolveTransactionCanonicalBilling } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
 
@@ -285,7 +285,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       }
 
       // TODO: For DAY billing granularity, we may want to consider proportional contributions to the months.
-      const amountPerBucket = getTransactionAmount(transaction) / contributingKeys.length;
+      const amountPerBucket = getTransactionAmount___deprecated(transaction) / contributingKeys.length;
       for (const key of contributingKeys) {
         billedBuckets.add(key, {
           source: transaction,

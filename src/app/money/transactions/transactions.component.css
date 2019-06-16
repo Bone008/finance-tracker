@@ -55,6 +55,11 @@
   font-size: 120%;
   white-space: nowrap;
 }
+/* Amount cells with a tooltip. */
+.transactions-container .cell-amount[aria-describedby] > span {
+  border-bottom: 1px dotted rgba(0,0,0, .66);
+  cursor: help;
+}
 .transactions-container .cell-amount .mat-icon {
   font-size: 18px;
   vertical-align: middle;

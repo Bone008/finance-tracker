@@ -110,9 +110,11 @@
           </span>
         </div>
 
-        <div class="cell-amount" [class.negative]="getTransactionAmount(transaction) < 0">
-          <span>{{getTransactionAmount(transaction) | number:'1.2-2'}}</span>
-          <span>&nbsp;{{getTransactionCurrencySymbol(transaction)}}</span>
+        <div
+            class="cell-amount"
+            [class.negative]="isTransactionAmountNegative(transaction)"
+            [matTooltip]="formatTransactionAmountAlt(transaction) || ''">
+          <span>{{formatTransactionAmount(transaction)}}</span>
           <mat-icon>{{getTransactionIcon(transaction)}}</mat-icon>
           <div
               *ngIf="getTransferInfo(transaction) as transfer"

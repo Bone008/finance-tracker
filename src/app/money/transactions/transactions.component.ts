@@ -12,7 +12,7 @@ import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, getTransactionAmount, isGroup, isSingle, mapTransactionData, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionAmount___deprecated, getTransactionUniqueCurrency, isGroup, isSingle, mapTransactionData, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
@@ -377,28 +377,43 @@ export class TransactionsComponent implements AfterViewInit {
   }
 
   isTransactionGroup = isGroup;
-  getTransactionAmount = getTransactionAmount;
+
+  /**
+   * Decides the currency in which the summed part of the transaction should be displayed and
+   * formats it accordingly.
+   */
+  formatTransactionAmount(transaction: Transaction): string {
+    let displayedCurrency = getTransactionUniqueCurrency(transaction, this.dataService);
+    if (displayedCurrency === null) {
+      displayedCurrency = this.dataService.getMainCurrency();
+    }
+    const amount = getTransactionAmount(transaction, this.dataService, this.currencyService, displayedCurrency);
+    return this.currencyService.format(amount, displayedCurrency);
+  }
+
+  /**
+   * If the transaction is not recorded in the main currency, this calculates and formats the amount
+   * converted to the main currency.
+   */
+  formatTransactionAmountAlt(transaction: Transaction): string | null {
+    let displayedCurrency = getTransactionUniqueCurrency(transaction, this.dataService);
+    if (displayedCurrency === null) {
+      return 'group of different currencies';
+    }
+    if (displayedCurrency === this.dataService.getMainCurrency()) {
+      return null;
+    }
+    const amount = getTransactionAmount(transaction, this.dataService, this.currencyService);
+    return this.currencyService.format(amount, this.dataService.getMainCurrency());
+  }
+
+  isTransactionAmountNegative(transaction: Transaction): boolean {
+    return getTransactionAmount(transaction, this.dataService, this.currencyService) < -0.005;
+  }
 
   getTransactionDate(transaction: Transaction): Date {
     // TODO properly create aggregate date of groups.
     return timestampToDate(extractTransactionData(transaction)[0].date);
-  }
-
-  getTransactionCurrencySymbol(transaction: Transaction): string {
-    let uniqueCurrency: string | null = null;
-    const currencies = mapTransactionData(transaction, this.dataService.currencyFromTxDataFn);
-    for (const currency of currencies) {
-      if (uniqueCurrency === null) {
-        uniqueCurrency = currency;
-      } else if (uniqueCurrency !== currency) {
-        uniqueCurrency = null;
-        break;
-      }
-    }
-    if (uniqueCurrency === null) {
-      return '??';
-    }
-    return this.currencyService.getSymbol(uniqueCurrency);
   }
 
   getTransactionIcon(transaction: Transaction): string {
@@ -510,7 +525,7 @@ export class TransactionsComponent implements AfterViewInit {
     let sumPositive = 0;
     let sumNegative = 0;
     for (const transaction of selected) {
-      const amount = getTransactionAmount(transaction);
+      const amount = getTransactionAmount___deprecated(transaction);
       sum += amount;
       if (amount < 0) sumNegative += amount;
       else sumPositive += amount;
