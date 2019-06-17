@@ -26,6 +26,9 @@ const TOKEN_IS_KEYWORDS = [
 const TOKEN_BILLING_KEYWORDS = [
   'default', 'none', 'day', 'month', 'year', 'relative', 'absolute', 'individual', 'multiple'
 ].sort();
+const TOKEN_DATE_KEYWORDS = [
+  'never', 'today', 'yesterday', 'tomorrow', 'thismonth', 'lastmonth', 'nextmonth', 'thisyear', 'lastyear', 'nextyear'
+].sort();
 const TOKEN_OPERATORS_BY_KEYWORD: { [keyword: string]: MatcherOperator[] } = {
   'is': [':'],
   'billing': [':'],
@@ -99,6 +102,12 @@ export class TransactionFilterService {
     else if (lastToken.startsWith('billing:')) {
       continuationPrefix += 'billing:';
       return filterFuzzyOptions(TOKEN_BILLING_KEYWORDS, lastToken.substr(8), true)
+        .map(keyword => continuationPrefix + keyword + ' ');
+    }
+    // Suggest special "date:" filters.
+    else if (lastToken.startsWith('date:')) {
+      continuationPrefix += 'date:';
+      return filterFuzzyOptions(TOKEN_DATE_KEYWORDS, lastToken.substr(5), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
     // Suggest labels.
