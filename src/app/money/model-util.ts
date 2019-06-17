@@ -1,6 +1,6 @@
 import * as moment from 'moment';
 import { BillingInfo, BillingType, Date as ProtoDate, GroupData, Transaction, TransactionData } from "../../proto/model";
-import { momentToProtoDate, moneyToNumber, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from "../core/proto-util";
+import { momentToProtoDate, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from "../core/proto-util";
 import { maxBy, pushDeduplicate, removeByValue } from '../core/util';
 import { CurrencyService } from './currency.service';
 import { DataService } from './data.service';
@@ -90,15 +90,6 @@ export function mapTransactionDataField<K extends keyof TransactionData>(
   dataField: K
 ): TransactionData[K][] {
   return mapTransactionData(subject, data => data[dataField]);
-}
-
-
-/**
- * Returns the combined amount of a transaction (the sum of its children).
- */
-export function getTransactionAmount___deprecated(transaction: Transaction): number {
-  return mapTransactionData(transaction, data => moneyToNumber(data.amount))
-    .reduce((a, b) => a + b, 0);
 }
 
 /** Returns the summed amount of any transaction, converted to the given (or main) currency. */
