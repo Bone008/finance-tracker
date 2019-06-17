@@ -1,6 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { Chart, ChartData, ChartType } from 'chart.js';
+import { patchObject } from 'src/app/core/util';
 
 export interface ChartElementClickEvent {
   datasetIndex: number;
@@ -94,34 +95,9 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    this.patchObject(this.internalChartData, this.data);
+    patchObject(this.internalChartData, this.data);
     if (this.chart) {
       this.chart.update();
-    }
-  }
-
-  /** Makes sure obj contains the same values as newObj without changing its identity. */
-  private patchObject(obj: any, newObj: any) {
-    // Special case for arrays: also patch length
-    if (Array.isArray(obj) && Array.isArray(newObj)) {
-      obj.length = newObj.length;
-    }
-
-    for (const key of Object.getOwnPropertyNames(newObj)) {
-      // Deep copy objects.
-      if (typeof obj[key] === 'object' && typeof newObj[key] === 'object'
-        && newObj[key] !== null) {
-        this.patchObject(obj[key], newObj[key]);
-      } else {
-        obj[key] = newObj[key];
-      }
-    }
-    // Remove properties no longer present in newData.
-    for (const key of Object.getOwnPropertyNames(obj)) {
-      // Keep chart.js metadata (_meta) untouched.
-      if (!(key in newObj) && key.indexOf('_') !== 0) {
-        delete obj[key];
-      }
     }
   }
 }

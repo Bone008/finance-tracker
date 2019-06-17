@@ -34,14 +34,10 @@
           <span>{{summary.diffDays}} days</span>
           <span *ngIf="summary.diffMonths >= 3">{{summary.diffMonths}} months</span>
           <span>
-            <span [class.negative]="summary.sum < 0">
-              {{summary.sum | number:'1.2-2'}}&nbsp;{{summary.currencySymbol}}
-            </span>
-            <span *ngIf="summary.sumPositive && summary.sumNegative">
-              (+{{summary.sumPositive | number:'1.2-2'}}&nbsp;{{summary.currencySymbol}},
-              <span class="negative">
-                {{summary.sumNegative | number:'1.2-2'}}&nbsp;{{summary.currencySymbol}}
-              </span>)
+            <span [class.negative]="summary.sumIsNegative">{{summary.sumFormatted}}</span>
+            <span *ngIf="summary.hasPositiveAndNegative">
+              ({{summary.sumPositiveFormatted}},
+              <span class="negative">{{summary.sumNegativeFormatted}}</span>)
             </span>
           </span>
         </div>

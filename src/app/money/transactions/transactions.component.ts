@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import * as moment from 'moment';
 import { combineLatest, of, Subscription } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { makeSharedObject } from 'src/app/core/util';
 import { google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
@@ -12,7 +13,7 @@ import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionAmount___deprecated, getTransactionUniqueCurrency, isGroup, isSingle, mapTransactionData, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, mapTransactionData, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
@@ -240,7 +241,7 @@ export class TransactionsComponent implements AfterViewInit {
       new Set<string>(mapTransactionData(transactions, this.dataService.currencyFromTxDataFn));
     if (currencies.size > 1) {
       alert('Cannot group transactions with mixed currencies yet!\nComing soon ...');
-      return;
+      //return;
     }
 
     const newChildren = extractTransactionData(transactions);
@@ -493,15 +494,8 @@ export class TransactionsComponent implements AfterViewInit {
     return "Group/ungroup selected";
   }
 
-  getSelectionSummary(): object | null {
+  getSelectionSummary = makeSharedObject<object>(() => {
     if (this.selection.selected.length < 2) {
-      return null;
-    }
-
-    // Do not show summary for multiple currencies.
-    const currencies =
-      new Set<string>(mapTransactionData(this.selection.selected, this.dataService.currencyFromTxDataFn));
-    if (currencies.size > 1) {
       return null;
     }
 
@@ -523,24 +517,29 @@ export class TransactionsComponent implements AfterViewInit {
     const diffDays = maxMoment.diff(minMoment, 'days') + 1;
     const diffMonths = maxMoment.diff(minMoment, 'months');
 
+    const targetCurrency = getTransactionUniqueCurrency(selected, this.dataService)
+      || this.dataService.getMainCurrency();
+
     let sum = 0;
     let sumPositive = 0;
     let sumNegative = 0;
     for (const transaction of selected) {
-      const amount = getTransactionAmount___deprecated(transaction);
+      const amount = getTransactionAmount(transaction, this.dataService, this.currencyService, targetCurrency);
       sum += amount;
       if (amount < 0) sumNegative += amount;
       else sumPositive += amount;
     }
-    //summary.push(`sum ${sum.toFixed(2)}, ${sumPositive.toFixed(2)}, ${sumNegative.toFixed(2)}`);
 
     return {
       dateFirst: minMoment.toDate(), dateLast: maxMoment.toDate(), datesAreSame,
       diffDays, diffMonths,
-      sum, sumPositive, sumNegative,
-      currencySymbol: this.currencyService.getSymbol(currencies.values().next().value),
+      sumFormatted: this.currencyService.format(sum, targetCurrency),
+      sumPositiveFormatted: this.currencyService.format(sumPositive, targetCurrency, true),
+      sumNegativeFormatted: this.currencyService.format(sumNegative, targetCurrency, true),
+      sumIsNegative: sum < -0.005,
+      hasPositiveAndNegative: sumPositive && sumNegative,
     };
-  }
+  });
 
   /** Comparator for transactions so they are sorted by date in descending order. */
   private compareTransactions(a: Transaction, b: Transaction) {

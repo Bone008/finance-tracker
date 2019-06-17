@@ -49,8 +49,40 @@ export function makeSharedDate(fn: () => Date | null): () => Date | null {
   }, fn);
 }
 
-export function makeSharedObject<TObject>(fn: () => TObject): () => TObject {
-  return makeShared<TObject, {}>({}, Object.assign, fn);
+export function makeSharedObject<TObject>(fn: () => TObject): () => TObject;
+export function makeSharedObject<TObject>(fn: () => TObject | null): () => TObject | null;
+export function makeSharedObject<TObject>(fn: () => TObject | null): () => TObject | null {
+  return makeShared<TObject | null, {}>({}, (shared, newValue) => {
+    if (newValue === null) return null;
+    patchObject(shared, newValue);
+    return <TObject>shared;
+  }, fn);
+}
+
+
+/** Makes sure obj contains the same values as newObj without changing its identity. */
+export function patchObject(obj: any, newObj: any) {
+  // Special case for arrays: also patch length
+  if (Array.isArray(obj) && Array.isArray(newObj)) {
+    obj.length = newObj.length;
+  }
+
+  for (const key of Object.getOwnPropertyNames(newObj)) {
+    // Deep copy objects.
+    if (typeof obj[key] === 'object' && typeof newObj[key] === 'object'
+      && newObj[key] !== null) {
+      patchObject(obj[key], newObj[key]);
+    } else {
+      obj[key] = newObj[key];
+    }
+  }
+  // Remove properties no longer present in newData.
+  for (const key of Object.getOwnPropertyNames(obj)) {
+    // Keep chart.js metadata (_meta) untouched.
+    if (!(key in newObj) && key.indexOf('_') !== 0) {
+      delete obj[key];
+    }
+  }
 }
 
 /** Escapes a string so it is safe to use as a literal in a regular expression. */

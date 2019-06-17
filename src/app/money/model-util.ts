@@ -125,10 +125,10 @@ export function getTransactionDataCurrency(data: TransactionData, dataService: D
   return dataService.getAccountById(data.accountId).currency;
 }
 
-/** If only one currency appears in the given transaction, returns its code, otherwise returns null. */
-export function getTransactionUniqueCurrency(transaction: Transaction, dataService: DataService): string | null {
+/** If only one currency appears in the given transactions, returns its code, otherwise returns null. */
+export function getTransactionUniqueCurrency(subject: Transaction | Transaction[], dataService: DataService): string | null {
   let uniqueCurrency: string | null = null;
-  const currencies = mapTransactionData(transaction, dataService.currencyFromTxDataFn);
+  const currencies = mapTransactionData(subject, dataService.currencyFromTxDataFn);
   for (const currency of currencies) {
     if (uniqueCurrency === null) {
       uniqueCurrency = currency;
