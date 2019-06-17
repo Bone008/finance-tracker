@@ -5,6 +5,9 @@ import { maxBy, pushDeduplicate, removeByValue } from '../core/util';
 import { CurrencyService } from './currency.service';
 import { DataService } from './data.service';
 
+/** Monetary values closer to zero than this threshold should be considered 0. */
+export const MONEY_EPSILON = 0.005;
+
 /** Type guard to check if a transaction has dataType 'single'. */
 export function isSingle(transaction: Transaction)
   : transaction is Transaction & { single: TransactionData } {

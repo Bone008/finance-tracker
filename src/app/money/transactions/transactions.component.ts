@@ -13,7 +13,7 @@ import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, mapTransactionData, mapTransactionDataField, removeLabelFromTransaction } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, mapTransactionData, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
@@ -409,7 +409,7 @@ export class TransactionsComponent implements AfterViewInit {
   }
 
   isTransactionAmountNegative(transaction: Transaction): boolean {
-    return getTransactionAmount(transaction, this.dataService, this.currencyService) < -0.005;
+    return getTransactionAmount(transaction, this.dataService, this.currencyService) < -MONEY_EPSILON;
   }
 
   getTransactionDate(transaction: Transaction): Date {
@@ -438,7 +438,7 @@ export class TransactionsComponent implements AfterViewInit {
       // ... with different accounts
       || transaction.group.children[0].accountId === transaction.group.children[1].accountId
       // ... with a total amount of 0.
-      || Math.abs(getTransactionAmount(transaction, this.dataService, this.currencyService)) >= 0.005) {
+      || Math.abs(getTransactionAmount(transaction, this.dataService, this.currencyService)) >= MONEY_EPSILON) {
       return null;
     }
 
@@ -536,7 +536,7 @@ export class TransactionsComponent implements AfterViewInit {
       sumFormatted: this.currencyService.format(sum, targetCurrency),
       sumPositiveFormatted: this.currencyService.format(sumPositive, targetCurrency, true),
       sumNegativeFormatted: this.currencyService.format(sumNegative, targetCurrency, true),
-      sumIsNegative: sum < -0.005,
+      sumIsNegative: sum < -MONEY_EPSILON,
       hasPositiveAndNegative: sumPositive && sumNegative,
     };
   });

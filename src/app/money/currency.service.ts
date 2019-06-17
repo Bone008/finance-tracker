@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Money } from 'src/proto/model';
 import { moneyToNumber } from '../core/proto-util';
+import { MONEY_EPSILON } from './model-util';
 
 const NBSP = '\xA0';
 
@@ -82,7 +83,7 @@ export class CurrencyService {
       amount = moneyToNumber(amount);
     }
     // Prevent ~0 values from being interpreted as either positive or negative.
-    if (Math.abs(amount) < 0.005) {
+    if (Math.abs(amount) < MONEY_EPSILON) {
       amount = 0;
     }
 

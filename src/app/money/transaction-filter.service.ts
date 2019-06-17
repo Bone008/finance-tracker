@@ -4,7 +4,7 @@ import { BillingType, ITransactionData, Transaction, TransactionData } from "../
 import { protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
 import { filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
 import { DataService } from "./data.service";
-import { extractTransactionData, getTransactionAmount___deprecated, isGroup, isSingle, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
+import { extractTransactionData, getTransactionAmount___deprecated, isGroup, isSingle, MONEY_EPSILON, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
 
 type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
 interface FilterToken {
@@ -211,8 +211,8 @@ export class TransactionFilterService {
           case 'mixed': return (_, dataList) => dataList.some(data => data.isCash) && dataList.some(data => !data.isCash);
           case 'single': return isSingle;
           case 'group': return isGroup;
-          case 'expense': return transaction => getTransactionAmount___deprecated(transaction) < -0.005;
-          case 'income': return transaction => getTransactionAmount___deprecated(transaction) > 0.005;
+          case 'expense': return transaction => getTransactionAmount___deprecated(transaction) < -MONEY_EPSILON;
+          case 'income': return transaction => getTransactionAmount___deprecated(transaction) > MONEY_EPSILON;
           default:
             // invalid 'is' keyword
             return null;
@@ -421,12 +421,12 @@ export class TransactionFilterService {
         let amount = accessor(transaction, dataList);
         if (!subPrecision) amount = Math.floor(amount);
         switch (operator) {
-          case '<': return amount < (searchAmount - 0.005);
-          case '<=': return amount < (searchAmount + 0.005);
-          case '>': return amount > (searchAmount + 0.005);
-          case '>=': return amount > (searchAmount - 0.005);
+          case '<': return amount < (searchAmount - MONEY_EPSILON);
+          case '<=': return amount < (searchAmount + MONEY_EPSILON);
+          case '>': return amount > (searchAmount + MONEY_EPSILON);
+          case '>=': return amount > (searchAmount - MONEY_EPSILON);
           case ':':
-          case '=': return Math.abs(amount - searchAmount) < 0.005;
+          case '=': return Math.abs(amount - searchAmount) < MONEY_EPSILON;
         }
       };
     }
@@ -437,11 +437,11 @@ export class TransactionFilterService {
         let absAmount = Math.abs(accessor(transaction, dataList));
         if (!subPrecision) absAmount = Math.floor(absAmount);
         switch (operator) {
-          case '<': return absAmount < (searchAmount - 0.005);
-          case '<=': return absAmount < (searchAmount + 0.005);
-          case '>': return absAmount > (searchAmount + 0.005);
-          case '>=': return absAmount > (searchAmount - 0.005);
-          case ':': return Math.abs(absAmount - searchAmount) < 0.005;
+          case '<': return absAmount < (searchAmount - MONEY_EPSILON);
+          case '<=': return absAmount < (searchAmount + MONEY_EPSILON);
+          case '>': return absAmount > (searchAmount + MONEY_EPSILON);
+          case '>=': return absAmount > (searchAmount - MONEY_EPSILON);
+          case ':': return Math.abs(absAmount - searchAmount) < MONEY_EPSILON;
           // '=' is handled above.
         }
       };
