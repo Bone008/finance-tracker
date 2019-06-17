@@ -81,6 +81,10 @@ export class CurrencyService {
     if (amount instanceof Money || amount === null || amount === undefined) {
       amount = moneyToNumber(amount);
     }
+    // Prevent ~0 values from being interpreted as either positive or negative.
+    if (Math.abs(amount) < 0.005) {
+      amount = 0;
+    }
 
     // Note: not using style:'currency', because it does not allow individual control over the
     // placement of the currency symbol and the separator chars.
