@@ -8,10 +8,11 @@ import { escapeRegex, splitQuotedString } from 'src/app/core/util';
 import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
+import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { CanonicalBillingInfo, extractAllLabels, getTransactionAmount___deprecated, mapTransactionData, resolveTransactionCanonicalBilling } from '../model-util';
+import { CanonicalBillingInfo, extractAllLabels, getTransactionAmount, resolveTransactionCanonicalBilling } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
 
@@ -55,6 +56,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   constructor(
     private readonly dataService: DataService,
     private readonly filterService: TransactionFilterService,
+    private readonly currencyService: CurrencyService,
     private readonly dialogService: DialogService,
     private readonly router: Router,
     private readonly loggerService: LoggerService) { }
@@ -233,7 +235,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     const displayUnit = 'month';
     const keyFormat = 'YYYY-MM';
 
-    const mainCurrency = this.dataService.getMainCurrency();
     const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
     const billedBuckets = new KeyedArrayAggregate<BilledTransaction>();
 
@@ -277,15 +278,9 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
       debugContribHistogram.add(contributingKeys.length + "", 1);
 
-      // TODO: Support converting currencies to main currency.
-      const currencies = mapTransactionData(transaction, this.dataService.currencyFromTxDataFn);
-      if (currencies.some(curr => curr !== mainCurrency)) {
-        // Skip for now.
-        continue;
-      }
-
+      const txAmount = getTransactionAmount(transaction, this.dataService, this.currencyService);
       // TODO: For DAY billing granularity, we may want to consider proportional contributions to the months.
-      const amountPerBucket = getTransactionAmount___deprecated(transaction) / contributingKeys.length;
+      const amountPerBucket = txAmount / contributingKeys.length;
       for (const key of contributingKeys) {
         billedBuckets.add(key, {
           source: transaction,
