@@ -110,23 +110,41 @@
           </span>
         </div>
 
-        <div
-            class="cell-amount"
-            [class.negative]="isTransactionAmountNegative(transaction)"
-            [matTooltip]="formatTransactionAmountAlt(transaction) || ''">
-          <span>{{formatTransactionAmount(transaction)}}</span>
-          <mat-icon>{{getTransactionIcon(transaction)}}</mat-icon>
+        <div class="cell-amount">
           <div
-              *ngIf="getTransferInfo(transaction) as transfer"
+              *ngIf="getTransferInfo(transaction) as transfer; else noTransfer"
               class="transfer"
               fxLayout="column" fxLayoutAlign="center end">
-            <mat-icon [matTooltip]="transfer.fromAccount.name">{{transfer.fromAccount.icon}}</mat-icon>
-            <span>
-              <span>{{transfer.amount | number:'1.2-2'}}</span>&nbsp;€
-              <mat-icon>arrow_downward</mat-icon>
-            </span>
-            <mat-icon [matTooltip]="transfer.toAccount.name">{{transfer.toAccount.icon}}</mat-icon>
+            <ng-container *ngIf="transfer.isMultiCurrency; else singleCurrency">
+              <span>
+                <span>{{transfer.toAmountFormatted}}</span>
+                <mat-icon [matTooltip]="transfer.toAccount.name">{{transfer.toAccount.icon}}</mat-icon>
+              </span>
+              <mat-icon>arrow_upward</mat-icon>
+              <span>
+                <span>{{transfer.fromAmountFormatted}}</span>
+                <mat-icon [matTooltip]="transfer.fromAccount.name">{{transfer.fromAccount.icon}}</mat-icon>
+              </span>
+            </ng-container>
+            <ng-template #singleCurrency>
+              <mat-icon [matTooltip]="transfer.toAccount.name">{{transfer.toAccount.icon}}</mat-icon>
+              <span>
+                <span>{{transfer.fromAmountFormatted}}</span>
+                <mat-icon>arrow_upward</mat-icon>
+              </span>
+              <mat-icon [matTooltip]="transfer.fromAccount.name">{{transfer.fromAccount.icon}}</mat-icon>
+            </ng-template>
           </div>
+
+          <ng-template #noTransfer>
+            <span
+                class="amount-value"
+                [class.negative]="isTransactionAmountNegative(transaction)"
+                [matTooltip]="formatTransactionAmountAlt(transaction) || ''">
+              {{formatTransactionAmount(transaction)}}
+            </span>
+            <mat-icon>{{getTransactionIcon(transaction)}}</mat-icon>
+          </ng-template>
         </div>
 
         <div class="cell-notes">

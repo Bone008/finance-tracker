@@ -55,8 +55,8 @@
   font-size: 120%;
   white-space: nowrap;
 }
-/* Amount cells with a tooltip. */
-.transactions-container .cell-amount[aria-describedby] > span {
+/* Monetary value with a tooltip. */
+.transactions-container .cell-amount .amount-value[aria-describedby] {
   border-bottom: 1px dotted rgba(0,0,0, .66);
   cursor: help;
 }

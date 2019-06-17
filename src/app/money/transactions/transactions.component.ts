@@ -432,8 +432,12 @@ export class TransactionsComponent implements AfterViewInit {
   }
 
   getTransferInfo(transaction: Transaction): object | null {
+    // Only allow groups with exactly 2 children ...
     if (!isGroup(transaction) || transaction.group.children.length !== 2
-      || transaction.group.children[0].accountId === transaction.group.children[1].accountId) {
+      // ... with different accounts
+      || transaction.group.children[0].accountId === transaction.group.children[1].accountId
+      // ... with a total amount of 0.
+      || Math.abs(getTransactionAmount(transaction, this.dataService, this.currencyService)) >= 0.005) {
       return null;
     }
 
@@ -442,20 +446,18 @@ export class TransactionsComponent implements AfterViewInit {
       // No opposing signs.
       return null;
     }
-    const currencies = transaction.group.children.map(this.dataService.currencyFromTxDataFn);
-    if (currencies[0] !== currencies[1]) {
-      // TODO: Cross-currency not supported yet.
-      return null;
-    }
-
+    const accounts = mapTransactionData(transaction, this.dataService.accountFromTxDataFn);
     const fromIndex = amounts[0] < 0 ? 0 : 1;
-    const from = transaction.group.children[fromIndex];
-    const to = transaction.group.children[1 - fromIndex];
+
+    // Since the summed amount is ~0, we can assume that fromAmount and toAmount have the same
+    // monetary value. If currencies are the same, they should also be the same number.
 
     return {
-      fromAccount: this.dataService.getAccountById(from.accountId),
-      toAccount: this.dataService.getAccountById(to.accountId),
-      amount: Math.min(-amounts[fromIndex], amounts[1 - fromIndex]),
+      fromAccount: accounts[fromIndex],
+      toAccount: accounts[1 - fromIndex],
+      isMultiCurrency: accounts[0].currency !== accounts[1].currency,
+      fromAmountFormatted: this.currencyService.format(-amounts[fromIndex], accounts[fromIndex].currency),
+      toAmountFormatted: this.currencyService.format(amounts[1 - fromIndex], accounts[1 - fromIndex].currency),
     }
   }
 
