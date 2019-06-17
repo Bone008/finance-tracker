@@ -385,40 +385,59 @@ export class TransactionFilterService {
   private makeDateRangeMatcher(value: string, operator: MatcherOperator,
     rangeSelector: (transaction: Transaction, dataList: TransactionData[]) => [moment.Moment, moment.Moment][]
   ): FilterMatcher | null {
-    // TODO support relative date input
-    if (value === 'empty' || value === 'never') {
+    const lowerValue = value.toLowerCase();
+    if (lowerValue === 'empty' || lowerValue === 'never') {
       if (operator !== ':') return null; // invalid operator
       return (t, d) => rangeSelector(t, d).some(
         interval => interval[0].unix() === 0 && interval[1].unix() === 0);
-    } else {
-      let granularity: 'year' | 'month' | 'day';
-      if (MOMENT_YEAR_REGEX.test(value)) {
-        granularity = 'year';
-      } else if (MOMENT_MONTH_REGEX.test(value)) {
-        granularity = 'month';
-      } else {
-        granularity = 'day';
-      }
-      const searchMoment = moment(value, MOMENT_DATE_FORMATS, true);
-
-      if (!searchMoment.isValid()) {
-        // invalid date format
-        return null;
-      }
-
-      let intervalPredicate: (from: moment.Moment, to: moment.Moment) => boolean;
-      // LHS:  [from ........................... to]
-      // RHS:                   ^-- searchMoment
-      switch (operator) {
-        case '<': intervalPredicate = (from, to) => from.isBefore(searchMoment, granularity); break;
-        case '<=': intervalPredicate = (from, to) => from.isSameOrBefore(searchMoment, granularity); break;
-        case '>': intervalPredicate = (from, to) => to.isAfter(searchMoment, granularity); break;
-        case '>=': intervalPredicate = (from, to) => to.isSameOrAfter(searchMoment, granularity); break;
-        case ':':
-        case '=': intervalPredicate = (from, to) => from.isSameOrBefore(searchMoment, granularity) && to.isSameOrAfter(searchMoment, granularity); break;
-      }
-      return (t, d) => rangeSelector(t, d).some(interval => intervalPredicate(interval[0], interval[1]));
     }
+
+    let granularity: 'year' | 'month' | 'day';
+    let searchMoment: moment.Moment;
+
+    switch (lowerValue) {
+      case 'tod':
+      case 'today': granularity = 'day'; searchMoment = moment(); break;
+      case 'yest':
+      case 'yesterday': granularity = 'day'; searchMoment = moment().subtract(1, 'day'); break;
+      case 'tom':
+      case 'tomorrow': granularity = 'day'; searchMoment = moment().add(1, 'day'); break;
+      case 'thismonth': granularity = 'month'; searchMoment = moment(); break;
+      case 'lastmonth': granularity = 'month'; searchMoment = moment().subtract(1, 'month'); break;
+      case 'nextmonth': granularity = 'month'; searchMoment = moment().add(1, 'month'); break;
+      case 'thisyear': granularity = 'year'; searchMoment = moment(); break;
+      case 'lastyear': granularity = 'year'; searchMoment = moment().subtract(1, 'year'); break;
+      case 'nextyear': granularity = 'year'; searchMoment = moment().add(1, 'year'); break;
+      // Not a keyword date.
+      default:
+        if (MOMENT_YEAR_REGEX.test(value)) {
+          granularity = 'year';
+          searchMoment = moment(value, MOMENT_DATE_FORMATS, true);
+        } else if (MOMENT_MONTH_REGEX.test(value)) {
+          granularity = 'month';
+          searchMoment = moment(value, MOMENT_DATE_FORMATS, true);
+        } else {
+          granularity = 'day';
+          searchMoment = moment(value, MOMENT_DATE_FORMATS, true);
+        }
+        if (!searchMoment.isValid()) {
+          // invalid date format
+          return null;
+        }
+    }
+
+    let intervalPredicate: (from: moment.Moment, to: moment.Moment) => boolean;
+    // LHS:  [from ........................... to]
+    // RHS:                   ^-- searchMoment
+    switch (operator) {
+      case '<': intervalPredicate = (from, to) => from.isBefore(searchMoment, granularity); break;
+      case '<=': intervalPredicate = (from, to) => from.isSameOrBefore(searchMoment, granularity); break;
+      case '>': intervalPredicate = (from, to) => to.isAfter(searchMoment, granularity); break;
+      case '>=': intervalPredicate = (from, to) => to.isSameOrAfter(searchMoment, granularity); break;
+      case ':':
+      case '=': intervalPredicate = (from, to) => from.isSameOrBefore(searchMoment, granularity) && to.isSameOrAfter(searchMoment, granularity); break;
+    }
+    return (t, d) => rangeSelector(t, d).some(interval => intervalPredicate(interval[0], interval[1]));
   }
 
   private makeNumericMatcher(value: string, operator: MatcherOperator,
