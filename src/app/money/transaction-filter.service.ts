@@ -3,8 +3,9 @@ import * as moment from 'moment';
 import { BillingType, ITransactionData, Transaction, TransactionData } from "../../proto/model";
 import { protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
 import { filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
+import { CurrencyService } from "./currency.service";
 import { DataService } from "./data.service";
-import { extractTransactionData, getTransactionAmount___deprecated, isGroup, isSingle, MONEY_EPSILON, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
+import { extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, MONEY_EPSILON, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
 
 type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
 interface FilterToken {
@@ -68,7 +69,10 @@ const MOMENT_DATE_FORMATS = [
 })
 export class TransactionFilterService {
 
-  constructor(private readonly dataService: DataService) { }
+  constructor(
+    private readonly dataService: DataService,
+    private readonly currencyService: CurrencyService
+  ) { }
 
   suggestFilterContinuations(filter: string): string[] {
     // Do not suggest anything when at start of new token.
@@ -211,8 +215,10 @@ export class TransactionFilterService {
           case 'mixed': return (_, dataList) => dataList.some(data => data.isCash) && dataList.some(data => !data.isCash);
           case 'single': return isSingle;
           case 'group': return isGroup;
-          case 'expense': return transaction => getTransactionAmount___deprecated(transaction) < -MONEY_EPSILON;
-          case 'income': return transaction => getTransactionAmount___deprecated(transaction) > MONEY_EPSILON;
+          case 'expense': return transaction =>
+            getTransactionAmount(transaction, this.dataService, this.currencyService) < -MONEY_EPSILON;
+          case 'income': return transaction =>
+            getTransactionAmount(transaction, this.dataService, this.currencyService) > MONEY_EPSILON;
           default:
             // invalid 'is' keyword
             return null;
@@ -227,7 +233,12 @@ export class TransactionFilterService {
         return this.makeDateMatcher(value, operator, 'modified');
 
       case 'amount':
-        return this.makeNumericMatcher(value, operator, getTransactionAmount___deprecated);
+        return this.makeNumericMatcher(value, operator, transaction =>
+          // Compute the summed amount, preferably in the transaction's native currency,
+          // otherwise in the main currency.
+          getTransactionAmount(transaction, this.dataService, this.currencyService,
+            getTransactionUniqueCurrency(transaction, this.dataService) || undefined)
+        );
 
       case 'reason':
         return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
@@ -273,7 +284,12 @@ export class TransactionFilterService {
             || test(data.reason)
             || test(data.bookingText)
             || test(data.comment)
-            || test(getTransactionAmount___deprecated(transaction).toFixed(2))
+            || test(
+              // Use the summed amount, preferably in the transaction's native currency,
+              // otherwise in the main currency.
+              getTransactionAmount(transaction, this.dataService, this.currencyService,
+                getTransactionUniqueCurrency(transaction, this.dataService) || undefined
+              ).toFixed(2))
             || test(timestampToMoment(data.date).format('YYYY-MM-DD'))
             || transaction.labels.some(label => test(label))));
 
