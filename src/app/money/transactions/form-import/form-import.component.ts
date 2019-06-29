@@ -8,7 +8,7 @@ import { DataService } from '../../data.service';
 import { FormatMapping } from './format-mapping';
 import { MAPPINGS_BY_FORMAT } from './mappings';
 
-type FileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb';
+type FileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs';
 type FileEncoding = 'windows-1252' | 'utf-8';
 
 @Component({

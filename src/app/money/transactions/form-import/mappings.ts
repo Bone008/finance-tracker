@@ -1,3 +1,4 @@
+import { escapeRegex } from "src/app/core/util";
 import { dateToTimestamp, numberToMoney } from "../../../core/proto-util";
 import { FormatMapping, FormatMappingBuilder } from "./format-mapping";
 
@@ -61,6 +62,26 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     .addMapping("amount", "Betrag (EUR)", parseAmount)
     .addMapping("bookingText", "Buchungstext")
     .build(),
+  'ubs': new FormatMappingBuilder<UbsRow>()
+    .addConstantMapping("isCash", false)
+    .addMapping("date", "Abschluss", parseDate)
+    .addMapping("reason", "Beschreibung 3")
+    .addMapping("who", "Beschreibung 2")
+    .addMapping("bookingText", "Beschreibung 1")
+    .addRawMapping("amount", ['Belastung', 'Gutschrift'], row => {
+      const expense = row['Belastung'];
+      const income = row['Gutschrift'];
+      if (!expense && !income) {
+        throw new Error('found neither "Belastung" nor "Gutschrift"');
+      }
+      const amount = parseAmount(expense || income, "'", ".");
+      if (expense) {
+        amount.units *= -1;
+        amount.subunits *= -1;
+      }
+      return amount;
+    })
+    .build(),
 };
 
 const dateRegex = /^(\d\d)\.(\d\d)\.(\d\d(?:\d\d)?)$/;
@@ -76,10 +97,16 @@ function parseDate(rawValue: string) {
   return dateToTimestamp(new Date(year, month - 1, day));
 }
 
-function parseAmount(rawValue: string) {
-  // Assume German nubmer formatting.
-  const num = Number(rawValue.replace(/\./g, "").replace(/,/g, "."));
-  if (isNaN(num)) throw new Error("could not parse amount: " + rawValue);
+function parseAmount(rawValue: string, groupingSep = ".", decimalSep = ",") {
+  let cleanedValue = rawValue;
+  if (groupingSep) {
+    cleanedValue = cleanedValue.replace(new RegExp(escapeRegex(groupingSep), "g"), "");
+  }
+  if (decimalSep) {
+    cleanedValue = cleanedValue.replace(new RegExp(escapeRegex(decimalSep), "g"), ".");
+  }
+  const num = Number(cleanedValue);
+  if (isNaN(num)) throw new Error("could not parse amount: " + rawValue + " / " + cleanedValue);
   return numberToMoney(num);
 }
 
@@ -150,4 +177,32 @@ interface DkbRow {
   "Gläubiger-ID": string;
   "Mandatsreferenz": string;
   "Kundenreferenz": string;
+}
+
+interface UbsRow {
+  // The first fields are only about the account that was exported from.
+  // They are joined with the actual transactions and the same in every row.
+  "Bewertungsdatum": string;
+  "Bankbeziehung": string;
+  "Portfolio": string;
+  "Produkt": string;
+  "IBAN": string;
+  "Whrg.": string;
+  "Datum von": string;
+  "Datum bis": string;
+  "Beschreibung": string;
+
+  // The following fields relate to the actual transaction.
+  "Abschluss": string;
+  "Buchungsdatum": string;
+  "Valuta": string;
+  "Beschreibung 1": string;
+  "Beschreibung 2": string;
+  "Beschreibung 3": string;
+  "Transaktions-Nr.": string;
+  "Devisenkurs zum Originalbetrag in Abrechnungswährung": string;
+  "Einzelbetrag": string;
+  "Belastung": string;
+  "Gutschrift": string;
+  "Saldo": string;
 }
