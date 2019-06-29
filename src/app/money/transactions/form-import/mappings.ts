@@ -55,10 +55,11 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
   'dkb': new FormatMappingBuilder<DkbRow>()
     .addConstantMapping("isCash", false)
     .addMapping("date", "Wertstellung", parseDate)
-    .addMapping("reason", "Verwendungszweck", input => input.replace('\n', ''))
+    .addMapping("reason", "Verwendungszweck")
     .addMapping("who", "Auftraggeber / Begünstigter")
     .addMapping("whoIdentifier", "Kontonummer")
-    .addRawMapping("amount", "Betrag (EUR)", parseAmount)
+    .addMapping("amount", "Betrag (EUR)", parseAmount)
+    .addMapping("bookingText", "Buchungstext")
     .build(),
 };
 

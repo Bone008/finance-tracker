@@ -8,7 +8,7 @@ import { DataService } from '../../data.service';
 import { FormatMapping } from './format-mapping';
 import { MAPPINGS_BY_FORMAT } from './mappings';
 
-type FileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp';
+type FileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb';
 type FileEncoding = 'windows-1252' | 'utf-8';
 
 @Component({
@@ -91,11 +91,16 @@ export class FormImportComponent implements OnInit {
       const file = this.file;
       const fileFormat = this.fileFormat;
       this.papaService.parse(file, {
-        beforeFirstChunk: firstChunk =>
+        beforeFirstChunk: firstChunk => {
           // Special case for MLP format: Strip preamble before header row.
-          (fileFormat === 'mlp' && firstChunk.includes('"Buchungstag";"Valuta";"Auftraggeber')
-            ? firstChunk.substr(firstChunk.indexOf('"Buchungstag";"Valuta";"Auftraggeber'))
-            : firstChunk),
+          if (fileFormat === 'mlp' && firstChunk.includes('"Buchungstag";"Valuta";"Auftraggeber')) {
+            firstChunk = firstChunk.substr(firstChunk.indexOf('"Buchungstag";"Valuta";"Auftraggeber'));
+          }
+          else if (fileFormat === 'dkb' && firstChunk.includes('"Buchungstag";"Wertstellung";')) {
+            firstChunk = firstChunk.substr(firstChunk.indexOf('"Buchungstag";"Wertstellung";'));
+          }
+          return firstChunk;
+        },
         header: true,
         skipEmptyLines: true,
         encoding: this.fileEncoding,
