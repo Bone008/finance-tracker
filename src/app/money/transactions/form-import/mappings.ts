@@ -52,6 +52,14 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
       return absAmount;
     })
     .build(),
+  'dkb': new FormatMappingBuilder<DkbRow>()
+    .addConstantMapping("isCash", false)
+    .addMapping("date", "Wertstellung", parseDate)
+    .addMapping("reason", "Verwendungszweck", input => input.replace('\n', ''))
+    .addMapping("who", "Auftraggeber / Begünstigter")
+    .addMapping("whoIdentifier", "Kontonummer")
+    .addRawMapping("amount", "Betrag (EUR)", parseAmount)
+    .build(),
 };
 
 const dateRegex = /^(\d\d)\.(\d\d)\.(\d\d(?:\d\d)?)$/;
@@ -127,4 +135,18 @@ interface MlpRow {
   "Währung": string;
   "Umsatz": string;
   " ": string;
+}
+
+interface DkbRow {
+  "Buchungstag": string;
+  "Wertstellung": string;
+  "Buchungstext": string;
+  "Auftraggeber / Begünstigter": string;
+  "Verwendungszweck": string;
+  "Kontonummer": string;
+  "BLZ": string;
+  "Betrag (EUR)": string;
+  "Gläubiger-ID": string;
+  "Mandatsreferenz": string;
+  "Kundenreferenz": string;
 }
