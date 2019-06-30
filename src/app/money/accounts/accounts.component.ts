@@ -127,11 +127,8 @@ export class AccountsComponent implements OnInit {
     this.accountInfosById = [];
     for (const account of accounts) {
       const info = this.computeInfo(account);
-
-      // TODO: Convert non-main currencies when calculating total balance.
-      if (account.currency === this.getMainCurrency()) {
-        this.totalBalance += info.balance;
-      }
+      this.totalBalance += this.currencyService.convertAmount(
+        info.balance, account.currency, this.dataService.getMainCurrency()) || 0;
 
       this.accountInfosById[account.id] = info;
     }
