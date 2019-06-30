@@ -23,7 +23,13 @@ message Transaction {
 }
 
 message GroupData {
+  // Individual child transactions.
   repeated TransactionData children = 1;
+
+  // If true, the user has marked this group as a transfer from one currency
+  // to another. The summed amount will be zero, even when the internal
+  // conversion rate does not match up perfectly.
+  bool is_cross_currency_transfer = 2;
   
   // A user-supplied comment about this transaction.
   // Must not be filled automatically on import.

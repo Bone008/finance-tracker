@@ -236,12 +236,18 @@ export class TransactionsComponent implements AfterViewInit {
    * of all labels of its children.
    */
   groupTransactions(transactions: Transaction[]) {
-    // TODO Remove this temporary check for grouping mixed currency transactions.
-    const currencies =
-      new Set<string>(mapTransactionData(transactions, this.dataService.currencyFromTxDataFn));
-    if (currencies.size > 1) {
-      alert('Cannot group transactions with mixed currencies yet!\nComing soon ...');
-      //return;
+    let isCrossCurrencyTransfer = false;
+    if (transactions.length === 2 && isSingle(transactions[0]) && isSingle(transactions[1])
+      && getTransactionUniqueCurrency(transactions, this.dataService) === null
+      && Math.sign(moneyToNumber(transactions[0].single!.amount)) !== Math.sign(moneyToNumber(transactions[1].single!.amount))
+    ) {
+      const summedAmount = getTransactionAmount(transactions[0], this.dataService, this.currencyService)
+        + getTransactionAmount(transactions[1], this.dataService, this.currencyService);
+      isCrossCurrencyTransfer = confirm('It seems like this group could be a transfer across multiple currencies.\n'
+        + 'Do you want to treat this as a transfer?\n'
+        + 'If yes (press OK), the total amount of the group will be treated as 0.\n'
+        + 'If no (press Cancel), the total amount of the group will be '
+        + this.currencyService.format(summedAmount, this.dataService.getMainCurrency(), true) + '.');
     }
 
     const newChildren = extractTransactionData(transactions);
@@ -256,6 +262,9 @@ export class TransactionsComponent implements AfterViewInit {
         children: newChildren,
       }),
     });
+    if (isCrossCurrencyTransfer) {
+      newTransaction.group!.isCrossCurrencyTransfer = true;
+    }
 
     this.selection.clear();
     this.dataService.removeTransactions(transactions);

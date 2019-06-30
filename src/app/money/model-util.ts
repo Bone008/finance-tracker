@@ -98,6 +98,11 @@ export function getTransactionAmount(transaction: Transaction,
   currencyService: CurrencyService,
   optTargetCurrency?: string
 ): number {
+  // Short-circuit: Treat as zero sum transaction if explicitly marked as such.
+  if (isGroup(transaction) && transaction.group.isCrossCurrencyTransfer) {
+    return 0;
+  }
+
   const targetCurrency = optTargetCurrency || dataService.getMainCurrency();
   return mapTransactionData(transaction, data => {
     const currency = getTransactionDataCurrency(data, dataService);
