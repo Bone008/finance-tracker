@@ -8,7 +8,7 @@ import { Account, KnownBalance, TransactionData } from 'src/proto/model';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
-import { extractTransactionData } from '../model-util';
+import { extractTransactionData, MONEY_EPSILON } from '../model-util';
 
 export interface AccountInfo {
   balance: number;
@@ -105,7 +105,9 @@ export class AccountsComponent implements OnInit {
     return this.currencyService.getSymbol(currencyCode);
   }
 
-  isTotalBalanceNegative(): boolean { return !!this.totalBalance && this.totalBalance < 0; }
+  isTotalBalanceNegative(): boolean {
+    return !!this.totalBalance && this.totalBalance < -MONEY_EPSILON;
+  }
   formatTotalBalance(): string | null {
     if (this.totalBalance === null || !this.getMainCurrency()) {
       return null;

@@ -89,10 +89,10 @@ export class BalancesComponent implements OnInit {
         return <DisplayedBalance>{
           original: balance,
           date: protoDateToMoment(balance.date).toDate(),
-          isNegative: moneyToNumber(balance.balance) < 0,
+          isNegative: moneyToNumber(balance.balance) < -MONEY_EPSILON,
           formattedBalance: this.currencyService.format(balance.balance, this.account.currency),
           hasDiscrepancy: discrepancy && Math.abs(discrepancy) >= MONEY_EPSILON,
-          isDiscrepancyNegative: discrepancy && discrepancy < 0,
+          isDiscrepancyNegative: discrepancy && discrepancy < -MONEY_EPSILON,
           formattedDiscrepancy: discrepancy && this.currencyService.format(discrepancy, this.account.currency, true),
         };
       })

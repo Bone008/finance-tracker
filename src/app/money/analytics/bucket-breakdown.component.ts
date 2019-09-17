@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { ChartData, ChartDataSets } from 'chart.js';
 import { KeyedArrayAggregate } from 'src/app/core/keyed-aggregate';
+import { MONEY_EPSILON } from '../model-util';
 import { BilledTransaction } from './analytics.component';
 
 @Component({
@@ -41,8 +42,8 @@ export class BucketBreakdownComponent implements OnChanges {
   private analyzeMonthlyBreakdown() {
     this.buckets = [];
     for (const [key, billedTransactions] of this.billedTransactionBuckets.getEntriesSorted()) {
-      const positive = billedTransactions.filter(t => t.amount > 0);
-      const negative = billedTransactions.filter(t => t.amount < 0);
+      const positive = billedTransactions.filter(t => t.amount > MONEY_EPSILON);
+      const negative = billedTransactions.filter(t => t.amount < -MONEY_EPSILON);
 
       this.buckets.push({
         name: key,

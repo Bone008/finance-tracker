@@ -4,7 +4,7 @@ import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggr
 import { getRandomInt } from '../../core/util';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
-import { extractAllLabels, getDominantLabels } from '../model-util';
+import { extractAllLabels, getDominantLabels, MONEY_EPSILON } from '../model-util';
 import { BilledTransaction, LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
 import { ChartElementClickEvent } from './chart.component';
 
@@ -124,11 +124,12 @@ export class LabelBreakdownComponent implements OnChanges {
         .map(label => collapsedNames[label] || label)
         .join(',');
 
-      if (billedTx.amount > 0) {
+      if (billedTx.amount > MONEY_EPSILON) {
         incomeGroups.add(label, billedTx.amount);
       } else {
         expensesGroups.add(label, billedTx.amount);
       }
+      // Transactions with amount exactly 0 are ignored.
     }
 
     this.chartData = [
