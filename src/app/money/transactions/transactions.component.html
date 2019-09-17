@@ -47,7 +47,7 @@
             mat-icon-button
             color="primary"
             matTooltip="Edit selected ..."
-            [disabled]="selection.selected.length !== 1 || isTransactionGroup(selection.selected[0])"
+            [disabled]="selection.selected.length !== 1 || !selection.selected[0].single"
             (click)="startEditTransaction(selection.selected[0])">
           <mat-icon>edit</mat-icon>
         </button>
@@ -62,18 +62,18 @@
         <button
             mat-icon-button
             color="primary"
-            [matTooltip]="getGroupTooltip(selection.selected)"
-            [disabled]="!canGroup(selection.selected) && !canUngroup(selection.selected)"
-            (click)="groupOrUngroupTransactions(selection.selected)">
-          <mat-icon>ballot</mat-icon>
+            matTooltip="Create copy from selected ..."
+            [disabled]="selection.selected.length !== 1 || !selection.selected[0].single"
+            (click)="startCopyTransaction(selection.selected[0])">
+          <mat-icon>file_copy</mat-icon>
         </button>
         <button
             mat-icon-button
             color="primary"
-            matTooltip="Create copy from selected ..."
-            [disabled]="selection.selected.length !== 1"
-            (click)="startCopyTransaction(selection.selected[0])">
-          <mat-icon>file_copy</mat-icon>
+            [matTooltip]="getGroupTooltip(selection.selected)"
+            [disabled]="!canGroup(selection.selected) && !canUngroup(selection.selected)"
+            (click)="groupOrUngroupTransactions(selection.selected)">
+          <mat-icon>ballot</mat-icon>
         </button>
         <button
             mat-icon-button
