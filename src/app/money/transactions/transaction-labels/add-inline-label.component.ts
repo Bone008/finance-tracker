@@ -33,6 +33,7 @@ export class AddInlineLabelComponent implements OnInit {
   @Output() readonly deleteLastRequested = new EventEmitter<void>();
 
   private isOpenSubject = new Subject<boolean>();
+  private rawHasFocus = false;
 
   constructor(
     private readonly dataService: DataService,
@@ -73,9 +74,28 @@ export class AddInlineLabelComponent implements OnInit {
     this.deleteLastRequested.next();
   }
 
-  // Necessary to programmatically focus this element from the outside a template reference.
+  // Necessary to programmatically focus this element from outside a template reference.
   focus() {
     this.element.nativeElement.querySelector('input')!.focus();
+  }
+
+  onFocusIn() {
+    this.rawHasFocus = true;
+    this.setIsOpen(true);;
+  }
+
+  onFocusOut(isAutocompleteOpen: boolean) {
+    this.rawHasFocus = false;
+    if (!isAutocompleteOpen) {
+      this.setIsOpen(false);
+    }
+  }
+
+  onAutocompleteClose() {
+    // If we lost focus while autocomplete was open, we have to close now.
+    if (!this.rawHasFocus) {
+      this.setIsOpen(false);
+    }
   }
 
   private filterLabelsByInput(input: string): string[] {
