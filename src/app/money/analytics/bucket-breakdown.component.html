@@ -3,7 +3,7 @@
   
   <hr>
 
-  <h3>Monthly averages:</h3>
+  <h3>Monthly overview:</h3>
   <table class="table-averages">
     <tr>
       <th></th>
@@ -11,17 +11,11 @@
       <th align="right">Expenses</th>
       <th align="right">Income</th>
     </tr>
-    <tr>
-      <th align="left">Mean</th>
-      <td align="right">{{monthlyMeanBucket.numTransactions | number:'1.0-1'}}</td>
-      <td align="right" class="negative">{{monthlyMeanBucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
-      <td align="right">{{monthlyMeanBucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
-    </tr>
-    <tr>
-      <th align="left">Median</th>
-      <td align="right">{{monthlyMedianBucket.numTransactions | number:'1.0-1'}}</td>
-      <td align="right" class="negative">{{monthlyMedianBucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
-      <td align="right">{{monthlyMedianBucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
+    <tr *ngFor="let bucket of aggregateBuckets">
+      <th align="left">{{bucket.name}}</th>
+      <td align="right">{{bucket.numTransactions | number:'1.0-1'}}</td>
+      <td align="right" class="negative">{{bucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
+      <td align="right">{{bucket.totalPositive | number:'1.2-2'}}&nbsp;€</td>
     </tr>
   </table>
   <hr>

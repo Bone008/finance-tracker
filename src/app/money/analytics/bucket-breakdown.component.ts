@@ -21,9 +21,8 @@ export class BucketBreakdownComponent implements OnChanges {
   bucketAltClick = new EventEmitter<string>();
 
   buckets: BucketInfo[] = [];
+  aggregateBuckets: BucketInfo[] = [];
   monthlyChartData: ChartData = {};
-  monthlyMeanBucket: Partial<BucketInfo> = {};
-  monthlyMedianBucket: Partial<BucketInfo> = {};
 
   ngOnChanges(changes: SimpleChanges) {
     this.analyzeMonthlyBreakdown();
@@ -65,20 +64,23 @@ export class BucketBreakdownComponent implements OnChanges {
     };
 
     // Calculate mean and median.
-    const [meanPositive, medianPositive] = this.calculateMeanAndMedian(this.buckets.map(b => b.totalPositive));
-    const [meanNegative, medianNegative] = this.calculateMeanAndMedian(this.buckets.map(b => b.totalNegative));
-    const [meanNum, medianNum] = this.calculateMeanAndMedian(this.buckets.map(b => b.numTransactions));
-    this.monthlyMeanBucket.totalPositive = meanPositive;
-    this.monthlyMeanBucket.totalNegative = meanNegative;
-    this.monthlyMeanBucket.numTransactions = meanNum;
-    this.monthlyMedianBucket.totalPositive = medianPositive;
-    this.monthlyMedianBucket.totalNegative = medianNegative;
-    this.monthlyMedianBucket.numTransactions = medianNum;
+    const aggNames = ['Total', 'Mean', 'Median'];
+    const aggPos = this.calculateTotalMeanMedian(this.buckets.map(b => b.totalPositive));
+    const aggNeg = this.calculateTotalMeanMedian(this.buckets.map(b => b.totalNegative));
+    const aggNum = this.calculateTotalMeanMedian(this.buckets.map(b => b.numTransactions));
+
+    this.aggregateBuckets = aggNames.map((name, i) => ({
+      name,
+      totalPositive: aggPos[i],
+      totalNegative: aggNeg[i],
+      numTransactions: aggNum[i],
+    }));
   }
 
-  private calculateMeanAndMedian(numbers: number[]): [number, number] {
-    if (numbers.length === 0) return [NaN, NaN];
-    const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+  private calculateTotalMeanMedian(numbers: number[]): [number, number, number] {
+    if (numbers.length === 0) return [NaN, NaN, NaN];
+    const total = numbers.reduce((a, b) => a + b, 0);
+    const mean = total / numbers.length;
 
     let median: number;
     const sorted = numbers.slice(0).sort((a, b) => a - b);
@@ -87,7 +89,7 @@ export class BucketBreakdownComponent implements OnChanges {
     } else {
       median = sorted[sorted.length >> 1];
     }
-    return [mean, median];
+    return [total, mean, median];
   }
 
 }
