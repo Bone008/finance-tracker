@@ -226,7 +226,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.labelGroups = parentLabels.getEntries()
+    this.labelGroups = parentLabels.getEntriesSorted()
       .filter(entry => entry[1].length > 1)
       .map(entry => <LabelGroup>{
         parentName: entry[0],
