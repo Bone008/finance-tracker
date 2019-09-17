@@ -20,4 +20,5 @@
     "**/*.spec.ts": true, // Temporary until we got some tests.
   },
   "typescript.tsdk": "node_modules\\typescript\\lib",
+  "search.usePCRE2": true,
 }
