@@ -5,7 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import * as moment from 'moment';
 import { combineLatest, of, Subscription } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
-import { makeSharedObject } from 'src/app/core/util';
+import { makeSharedObject, patchObject } from 'src/app/core/util';
 import { google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
@@ -17,6 +17,13 @@ import { addLabelToTransaction, extractTransactionData, getTransactionAmount, ge
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
+
+// Extension of Transaction class to hold objects used by the view.
+interface TransactionViewCache {
+  __date?: Date;
+  __formattedNotes?: [string, string][];
+  __transferInfo?: object;
+}
 
 @Component({
   selector: 'app-transactions',
@@ -421,9 +428,14 @@ export class TransactionsComponent implements AfterViewInit {
     return getTransactionAmount(transaction, this.dataService, this.currencyService) < -MONEY_EPSILON;
   }
 
-  getTransactionDate(transaction: Transaction): Date {
+  getTransactionDate(transaction: Transaction & TransactionViewCache): Date {
     // TODO properly create aggregate date of groups.
-    return timestampToDate(extractTransactionData(transaction)[0].date);
+    const millis = timestampToMilliseconds(extractTransactionData(transaction)[0].date);
+
+    // Fix object identity to play nice with Angular change tracking.
+    if (!transaction.__date) transaction.__date = new Date();
+    transaction.__date.setTime(millis);
+    return transaction.__date;
   }
 
   getTransactionIcon(transaction: Transaction): string {
@@ -441,7 +453,10 @@ export class TransactionsComponent implements AfterViewInit {
     return uniqueIcon || 'list';
   }
 
-  getTransferInfo(transaction: Transaction): object | null {
+  getTransferInfo(transaction: Transaction & TransactionViewCache): object | null {
+    // (Need to copy due to a bug in TypeScript intersection types.)
+    const tx = transaction;
+
     // Only allow groups with exactly 2 children ...
     if (!isGroup(transaction) || transaction.group.children.length !== 2
       // ... with different accounts
@@ -462,18 +477,23 @@ export class TransactionsComponent implements AfterViewInit {
     // Since the summed amount is ~0, we can assume that fromAmount and toAmount have the same
     // monetary value. If currencies are the same, they should also be the same number.
 
-    return {
+    const ret = {
       fromAccount: accounts[fromIndex],
       toAccount: accounts[1 - fromIndex],
       isMultiCurrency: accounts[0].currency !== accounts[1].currency,
       fromAmountFormatted: this.currencyService.format(-amounts[fromIndex], accounts[fromIndex].currency),
       toAmountFormatted: this.currencyService.format(amounts[1 - fromIndex], accounts[1 - fromIndex].currency),
     }
+
+    // Fix object identity to play nice with Angular change tracking.
+    // NOTE: DO NOT USE patchObject BECAUSE WE DO NOT WANT DEEP UPDATES OF ACCOUNT OBJECTS!
+    if (!tx.__transferInfo) tx.__transferInfo = {};
+    return Object.assign(tx.__transferInfo, ret);
   }
 
   /** Returns array of lines. */
-  formatTransactionNotes(transaction: Transaction): [string, string][] {
-    return extractTransactionData(transaction)
+  formatTransactionNotes(transaction: Transaction & TransactionViewCache): [string, string][] {
+    const ret = extractTransactionData(transaction)
       .sort((a, b) => -compareTimestamps(a.date, b.date))
       .map<[string, string]>(data => [
         (isGroup(transaction)
@@ -481,6 +501,11 @@ export class TransactionsComponent implements AfterViewInit {
           : '') + [data.who, data.reason].filter(value => !!value).join(", "),
         data.comment
       ]);
+
+    // Fix object identity to play nice with Angular change tracking.
+    if (!transaction.__formattedNotes) transaction.__formattedNotes = [];
+    patchObject(transaction.__formattedNotes, ret);
+    return transaction.__formattedNotes;
   }
 
   private getSignString(num: number): string {
