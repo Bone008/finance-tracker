@@ -173,21 +173,21 @@ export function removeLabelFromTransaction(transaction: Transaction, label: stri
 }
 
 /**
- * Returns an ordered list of labels of a transaction that are dominant with
- * respect to a given partial order. The list may be empty.
+ * Returns an ordered subset of labels that are dominant with respect to a given
+ * partial order. The given labels and the returned subset may be empty.
  */
-export function getTransactionDominantLabels(
-  transaction: Transaction,
+export function getDominantLabels(
+  labels: string[],
   labelDominanceOrder: { [label: string]: number },
   excludedLabels: string[] = []
 ): string[] {
   // Fast path for simple cases.
-  if (transaction.labels.length <= 1 && excludedLabels.length === 0) {
-    return transaction.labels;
+  if (labels.length <= 1 && excludedLabels.length === 0) {
+    return labels;
   }
   // Get applicable labels ranked by their dominance in descending order.
   // Equally dominant labels are sorted in alphabetical order.
-  const labelInfos = transaction.labels
+  const labelInfos = labels
     .filter(label => excludedLabels.indexOf(label) === -1)
     .map(label => ({ label, dominance: labelDominanceOrder[label] || 0 }))
     .sort((a, b) => (b.dominance - a.dominance) || a.label.localeCompare(b.label));
@@ -233,20 +233,23 @@ export function resolveTransactionRawBilling(
   // Initially assume unknown (default) billing.
   let resolvedBilling = new BillingInfo({ periodType: BillingType.UNKNOWN });
 
-  // Check for individual billing config (overrides that inherited from labels).
+  // Check for individual billing config on transaction.
   if (transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN) {
     resolvedBilling = transaction.billing;
   } else {
     // Check for billing config inherited from labels.
-    // Of the dominant labels, the first present billing config will be applied
-    // and the rest ignored.
-    const dominantLabels = getTransactionDominantLabels(transaction, labelDominanceOrder);
-    for (const label of dominantLabels) {
+    // Of the labels with present billing config, the first dominant label will
+    // be applied and the rest ignored.
+    const relevantLabels: string[] = [];
+    for (const label of transaction.labels) {
       const labelConfig = dataService.getLabelConfig(label);
       if (labelConfig && labelConfig.billing && labelConfig.billing.periodType !== BillingType.UNKNOWN) {
-        resolvedBilling = labelConfig.billing;
-        break;
+        relevantLabels.push(label);
       }
+    }
+    const dominantLabels = getDominantLabels(relevantLabels, labelDominanceOrder);
+    if (dominantLabels.length > 0) {
+      resolvedBilling = dataService.getLabelConfig(dominantLabels[0])!.billing!;
     }
   }
 

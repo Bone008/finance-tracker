@@ -3,7 +3,7 @@ import { ChartData } from 'chart.js';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { getRandomInt } from '../../core/util';
 import { DataService } from '../data.service';
-import { extractAllLabels, getTransactionDominantLabels } from '../model-util';
+import { extractAllLabels, getDominantLabels } from '../model-util';
 import { BilledTransaction, LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
 import { ChartElementClickEvent } from './chart.component';
 
@@ -110,7 +110,7 @@ export class LabelBreakdownComponent implements OnChanges {
     const expensesGroups = new KeyedNumberAggregate();
     const incomeGroups = new KeyedNumberAggregate();
     for (const billedTx of this.billedTransactionBuckets.getValuesFlat()) {
-      const dominantLabels = getTransactionDominantLabels(billedTx.source, dominanceOrder, this.labelsSharedByAll);
+      const dominantLabels = getDominantLabels(billedTx.source.labels, dominanceOrder, this.labelsSharedByAll);
       const label = dominantLabels.length === 0 ? NONE_GROUP_NAME : dominantLabels
         // TODO This may potentially lead to duplicates, but I don't care right now because it is quite unlikely.
         .map(label => collapsedNames[label] || label)
