@@ -179,7 +179,7 @@ export class DataService {
   }
 
   /** Returns a label's configured billing info, or a default billing if unset. */
-  getLabelBillingInfo(label: string): BillingInfo {
+  getLabelBilling(label: string): BillingInfo {
     const labelConfig = this.getLabelConfig(label);
     return (labelConfig && labelConfig.billing) || new BillingInfo();
   }

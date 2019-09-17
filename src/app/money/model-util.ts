@@ -242,14 +242,13 @@ export function resolveTransactionRawBilling(
     // be applied and the rest ignored.
     const relevantLabels: string[] = [];
     for (const label of transaction.labels) {
-      const labelConfig = dataService.getLabelConfig(label);
-      if (labelConfig && labelConfig.billing && labelConfig.billing.periodType !== BillingType.UNKNOWN) {
+      if (dataService.getLabelBilling(label).periodType !== BillingType.UNKNOWN) {
         relevantLabels.push(label);
       }
     }
     const dominantLabels = getDominantLabels(relevantLabels, labelDominanceOrder);
     if (dominantLabels.length > 0) {
-      resolvedBilling = dataService.getLabelConfig(dominantLabels[0])!.billing!;
+      resolvedBilling = dataService.getLabelBilling(dominantLabels[0]);
     }
   }
 

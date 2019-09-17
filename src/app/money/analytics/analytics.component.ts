@@ -213,7 +213,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     const labels = extractAllLabels(this.matchingTransactions);
     const parentLabels = new KeyedArrayAggregate<string>();
     for (const label of labels) {
-      if (this.dataService.getLabelBillingInfo(label).periodType === BillingType.NONE) {
+      if (this.dataService.getLabelBilling(label).periodType === BillingType.NONE) {
         continue;
       }
 

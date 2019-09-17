@@ -354,10 +354,9 @@ export class TransactionFilterService {
           return billing.periodType !== BillingType.UNKNOWN && billing.periodType !== BillingType.NONE && !billing.isRelative;
         };
         case 'individual': return transaction => !!transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
-        case 'multiple': return transaction => transaction.labels.filter(label => {
-          const cfg = this.dataService.getLabelConfig(label);
-          return cfg && cfg.billing && cfg.billing.periodType !== BillingType.UNKNOWN;
-        }).length > 1;
+        case 'multiple': return transaction => transaction.labels.filter(label =>
+          this.dataService.getLabelBilling(label).periodType !== BillingType.UNKNOWN
+        ).length > 1;
         default: // ignore, handled by more generic date range matcher
       }
     }
