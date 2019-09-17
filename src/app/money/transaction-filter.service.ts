@@ -105,9 +105,10 @@ export class TransactionFilterService {
         .map(keyword => continuationPrefix + keyword + ' ');
     }
     // Suggest special "date:" filters.
-    else if (lastToken.startsWith('date:')) {
-      continuationPrefix += 'date:';
-      return filterFuzzyOptions(TOKEN_DATE_KEYWORDS, lastToken.substr(5), true)
+    else if (lastToken.startsWith('date:') || lastToken.startsWith('created:') || lastToken.startsWith('modified:')) {
+      const c = lastToken.indexOf(':') + 1;
+      continuationPrefix += lastToken.substr(0, c);
+      return filterFuzzyOptions(TOKEN_DATE_KEYWORDS, lastToken.substr(c), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
     // Suggest labels.
