@@ -126,7 +126,7 @@ export class LabelBreakdownComponent implements OnChanges {
 
       if (billedTx.amount > MONEY_EPSILON) {
         incomeGroups.add(label, billedTx.amount);
-      } else {
+      } else if (billedTx.amount < -MONEY_EPSILON) {
         expensesGroups.add(label, billedTx.amount);
       }
       // Transactions with amount exactly 0 are ignored.
