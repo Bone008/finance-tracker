@@ -15,7 +15,12 @@
         Show more
       </button>
     </div>
-    <app-chart type="pie" [data]="chartData[0]" (elementClick)="onElementClick(0, $event)"></app-chart>
+    <app-chart
+        type="pie"
+        [data]="chartData[0]"
+        [tooltipCallbacks]="chartTooltipCallbacks[0]"
+        (elementClick)="onElementClick(0, $event)">
+    </app-chart>
   </div>
   <div fxFlex="50" fxLayout="column">
     <h3 fxFlexAlign="center">Income</h3>
@@ -33,7 +38,12 @@
         Show more
       </button>
     </div>
-    <app-chart type="pie" [data]="chartData[1]" (elementClick)="onElementClick(1, $event)"></app-chart>
+    <app-chart
+        type="pie"
+        [data]="chartData[1]"
+        [tooltipCallbacks]="chartTooltipCallbacks[1]"
+        (elementClick)="onElementClick(1, $event)">
+    </app-chart>
   </div>
 </div>
 

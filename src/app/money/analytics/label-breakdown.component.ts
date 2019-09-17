@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
-import { ChartData } from 'chart.js';
+import { ChartData, ChartTooltipCallback, ChartTooltipItem } from 'chart.js';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { getRandomInt } from '../../core/util';
+import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { extractAllLabels, getDominantLabels } from '../model-util';
 import { BilledTransaction, LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
@@ -31,15 +32,22 @@ export class LabelBreakdownComponent implements OnChanges {
   @Output()
   groupAltClick = new EventEmitter<string[]>();
 
-  /** Data for pie charts showing expenses/income by label. */
+  /** Data for pie charts passed to the AppChart component. */
   chartData: [ChartData, ChartData] = [{}, {}];
+  /** Tooltip config for pie charts passed to the AppChart component. */
+  chartTooltipCallbacks: [ChartTooltipCallback, ChartTooltipCallback] = [
+    this.makeChartTooltipCallbacks(0),
+    this.makeChartTooltipCallbacks(1),
+  ];
   /** List of labels that are shared by all matching transactions. */
   labelsSharedByAll: string[] = [];
 
   /** Maximum number of groups to display in charts. */
   private labelChartGroupLimits: [number, number] = [6, 6];
 
-  constructor(private readonly dataService: DataService) { }
+  constructor(
+    private readonly currencyService: CurrencyService,
+    private readonly dataService: DataService) { }
 
   ngOnChanges(changes: SimpleChanges) {
     this.analyzeLabelBreakdown();
@@ -157,6 +165,29 @@ export class LabelBreakdownComponent implements OnChanges {
     };
   }
 
+  private makeChartTooltipCallbacks(chartIndex: 0 | 1): ChartTooltipCallback {
+    return {
+      title: (items: ChartTooltipItem[], data: ChartData) => {
+        return data.labels![items[0].index!];
+      },
+      label: (item: ChartTooltipItem, data: ChartData) => {
+        const allValues = <number[]>data.datasets![item.datasetIndex!].data;
+
+        const value = allValues[item.index!];
+        const percentage = value / allValues.reduce((a, b) => a + b, 0);
+        const numMonths = this.billedTransactionBuckets.getKeys().length;
+        const perMonth = value / numMonths;
+        return [
+          this.currencyService.format(value, this.dataService.getMainCurrency()) + ' total',
+          numMonths > 1
+            ? this.currencyService.format(perMonth, this.dataService.getMainCurrency()) + ` monthly (over ${numMonths} months)`
+            : '',
+          (percentage * 100).toLocaleString('en-US',
+            { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' %',
+        ].filter(line => !!line);
+      },
+    }
+  }
 }
 
 function generateColor(): string {

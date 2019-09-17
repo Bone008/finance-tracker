@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
-import { Chart, ChartData, ChartType } from 'chart.js';
+import { Chart, ChartData, ChartTooltipCallback, ChartType } from 'chart.js';
 import { patchObject } from 'src/app/core/util';
 
 export interface ChartElementClickEvent {
@@ -30,6 +30,8 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   type: ChartType;
   @Input()
   data: ChartData;
+  @Input()
+  tooltipCallbacks?: ChartTooltipCallback;
   @Output()
   readonly elementClick = new EventEmitter<ChartElementClickEvent>();
 
@@ -54,6 +56,23 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   }
 
   ngAfterViewInit() {
+    const defaultTooltipCallbacks: ChartTooltipCallback = {
+      label: (item, data) => {
+        // Some tailored default callback otherwise.
+        const rawValue = item.yLabel || (data.datasets && data.datasets[item.datasetIndex!].data![item.index!]);
+        let label = this.decimalPipe.transform(rawValue, '1.2-2') + ' €';
+        const datasetName = data.datasets && data.datasets[item.datasetIndex!].label;
+        if (datasetName) {
+          label += ` (${datasetName})`;
+        }
+        // Prepend name of data point for pie charts.
+        if (this.type === 'pie' && data.labels) {
+          label = data.labels[item.index!] + ': ' + label;
+        }
+        return label;
+      },
+    };
+
     const canvas = this.chartCanvas.nativeElement as HTMLCanvasElement;
     this.chart = new Chart(canvas, {
       type: this.type,
@@ -63,21 +82,7 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
         legend: { position: 'top' },
         tooltips: {
           mode: 'index',
-          callbacks: {
-            label: (item, data) => {
-              const rawValue = item.yLabel || (data.datasets && data.datasets[item.datasetIndex!].data![item.index!]);
-              let label = this.decimalPipe.transform(rawValue, '1.2-2') + ' €';
-              let datasetName = data.datasets && data.datasets[item.datasetIndex!].label;
-              if (datasetName) {
-                label += ` (${datasetName})`;
-              }
-              // Prepend name of data point for pie charts.
-              if (this.type === 'pie' && data.labels) {
-                label = data.labels[item.index!] + ': ' + label;
-              }
-              return label;
-            },
-          },
+          callbacks: Object.assign({}, defaultTooltipCallbacks, this.tooltipCallbacks),
         },
         onClick: (event: MouseEvent, elements: any[]) => {
           if (elements.length > 0) {
@@ -95,9 +100,11 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    patchObject(this.internalChartData, this.data);
-    if (this.chart) {
-      this.chart.update();
+    if (changes.hasOwnProperty('data')) {
+      patchObject(this.internalChartData, this.data);
+      if (this.chart) {
+        this.chart.update();
+      }
     }
   }
 }
