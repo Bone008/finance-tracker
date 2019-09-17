@@ -180,7 +180,8 @@ export class LabelBreakdownComponent implements OnChanges {
         return [
           this.currencyService.format(value, this.dataService.getMainCurrency()) + ' total',
           numMonths > 1
-            ? this.currencyService.format(perMonth, this.dataService.getMainCurrency()) + ` monthly (over ${numMonths} months)`
+            ? (this.currencyService.format(perMonth, this.dataService.getMainCurrency())
+              + ` monthly mean (over ${numMonths} months)`)
             : '',
           (percentage * 100).toLocaleString('en-US',
             { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' %',
