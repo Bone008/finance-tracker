@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
-import { Account, DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
+import { Account, BillingInfo, DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { pluralizeArgument, removeByValue } from "../core/util";
 import { MigrationsService } from "./migrations.service";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
@@ -176,6 +176,12 @@ export class DataService {
       this.data.labelConfigs[label] = new LabelConfig();
     }
     return this.data.labelConfigs[label];
+  }
+
+  /** Returns a label's configured billing info, or a default billing if unset. */
+  getLabelBillingInfo(label: string): BillingInfo {
+    const labelConfig = this.getLabelConfig(label);
+    return (labelConfig && labelConfig.billing) || new BillingInfo();
   }
 
   getImportedRowById(id: number): ImportedRow | null {
