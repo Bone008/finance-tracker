@@ -62,6 +62,14 @@ export function makeSharedObject<TObject>(fn: () => TObject | null): () => TObje
 
 /** Makes sure obj contains the same values as newObj without changing its identity. */
 export function patchObject(obj: any, newObj: any) {
+  // Special case for dates.
+  if (obj instanceof Date) {
+    if (!(newObj instanceof Date)) {
+      throw new Error('tried to patch Date with non-Date object');
+    }
+    obj.setTime(newObj.getTime());
+  }
+
   // Special case for arrays: also patch length
   if (Array.isArray(obj) && Array.isArray(newObj)) {
     obj.length = newObj.length;
