@@ -33,12 +33,12 @@ import { TransactionLabelsComponent } from './transactions/transaction-labels/tr
 import { TransactionsComponent } from './transactions/transactions.component';
 
 const appRoutes: Routes = [
-  { path: 'overview', component: AccountsComponent },
-  { path: 'transactions', component: TransactionsComponent },
-  { path: 'labels', component: LabelsComponent },
-  { path: 'rules', component: RulesComponent },
-  { path: 'analytics', component: AnalyticsComponent },
-  { path: 'comments', component: CommentsComponent },
+  { path: 'overview', component: AccountsComponent, data: { title: 'Overview' } },
+  { path: 'transactions', component: TransactionsComponent, data: { title: 'Transactions' } },
+  { path: 'labels', component: LabelsComponent, data: { title: 'Labels' } },
+  { path: 'rules', component: RulesComponent, data: { title: 'Rules' } },
+  { path: 'analytics', component: AnalyticsComponent, data: { title: 'Analytics' } },
+  { path: 'comments', component: CommentsComponent, data: { title: 'Comments' } },
   { path: '', pathMatch: 'full', redirectTo: 'overview' }
 ];
 

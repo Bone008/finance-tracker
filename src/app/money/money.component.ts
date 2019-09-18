@@ -1,8 +1,10 @@
 import { MediaMatcher } from '@angular/cdk/layout';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { Title } from '@angular/platform-browser';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import * as moment from 'moment';
 import { fromEvent, merge, timer } from 'rxjs';
-import { filter, switchMap, takeWhile } from 'rxjs/operators';
+import { filter, mergeMap, switchMap, takeWhile } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { DataContainer } from '../../proto/model';
 import { LoggerService } from '../core/logger.service';
@@ -32,6 +34,9 @@ export class MoneyComponent implements OnInit, OnDestroy {
     private readonly storageSettingsService: StorageSettingsService,
     private readonly dialogService: DialogService,
     private readonly loggerService: LoggerService,
+    private readonly titleService: Title,
+    private readonly activatedRoute: ActivatedRoute,
+    private readonly router: Router,
     changeDetectorRef: ChangeDetectorRef, media: MediaMatcher
   ) {
     this.mobileQuery = media.matchMedia('screen and (max-width: 959px)');
@@ -40,6 +45,23 @@ export class MoneyComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Make page title follow the router.
+    const baseTitle = this.titleService.getTitle();
+    this.router.events
+      .pipe(
+        filter(event => event instanceof NavigationEnd),
+        mergeMap(() => this.activatedRoute.firstChild!.data)
+      )
+      .subscribe(data => {
+        const routeTitle = data['title'];
+        if (routeTitle) {
+          this.titleService.setTitle(baseTitle + ' - ' + routeTitle);
+        } else {
+          this.titleService.setTitle(baseTitle);
+        }
+      });
+
+
     this.refreshData();
 
     const periodicTimer = timer(0, 60 * 1000)
