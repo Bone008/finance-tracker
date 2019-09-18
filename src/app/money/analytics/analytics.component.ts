@@ -1,8 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { LoggerService } from 'src/app/core/logger.service';
 import { escapeRegex, splitQuotedString } from 'src/app/core/util';
 import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
@@ -25,11 +25,7 @@ export const LABEL_HIERARCHY_SEPARATOR = '/';
   styleUrls: ['./analytics.component.css']
 })
 export class AnalyticsComponent implements OnInit, OnDestroy {
-  // TODO Split this component into multiple parts, possibly add "AnalyticsService" for shared functionality.
-
-  private static lastFilterValue = "";
-
-  readonly filterState = new FilterState(AnalyticsComponent.lastFilterValue);
+  readonly filterState = new FilterState();
   readonly ignoreBillingPeriodSubject = new BehaviorSubject<boolean>(false);
   readonly labelCollapseSubject = new BehaviorSubject<void>(void (0));
   private readonly labelDominanceSubject = new BehaviorSubject<LabelDominanceOrder>({});
@@ -58,10 +54,14 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     private readonly filterService: TransactionFilterService,
     private readonly currencyService: CurrencyService,
     private readonly dialogService: DialogService,
+    private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly loggerService: LoggerService) { }
 
   ngOnInit() {
+    this.filterState.followFragment(this.route, this.router);
+
+    // TODO @ZombieSubscription
     this.dataService.userSettings$
       .pipe(map(settings => settings.labelDominanceOrder))
       .subscribe(this.labelDominanceSubject);
@@ -71,7 +71,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.txSubscription =
       combineLatest(
         this.dataService.transactions$,
-        this.filterState.value$.pipe(tap(value => AnalyticsComponent.lastFilterValue = value)),
+        this.filterState.value$,
         this.ignoreBillingPeriodSubject,
         this.labelCollapseSubject,
         this.labelDominanceSubject)
@@ -103,7 +103,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
 
     if (isAltClick) {
-      this.router.navigate(['/transactions'], { queryParams: { q: filter } });
+      this.router.navigate(['/transactions'], { fragment: 'q=' + filter });
     } else {
       this.filterState.setValueNow(filter);
     }
@@ -123,7 +123,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
 
     if (isAltClick) {
-      this.router.navigate(['/transactions'], { queryParams: { q: filter } });
+      this.router.navigate(['/transactions'], { fragment: 'q=' + filter });
     } else {
       this.filterState.setValueNow(filter);
     }

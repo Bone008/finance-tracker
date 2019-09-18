@@ -1,10 +1,10 @@
 import { SelectionModel } from '@angular/cdk/collections';
 import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
 import { MatPaginator, MatTableDataSource } from '@angular/material';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import * as moment from 'moment';
 import { combineLatest, of, Subscription } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { makeSharedObject, patchObject } from 'src/app/core/util';
 import { google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
@@ -31,9 +31,7 @@ interface TransactionViewCache {
   styleUrls: ['./transactions.component.css'],
 })
 export class TransactionsComponent implements AfterViewInit {
-  private static lastFilterValue = "";
-
-  readonly filterState = new FilterState(TransactionsComponent.lastFilterValue);
+  readonly filterState = new FilterState();
   readonly transactionsDataSource = new MatTableDataSource<Transaction>();
   transactionsSubject = of<Transaction[]>([]);
   selection = new SelectionModel<Transaction>(true);
@@ -50,6 +48,7 @@ export class TransactionsComponent implements AfterViewInit {
     private readonly loggerService: LoggerService,
     private readonly dialogService: DialogService,
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
     private readonly changeDetector: ChangeDetectorRef) {
   }
 
@@ -57,23 +56,10 @@ export class TransactionsComponent implements AfterViewInit {
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsSubject = this.transactionsDataSource.connect();
 
-    // TODO Add full support for query param by also updating it when the filter changes.
-    this.route.queryParamMap.subscribe(queryParams => {
-      const queryFilter = queryParams.get('q');
-      if (queryFilter) {
-        this.filterState.setValueNow(queryFilter);
-      }
-    });
-
-    const filterValue$ = this.filterState.value$.pipe(
-      // Remember last received value.
-      tap(value => TransactionsComponent.lastFilterValue = value),
-      // Reset to first page whenever filter is changed.
-      tap(() => this.transactionsDataSource.paginator!.firstPage())
-    );
+    this.filterState.followFragment(this.route, this.router);
 
     // Listen to updates of both the data source and the filter.
-    this.txSubscription = combineLatest(this.dataService.transactions$, filterValue$)
+    this.txSubscription = combineLatest(this.dataService.transactions$, this.filterState.value$)
       .pipe(
         map(([transactions, filterValue]) =>
           this.filterService.applyFilter(transactions, filterValue)),
@@ -83,6 +69,8 @@ export class TransactionsComponent implements AfterViewInit {
       .subscribe(value => {
         this.transactionsDataSource.data = value;
 
+        // Reset to first page.
+        this.transactionsDataSource.paginator!.firstPage();
         // Deselect all transactions that are no longer part of the filtered data.
         this.selection.deselect(...this.selection.selected.filter(
           t => value.indexOf(t) === -1)

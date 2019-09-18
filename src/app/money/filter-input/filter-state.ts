@@ -1,3 +1,4 @@
+import { ActivatedRoute, Router } from "@angular/router";
 import { merge, Observable, Subject } from "rxjs";
 import { debounceTime, distinctUntilChanged, map, startWith } from "rxjs/operators";
 
@@ -50,5 +51,28 @@ export class FilterState {
   setValueNow(newValue: string) {
     this._currentValue = newValue;
     this.immediateChangeSubject.next();
+  }
+
+  followFragment(route: ActivatedRoute, router: Router) {
+    const prefix = 'q=';
+    // Fragment change --> value change.
+    route.fragment.subscribe(fragment => {
+      const newValue = fragment && fragment.startsWith(prefix)
+        ? fragment.substr(prefix.length)
+        : '';
+      if (newValue == this.getCurrentValue().trim()) {
+        return;
+      }
+      this.setValueNow(newValue);
+    });
+
+    // Value change --> fragment change.
+    this.value$.subscribe(value => {
+      const q = value.trim();
+      router.navigate([], {
+        fragment: q ? prefix + q : undefined,
+        queryParamsHandling: 'preserve',
+      });
+    });
   }
 }
