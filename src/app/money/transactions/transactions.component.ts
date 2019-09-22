@@ -58,6 +58,13 @@ export class TransactionsComponent implements AfterViewInit {
 
     this.filterState.followFragment(this.route, this.router);
 
+    // Reset to first page whenever filter changes.
+    // We do NOT want this to happen when transaction list changes, otherwise
+    // grouping transactions while on a different page is annoying.
+    this.filterState.value$.subscribe(() => {
+      this.transactionsDataSource.paginator!.firstPage();
+    });
+
     // Listen to updates of both the data source and the filter.
     this.txSubscription = combineLatest(this.dataService.transactions$, this.filterState.value$)
       .pipe(
@@ -69,8 +76,6 @@ export class TransactionsComponent implements AfterViewInit {
       .subscribe(value => {
         this.transactionsDataSource.data = value;
 
-        // Reset to first page.
-        this.transactionsDataSource.paginator!.firstPage();
         // Deselect all transactions that are no longer part of the filtered data.
         this.selection.deselect(...this.selection.selected.filter(
           t => value.indexOf(t) === -1)
