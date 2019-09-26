@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 import { getRandomInt } from '../core/util';
 
 /** Regular expression that only matches properly formatted data keys. */
@@ -13,12 +14,22 @@ export interface StorageSettings {
   providedIn: 'root'
 })
 export class StorageSettingsService {
-  constructor() { }
+  /** Observable subject that is updated whenever storage settings change. */
+  readonly settings$: BehaviorSubject<StorageSettings | null>;
+
+  constructor() {
+    this.settings$ = new BehaviorSubject<StorageSettings | null>(
+      this.getSettings());
+  }
 
   hasSettings(): boolean {
     return localStorage.getItem('storage_settings_dataKey') !== null;
   }
 
+  /**
+   * Returns the stored settings as an independent object or null if not found.
+   * setSettings() has to be called to persist any changes made to this object.
+   **/
   getSettings(): StorageSettings | null {
     let dataKey = localStorage.getItem('storage_settings_dataKey');
     if (!dataKey) {
@@ -27,6 +38,10 @@ export class StorageSettingsService {
     return { dataKey };
   }
 
+  /**
+   * Returns the stored settings as an independent object or initializes them.
+   * setSettings() has to be called to persist any changes made to this object.
+   **/
   getOrInitSettings(): StorageSettings {
     let settings = this.getSettings();
     if (!settings) {
@@ -39,11 +54,13 @@ export class StorageSettingsService {
     return settings;
   }
 
+  /** Updates the locally stored settings with new values. */
   setSettings(settings: StorageSettings) {
     if (!this.isValidDataKey(settings.dataKey)) {
       throw new Error('dataKey is not properly formatted');
     }
     localStorage.setItem('storage_settings_dataKey', settings.dataKey);
+    this.settings$.next(settings);
   }
 
   isValidDataKey(key: string) {

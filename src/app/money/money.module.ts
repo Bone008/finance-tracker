@@ -39,6 +39,7 @@ const appRoutes: Routes = [
   { path: 'rules', component: RulesComponent, data: { title: 'Rules' } },
   { path: 'analytics', component: AnalyticsComponent, data: { title: 'Analytics' } },
   { path: 'comments', component: CommentsComponent, data: { title: 'Comments' } },
+  { path: 'settings', component: SettingsComponent, data: { title: 'Settings' } },
   { path: '', pathMatch: 'full', redirectTo: 'overview' }
 ];
 
@@ -87,7 +88,6 @@ const appRoutes: Routes = [
     RuleEditComponent,
     DialogDeleteWithOrphansComponent,
     DialogSplitTransactionComponent,
-    SettingsComponent,
     DialogLabelDominanceComponent,
     DialogStaleDataComponent,
   ],

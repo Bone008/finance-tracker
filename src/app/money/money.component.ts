@@ -61,8 +61,10 @@ export class MoneyComponent implements OnInit, OnDestroy {
         }
       });
 
-
-    this.refreshData();
+    // Attempt refresh whenever data key changes (also initially).
+    this.storageSettingsService.settings$.subscribe(() => {
+      this.refreshData();
+    });
 
     const periodicTimer = timer(0, 60 * 1000)
       .pipe(
@@ -93,22 +95,6 @@ export class MoneyComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.mobileQuery.removeListener(this._mobileQueryListener);
     this.alive = false;
-  }
-
-  openSettings() {
-    const storageSettings = this.storageSettingsService.getOrInitSettings();
-    const originalSettings = Object.assign({}, storageSettings);
-
-    this.dialogService.openSettings(storageSettings)
-      .afterConfirmed().subscribe(() => {
-        this.storageSettingsService.setSettings(storageSettings);
-
-        const hasChanges = Object.keys(originalSettings).some(
-          key => originalSettings[key] !== storageSettings[key]);
-        if (hasChanges) {
-          this.refreshData();
-        }
-      });
   }
 
   refreshData() {

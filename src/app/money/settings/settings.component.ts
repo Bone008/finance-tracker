@@ -1,5 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { Component, OnInit } from '@angular/core';
 import { DATA_KEY_REGEXP, StorageSettings, StorageSettingsService } from '../storage-settings.service';
 
 @Component({
@@ -12,11 +11,11 @@ export class SettingsComponent implements OnInit {
   readonly storageSettings: StorageSettings;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) data: { storageSettings: StorageSettings },
-    private readonly storageSettingsService: StorageSettingsService,
-    private readonly matDialogRef: MatDialogRef<SettingsComponent>
+    private readonly storageSettingsService: StorageSettingsService
   ) {
-    this.storageSettings = data.storageSettings;
+    // Storage service returns an independent copy, so we can modify the object
+    // directly.
+    this.storageSettings = this.storageSettingsService.getOrInitSettings();
   }
 
   ngOnInit() {
@@ -26,7 +25,15 @@ export class SettingsComponent implements OnInit {
     this.storageSettings.dataKey = this.storageSettingsService.generateDataKey();
   }
 
+  hasStorageChanges(): boolean {
+    const originalSettings = this.storageSettingsService.getSettings();
+    return !!originalSettings && originalSettings.dataKey !== this.storageSettings.dataKey;
+  }
+
   onSubmit() {
-    this.matDialogRef.close(true);
+    if (!this.hasStorageChanges()) { return; }
+
+    this.storageSettingsService.setSettings(this.storageSettings);
+    // Data will be refreshed automatically by the subscriber in MoneyComponent.
   }
 }

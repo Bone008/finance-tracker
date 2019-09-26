@@ -1,42 +1,51 @@
-<h2 mat-dialog-title>Settings</h2>
+<mat-card class="main-card">
+  <mat-card-title fxLayout="row" fxLayoutGap="10px">
+    <span fxFlex>Settings</span>
+  </mat-card-title>
 
-<form #settingsForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
-  <mat-dialog-content fxLayout="column">
-    <p style="margin-top: 0;">
-      The data key identifies your personal finance database when syncing it
-      to the server. To access your data on a different device, enter this key
-      in the settings of that device.
-    </p>
-    <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
-      <mat-form-field fxFlex>
-        <input
-            #dataKey="ngModel"
-            matInput
-            name="dataKey"
-            [(ngModel)]="storageSettings.dataKey"
-            [pattern]="dataKeyPattern"
-            placeholder="Data key"
-            required>
-      </mat-form-field>
-      <button
-          mat-raised-button
-          type="button"
-          (click)="randomizeDataKey()">
-        Randomize
-      </button>
-    </div>
+  <form class="mat-card-content" #settingsForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
+    <mat-card-content fxLayout="column">
+      <p>
+        The data key identifies your personal finance database when syncing it
+        to the server. To access your data on a different device, enter this key
+        in the settings of that device.
+      </p>
+      <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
+        <mat-form-field>
+          <input
+              #dataKey="ngModel"
+              matInput
+              name="dataKey"
+              [(ngModel)]="storageSettings.dataKey"
+              [pattern]="dataKeyPattern"
+              placeholder="Data key"
+              required>
+        </mat-form-field>
+        <button
+            mat-raised-button
+            type="button"
+            (click)="randomizeDataKey()">
+          Randomize
+        </button>
+      </div>
 
-    <p class="error" *ngIf="dataKey.invalid && dataKey.touched && dataKey.errors.required">
-      Please enter a data key.
-    </p>
-    <p class="error" *ngIf="dataKey.invalid && dataKey.touched && dataKey.errors.pattern">
-      The pattern of the data key is incorrect.
-      It should have the form XXXX-XXXX-XXXX-XXXX.
-    </p>
-  </mat-dialog-content>
-  
-  <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
-    <button mat-button mat-dialog-close>Cancel</button>
-    <button mat-button type="submit" [disabled]="!settingsForm.valid" color="primary">Save</button>
-  </mat-dialog-actions>
-</form>
+      <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
+        <button
+            fxFlexAlign="start"
+            mat-raised-button
+            type="submit"
+            [disabled]="!settingsForm.valid || !hasStorageChanges()"
+            color="primary">
+          Save
+        </button>
+        <span class="error" *ngIf="dataKey.invalid && dataKey.touched && dataKey.errors.required">
+          Please enter a data key.
+        </span>
+        <span class="error" *ngIf="dataKey.invalid && dataKey.touched && dataKey.errors.pattern">
+          The pattern of the data key is incorrect.
+          It should have the form XXXX-XXXX-XXXX-XXXX.
+        </span>
+      </div>
+    </mat-card-content>
+  </form>
+</mat-card>
