@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { DATA_KEY_REGEXP, StorageSettings, StorageSettingsService } from '../storage-settings.service';
 
 @Component({
@@ -11,7 +12,8 @@ export class SettingsComponent implements OnInit {
   readonly storageSettings: StorageSettings;
 
   constructor(
-    private readonly storageSettingsService: StorageSettingsService
+    private readonly storageSettingsService: StorageSettingsService,
+    private readonly router: Router
   ) {
     // Storage service returns an independent copy, so we can modify the object
     // directly.
@@ -33,7 +35,8 @@ export class SettingsComponent implements OnInit {
   onSubmit() {
     if (!this.hasStorageChanges()) { return; }
 
-    this.storageSettingsService.setSettings(this.storageSettings);
     // Data will be refreshed automatically by the subscriber in MoneyComponent.
+    this.storageSettingsService.setSettings(this.storageSettings);
+    this.router.navigate(['/']);
   }
 }
