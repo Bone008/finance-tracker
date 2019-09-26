@@ -3,13 +3,14 @@
     <span fxFlex>Settings</span>
   </mat-card-title>
 
-  <form class="mat-card-content" #settingsForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
-    <mat-card-content fxLayout="column">
-      <p>
-        The data key identifies your personal finance database when syncing it
-        to the server. To access your data on a different device, enter this key
-        in the settings of that device.
-      </p>
+  <!-- Note: No flex layout here to retain box layout / collapsing margins / hr, etc. -->
+  <mat-card-content>
+    <p>
+      The data key identifies your personal finance database when syncing it
+      to the server. To access your data on a different device, enter this key
+      in the settings of that device.
+    </p>
+    <form #settingsForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
       <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
         <mat-form-field>
           <input
@@ -46,6 +47,25 @@
           It should have the form XXXX-XXXX-XXXX-XXXX.
         </span>
       </div>
-    </mat-card-content>
-  </form>
+    </form>
+
+    <hr>
+
+    <h2>Backup</h2>
+    <p>
+      You can export the entire binary database for backup purposes or to integrate with a different
+      service. The data is in gzipped
+      <a href="https://developers.google.com/protocol-buffers" target="_blank">protocol buffer</a>
+      format. If you want to parse the data outside of this tool, you can use the
+      <a href="https://github.com/Bone008/finance-tracker/tree/master/src/proto" target="_blank">
+        proto message types on GitHub.
+      </a>
+    </p>
+    <button
+        mat-raised-button
+        color="primary"
+        (click)="exportData()">
+      Download data
+    </button>
+  </mat-card-content>
 </mat-card>

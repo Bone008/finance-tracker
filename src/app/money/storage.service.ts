@@ -120,16 +120,13 @@ export class StorageService {
   }
 
   saveData(data: DataContainer): Promise<void> {
-    data.lastModified = timestampNow();
-
-    const encodedData = DataContainer.encode(data).finish();
-    const compressedData = gzip(encodedData);
-
     const settings = this.storageSettingsService.getSettings();
     if (!settings) {
-      return Promise.reject("No data key! Check settings.");
+      return Promise.reject("No data key! Please set one in settings.");
     }
-
+    
+    data.lastModified = timestampNow();
+    const compressedData = this.encodeAndCompressData(data);
     const dataBlob = new Blob([compressedData], { type: 'application/octet-stream' });
     const formData = new FormData();
     formData.set('data', dataBlob, settings.dataKey);
@@ -153,6 +150,12 @@ export class StorageService {
           this.lastKnownHash = hash;
         });
       })).toPromise();
+  }
+
+  /** Returns the optimized binary representation of the given DataContainer. */
+  encodeAndCompressData(data: DataContainer): Uint8Array {
+    const encodedData = DataContainer.encode(data).finish();
+    return gzip(encodedData);
   }
 
 
