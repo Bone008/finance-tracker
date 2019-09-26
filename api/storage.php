@@ -52,16 +52,13 @@ function legacyPostStorage($id) {
 
 Flight::route('POST /storage/@id:[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}', function($id) {
   $filesData = Flight::request()->files->data;
+  // Only required if there exists an old file under this id.
   $lastKnownHash = Flight::request()->data->lastKnownHash;
 
   if (!isset($filesData['error']) || is_array($filesData['error'])) {
     // For now, assume it is an old client and fall back to legacy storage.
     legacyPostStorage($id);
     //Flight::json(['error' => 'Invalid parameters.']);
-    return;
-  }
-  if(!is_string($lastKnownHash)) {
-    Flight::json(['error' => 'Invalid parameters: Hash missing.']);
     return;
   }
   switch ($filesData['error']) {
@@ -83,6 +80,10 @@ Flight::route('POST /storage/@id:[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}
   // Validate the sent hash.
   $currentHash = null;
   if(file_exists($binFile)) {
+    if(!is_string($lastKnownHash)) {
+      Flight::json(['error' => 'Invalid parameters: Hash missing.']);
+      return;
+    }
     $currentHash = hash_file(HASH_ALGORITHM, $binFile);
     if($lastKnownHash !== $currentHash) {
       Flight::json(['error' => 'Local database out of date. Please reload.']);
