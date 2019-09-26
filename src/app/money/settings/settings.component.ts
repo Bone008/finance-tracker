@@ -23,7 +23,10 @@ export class SettingsComponent implements OnInit {
   ) {
     // Storage service returns an independent copy, so we can modify the object
     // directly.
-    this.storageSettings = this.storageSettingsService.getOrInitSettings();
+    this.storageSettings = this.storageSettingsService.getSettings()
+      || {
+        dataKey: '',
+      };
   }
 
   ngOnInit() {
@@ -35,7 +38,7 @@ export class SettingsComponent implements OnInit {
 
   hasStorageChanges(): boolean {
     const originalSettings = this.storageSettingsService.getSettings();
-    return !!originalSettings && originalSettings.dataKey !== this.storageSettings.dataKey;
+    return !originalSettings || originalSettings.dataKey !== this.storageSettings.dataKey;
   }
 
   onSubmit() {

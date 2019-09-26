@@ -69,8 +69,10 @@ export class StorageService {
   loadData(): Promise<DataContainer> {
     const storageSettings = this.storageSettingsService.getSettings();
     if (!storageSettings) {
-      // We don't have a data key yet, generate one and return empty container.
-      this.storageSettingsService.getOrInitSettings();
+      // We don't have a data key yet, return empty container and leave it unset.
+      // Automatically generating one here would lead to the user not noticing
+      // when localStorage was cleared while the app remains loaded and silently
+      // storing their existing database under a new key.
       return Promise.resolve(new DataContainer());
     }
     const dataKey = storageSettings.dataKey;
@@ -124,7 +126,7 @@ export class StorageService {
     if (!settings) {
       return Promise.reject("No data key! Please set one in settings.");
     }
-    
+
     data.lastModified = timestampNow();
     const compressedData = this.encodeAndCompressData(data);
     const dataBlob = new Blob([compressedData], { type: 'application/octet-stream' });

@@ -61,6 +61,10 @@ export class MoneyComponent implements OnInit, OnDestroy {
         }
       });
 
+    // On first visit, initialize data key so the user can immediately start.
+    if (!this.storageSettingsService.hasSettings()) {
+      this.storageSettingsService.getOrInitSettings();
+    }
     // Attempt refresh whenever data key changes (also initially).
     this.storageSettingsService.settings$.subscribe(() => {
       this.refreshData();
