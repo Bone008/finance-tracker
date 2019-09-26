@@ -15,7 +15,6 @@ import { DialogLabelDominanceComponent } from './analytics/dialog-label-dominanc
 import { LabelBreakdownComponent } from './analytics/label-breakdown.component';
 import { BillingInfoComponent } from './billing-info/billing-info.component';
 import { CommentsComponent } from './comments/comments.component';
-import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
 import { FilterFormatValidatorDirective } from './filter-input/filter-format-validator.directive';
 import { FilterInputComponent } from './filter-input/filter-input.component';
@@ -24,6 +23,7 @@ import { LabelsComponent } from './labels/labels.component';
 import { MoneyComponent } from './money.component';
 import { RuleEditComponent } from './rules/rule-edit/rule-edit.component';
 import { RulesComponent } from './rules/rules.component';
+import { SettingsComponent } from './settings/settings.component';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
 import { FormImportComponent } from './transactions/form-import/form-import.component';
@@ -61,7 +61,7 @@ const appRoutes: Routes = [
     AddInlineLabelComponent,
     DialogDeleteWithOrphansComponent,
     DialogSplitTransactionComponent,
-    DialogSettingsComponent,
+    SettingsComponent,
     LabelsComponent,
     CommentsComponent,
     FilterInputComponent,
@@ -87,7 +87,7 @@ const appRoutes: Routes = [
     RuleEditComponent,
     DialogDeleteWithOrphansComponent,
     DialogSplitTransactionComponent,
-    DialogSettingsComponent,
+    SettingsComponent,
     DialogLabelDominanceComponent,
     DialogStaleDataComponent,
   ],

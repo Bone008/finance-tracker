@@ -3,18 +3,18 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { DATA_KEY_REGEXP, StorageSettings, StorageSettingsService } from '../storage-settings.service';
 
 @Component({
-  selector: 'app-dialog-settings',
-  templateUrl: './dialog-settings.component.html',
-  styleUrls: ['./dialog-settings.component.css']
+  selector: 'app-settings',
+  templateUrl: './settings.component.html',
+  styleUrls: ['./settings.component.css']
 })
-export class DialogSettingsComponent implements OnInit {
+export class SettingsComponent implements OnInit {
   readonly dataKeyPattern = DATA_KEY_REGEXP;
   readonly storageSettings: StorageSettings;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) data: { storageSettings: StorageSettings },
     private readonly storageSettingsService: StorageSettingsService,
-    private readonly matDialogRef: MatDialogRef<DialogSettingsComponent>
+    private readonly matDialogRef: MatDialogRef<SettingsComponent>
   ) {
     this.storageSettings = data.storageSettings;
   }

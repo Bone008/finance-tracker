@@ -7,9 +7,9 @@ import { Account, ProcessingRule, Transaction, TransactionData } from '../../pro
 import { AccountEditComponent, AccountEditConfig } from './accounts/account-edit/account-edit.component';
 import { BalancesComponent } from './accounts/balances/balances.component';
 import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
-import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
 import { RuleEditComponent, RuleEditConfig } from './rules/rule-edit/rule-edit.component';
+import { SettingsComponent } from './settings/settings.component';
 import { StorageSettings } from './storage-settings.service';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
@@ -36,8 +36,8 @@ export class DialogService {
 
   constructor(private readonly matDialog: MatDialog) { }
 
-  openSettings(storageSettings: StorageSettings): ConfirmableDialogRef<DialogSettingsComponent> {
-    return this.openConfirmable(DialogSettingsComponent, {
+  openSettings(storageSettings: StorageSettings): ConfirmableDialogRef<SettingsComponent> {
+    return this.openConfirmable(SettingsComponent, {
       data: { storageSettings },
     });
   }
