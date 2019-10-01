@@ -2,6 +2,7 @@ import { Component, EventEmitter, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { PapaParseResult, PapaParseService } from 'ngx-papaparse';
 import { Observable } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import { Account, ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { timestampNow, timestampToWholeSeconds } from '../../core/proto-util';
@@ -10,7 +11,12 @@ import { RuleService } from '../rule.service';
 import { FormatMapping } from './format-mapping';
 import { MAPPINGS_BY_FORMAT } from './mappings';
 
+// TODO Once we upgrade to TypeScript 3.4+, this can be rewritten to:
+// const ALL_FILE_FORMATS = ['foobar', ...] as const;
+// type FileFormat = typeof ALL_FILE_FORMATS;
+const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs'];
 type FileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs';
+const ALL_FILE_ENCODINGS = ['windows-1252', 'utf-8'];
 type FileEncoding = 'windows-1252' | 'utf-8';
 
 @Component({
@@ -59,14 +65,28 @@ export class ImportFileComponent implements OnInit {
     private readonly matDialogRef: MatDialogRef<ImportFileComponent>,
   ) {
     this.allAccounts$ = this.dataService.accounts$;
-    this._account = data.account || null;
+    this.targetAccount = data.account || null;
   }
 
   ngOnInit() {
-    this.formInputChange.subscribe(() => this.updateFilePreview());
+    // Select account default file format & encoding if present.
+    if (this.targetAccount && ALL_FILE_FORMATS.includes(this.targetAccount.preferredFileFormat)) {
+      this.fileFormat = <FileFormat>this.targetAccount.preferredFileFormat;
+    }
+    if (this.targetAccount && ALL_FILE_ENCODINGS.includes(this.targetAccount.preferredFileEncoding)) {
+      this.fileEncoding = <FileEncoding>this.targetAccount.preferredFileEncoding;
+    }
+
+    this.formInputChange
+      .pipe(debounceTime(10))
+      .subscribe(() => this.updateFilePreview());
   }
 
   onSubmit() {
+    if (!this.targetAccount) {
+      return;
+    }
+
     const entries = this.entriesToImport;
     // Store rows, which generates their ids.
     this.dataService.addImportedRows(entries.map(e => e.row));
@@ -78,8 +98,12 @@ export class ImportFileComponent implements OnInit {
       this.dataService.addTransactions(entry.transaction);
     }
     this.ruleService.notifyImported(entries.map(e => e.transaction));
-
     this.loggerService.log(`Imported ${entries.length} transactions.`);
+
+    // Update account default file format & encoding.
+    this.targetAccount.preferredFileFormat = this.fileFormat;
+    this.targetAccount.preferredFileEncoding = this.fileEncoding;
+
     this.matDialogRef.close(true);
   }
 
