@@ -1,5 +1,5 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { MAT_DIALOG_DATA } from '@angular/material';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import * as moment from 'moment';
 import { momentToProtoDate, moneyToNumber, numberToMoney, protoDateToMoment, timestampToMoment } from 'src/app/core/proto-util';
 import { maxBy, removeByValue } from 'src/app/core/util';

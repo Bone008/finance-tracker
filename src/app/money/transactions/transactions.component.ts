@@ -1,6 +1,7 @@
 import { SelectionModel } from '@angular/cdk/collections';
 import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
-import { MatPaginator, MatTableDataSource } from '@angular/material';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
 import * as moment from 'moment';
 import { combineLatest, of, Subscription } from 'rxjs';

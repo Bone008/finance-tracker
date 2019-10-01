@@ -1,6 +1,6 @@
 import { ComponentType } from '@angular/cdk/portal';
 import { Injectable } from '@angular/core';
-import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { Account, ProcessingRule, Transaction, TransactionData } from '../../proto/model';

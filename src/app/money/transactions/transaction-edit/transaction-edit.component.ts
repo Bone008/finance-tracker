@@ -1,5 +1,5 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 import { Account, BillingInfo, Money, Transaction, TransactionData } from '../../../../proto/model';
 import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
