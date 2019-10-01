@@ -1,5 +1,5 @@
 import { escapeRegex } from "src/app/core/util";
-import { dateToTimestamp, numberToMoney } from "../../../core/proto-util";
+import { dateToTimestamp, numberToMoney } from "../../core/proto-util";
 import { FormatMapping, FormatMappingBuilder } from "./format-mapping";
 
 /** Dictionary that contains configurations for each supported import format. */

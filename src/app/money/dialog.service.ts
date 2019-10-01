@@ -8,10 +8,10 @@ import { AccountEditComponent, AccountEditConfig } from './accounts/account-edit
 import { BalancesComponent } from './accounts/balances/balances.component';
 import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
+import { ImportFileComponent } from './import/import-file.component';
 import { RuleEditComponent, RuleEditConfig } from './rules/rule-edit/rule-edit.component';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
-import { FormImportComponent } from './transactions/form-import/form-import.component';
 import { TransactionEditComponent } from './transactions/transaction-edit/transaction-edit.component';
 
 export type ConfirmableDialogRef<T> =
@@ -38,8 +38,8 @@ export class DialogService {
     return this.openConfirmable(DialogStaleDataComponent);
   }
 
-  openAccountImport(account: Account | null): ConfirmableDialogRef<FormImportComponent> {
-    return this.openConfirmable(FormImportComponent, { data: { account } });
+  openAccountImport(account: Account | null): ConfirmableDialogRef<ImportFileComponent> {
+    return this.openConfirmable(ImportFileComponent, { data: { account } });
   }
 
   openAccountEdit(account: Account, editMode: 'add' | 'edit')

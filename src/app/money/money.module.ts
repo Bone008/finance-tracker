@@ -18,6 +18,7 @@ import { CommentsComponent } from './comments/comments.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
 import { FilterFormatValidatorDirective } from './filter-input/filter-format-validator.directive';
 import { FilterInputComponent } from './filter-input/filter-input.component';
+import { ImportFileComponent } from './import/import-file.component';
 import { LabelChipComponent } from './label-chip/label-chip.component';
 import { LabelsComponent } from './labels/labels.component';
 import { MoneyComponent } from './money.component';
@@ -26,7 +27,6 @@ import { RulesComponent } from './rules/rules.component';
 import { SettingsComponent } from './settings/settings.component';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
-import { FormImportComponent } from './transactions/form-import/form-import.component';
 import { TransactionEditComponent } from './transactions/transaction-edit/transaction-edit.component';
 import { AddInlineLabelComponent } from './transactions/transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transactions/transaction-labels/transaction-labels.component';
@@ -55,7 +55,7 @@ const appRoutes: Routes = [
   declarations: [
     MoneyComponent,
     AnalyticsComponent,
-    FormImportComponent,
+    ImportFileComponent,
     TransactionEditComponent,
     TransactionsComponent,
     TransactionLabelsComponent,
@@ -81,7 +81,7 @@ const appRoutes: Routes = [
     BalancesComponent,
   ],
   entryComponents: [
-    FormImportComponent,
+    ImportFileComponent,
     AccountEditComponent,
     BalancesComponent,
     TransactionEditComponent,

@@ -2,11 +2,11 @@ import { Component, EventEmitter, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { PapaParseResult, PapaParseService } from 'ngx-papaparse';
 import { Observable } from 'rxjs';
-import { Account, ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../../proto/model';
-import { LoggerService } from '../../../core/logger.service';
-import { timestampNow, timestampToWholeSeconds } from '../../../core/proto-util';
-import { DataService } from '../../data.service';
-import { RuleService } from '../../rule.service';
+import { Account, ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../proto/model';
+import { LoggerService } from '../../core/logger.service';
+import { timestampNow, timestampToWholeSeconds } from '../../core/proto-util';
+import { DataService } from '../data.service';
+import { RuleService } from '../rule.service';
 import { FormatMapping } from './format-mapping';
 import { MAPPINGS_BY_FORMAT } from './mappings';
 
@@ -14,11 +14,11 @@ type FileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs';
 type FileEncoding = 'windows-1252' | 'utf-8';
 
 @Component({
-  selector: 'app-form-import',
-  templateUrl: './form-import.component.html',
-  styleUrls: ['./form-import.component.css']
+  selector: 'app-import-file',
+  templateUrl: './import-file.component.html',
+  styleUrls: ['./import-file.component.css']
 })
-export class FormImportComponent implements OnInit {
+export class ImportFileComponent implements OnInit {
   readonly allAccounts$: Observable<Account[]>;
 
   // Form data.
@@ -56,7 +56,7 @@ export class FormImportComponent implements OnInit {
     private readonly ruleService: RuleService,
     private readonly loggerService: LoggerService,
     private readonly papaService: PapaParseService,
-    private readonly matDialogRef: MatDialogRef<FormImportComponent>,
+    private readonly matDialogRef: MatDialogRef<ImportFileComponent>,
   ) {
     this.allAccounts$ = this.dataService.accounts$;
     this._account = data.account || null;
