@@ -38,8 +38,8 @@ export class DialogService {
     return this.openConfirmable(DialogStaleDataComponent);
   }
 
-  openFormImport(): ConfirmableDialogRef<FormImportComponent> {
-    return this.openConfirmable(FormImportComponent);
+  openAccountImport(account: Account | null): ConfirmableDialogRef<FormImportComponent> {
+    return this.openConfirmable(FormImportComponent, { data: { account } });
   }
 
   openAccountEdit(account: Account, editMode: 'add' | 'edit')

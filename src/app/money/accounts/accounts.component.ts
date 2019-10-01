@@ -30,6 +30,7 @@ export class AccountsComponent implements OnInit {
 
   private totalBalance: number | null = null;
   private accountInfosById: AccountInfo[] = [];
+  /** Empty subject that is updated whenever an individual account is changed. */
   private accountEditSubject = new BehaviorSubject<void>(void (0));
 
   constructor(
@@ -80,6 +81,14 @@ export class AccountsComponent implements OnInit {
       .afterConfirmed().subscribe(() => {
         Object.assign(account, temp);
         //account.modified = timestampNow();
+        this.accountEditSubject.next();
+      });
+  }
+
+  /** Opens dialog to import transactions into an account. */
+  startImport(account: Account) {
+    this.dialogService.openAccountImport(account)
+      .afterConfirmed().subscribe(() => {
         this.accountEditSubject.next();
       });
   }

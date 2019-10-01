@@ -52,12 +52,21 @@
         <button
             mat-icon-button
             color="primary"
+            matTooltip="Import transactions from CSV"
+            (click)="startImport(account)">
+          <mat-icon>attachment</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            color="primary"
+            matTooltip="Edit account details"
             (click)="startEdit(account)">
           <mat-icon>edit</mat-icon>
         </button>
         <button
             mat-icon-button
             color="primary"
+            matTooltip="Delete account"
             (click)="delete(account)">
           <mat-icon>delete</mat-icon>
         </button>

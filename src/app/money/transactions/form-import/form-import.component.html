@@ -1,6 +1,22 @@
 <h2 mat-dialog-title>Import CSV</h2>
 
 <mat-dialog-content fxLayout="column">
+  <mat-form-field floatLabel="always">
+    <mat-select
+        name="account"
+        [(ngModel)]="targetAccount"
+        placeholder="Target account">
+      <mat-select-trigger>
+        <mat-icon>{{targetAccount?.icon}}</mat-icon>&nbsp;{{targetAccount?.name}}
+      </mat-select-trigger>
+      <mat-option
+          *ngFor="let account of allAccounts$ | async"
+          [value]="account">
+        <mat-icon>{{account.icon}}</mat-icon>&nbsp;{{account.name}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
   <div class="mat-form-field-wrapper">
     <label>
       <span class="custom-field-label">Select file to import</span>
@@ -22,22 +38,6 @@
       <mat-option value="windows-1252">Windows-1252</mat-option>
     </mat-select>
   </mat-form-field>
-  
-  <mat-form-field floatLabel="always">
-    <mat-select
-        name="account"
-        [(ngModel)]="targetAccount"
-        placeholder="Target account">
-      <mat-select-trigger>
-        <mat-icon>{{targetAccount?.icon}}</mat-icon>&nbsp;{{targetAccount?.name}}
-      </mat-select-trigger>
-      <mat-option
-          *ngFor="let account of allAccounts$ | async"
-          [value]="account">
-        <mat-icon>{{account.icon}}</mat-icon>&nbsp;{{account.name}}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
 
   <p *ngIf="duplicateCount > 0">
     Skipped {{duplicateCount}} transactions that have already been imported.
@@ -57,7 +57,9 @@
   <button mat-button mat-dialog-close>Cancel</button>
   <button
       mat-button
-      [mat-dialog-close]="true"
+      color="primary"
       [disabled]="entriesToImport.length === 0"
-      color="primary">Import</button>
+      (click)="onSubmit()">
+    Import
+  </button>
 </mat-dialog-actions>

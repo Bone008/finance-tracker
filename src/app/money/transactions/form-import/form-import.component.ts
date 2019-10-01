@@ -1,10 +1,12 @@
-import { Component, EventEmitter, OnInit } from '@angular/core';
+import { Component, EventEmitter, Inject, OnInit } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { PapaParseResult, PapaParseService } from 'ngx-papaparse';
 import { Observable } from 'rxjs';
 import { Account, ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../../proto/model';
 import { LoggerService } from '../../../core/logger.service';
 import { timestampNow, timestampToWholeSeconds } from '../../../core/proto-util';
 import { DataService } from '../../data.service';
+import { RuleService } from '../../rule.service';
 import { FormatMapping } from './format-mapping';
 import { MAPPINGS_BY_FORMAT } from './mappings';
 
@@ -49,15 +51,36 @@ export class FormImportComponent implements OnInit {
   errors: string[] = [];
 
   constructor(
+    @Inject(MAT_DIALOG_DATA) data: { account?: Account | null },
     private readonly dataService: DataService,
+    private readonly ruleService: RuleService,
     private readonly loggerService: LoggerService,
-    private readonly papaService: PapaParseService
+    private readonly papaService: PapaParseService,
+    private readonly matDialogRef: MatDialogRef<FormImportComponent>,
   ) {
     this.allAccounts$ = this.dataService.accounts$;
+    this._account = data.account || null;
   }
 
   ngOnInit() {
     this.formInputChange.subscribe(() => this.updateFilePreview());
+  }
+
+  onSubmit() {
+    const entries = this.entriesToImport;
+    // Store rows, which generates their ids.
+    this.dataService.addImportedRows(entries.map(e => e.row));
+    // Link transactions to their rows and store them.
+    for (const entry of entries) {
+      console.assert(entry.transaction.single != null,
+        "import should only generate single transactions");
+      entry.transaction.single!.importedRowId = entry.row.id;
+      this.dataService.addTransactions(entry.transaction);
+    }
+    this.ruleService.notifyImported(entries.map(e => e.transaction));
+
+    this.loggerService.log(`Imported ${entries.length} transactions.`);
+    this.matDialogRef.close(true);
   }
 
   getPreviewMinDate(): Date | null {
@@ -112,7 +135,7 @@ export class FormImportComponent implements OnInit {
   }
 
   private processFileContents(fileName: string, fileFormat: FileFormat, csvData: PapaParseResult) {
-    console.log(csvData);
+    this.loggerService.debug('csvData', csvData);
     this.resetPreview();
 
     const mapping = MAPPINGS_BY_FORMAT[fileFormat];
@@ -179,7 +202,7 @@ export class FormImportComponent implements OnInit {
       });
     }
 
-    console.log(this.entriesToImport);
+    this.loggerService.debug('entriesToImport', this.entriesToImport);
   }
 
   private validateRequiredColumns(presentColumns: string[], mapping: FormatMapping): boolean {
