@@ -35,7 +35,7 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   @Output()
   readonly elementClick = new EventEmitter<ChartElementClickEvent>();
 
-  @ViewChild('chartCanvas')
+  @ViewChild('chartCanvas', { static: true })
   private chartCanvas: ElementRef;
 
   private chart: Chart;

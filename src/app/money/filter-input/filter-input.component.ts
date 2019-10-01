@@ -17,7 +17,7 @@ export class FilterInputComponent implements OnInit {
   @Input()
   state: FilterState;
 
-  @ViewChild(MatAutocompleteTrigger)
+  @ViewChild(MatAutocompleteTrigger, { static: true })
   private filterAutocompleteTrigger: MatAutocompleteTrigger;
 
   get filterInput() { return this.state.getCurrentValue(); }

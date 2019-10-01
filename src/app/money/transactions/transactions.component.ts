@@ -36,7 +36,7 @@ export class TransactionsComponent implements AfterViewInit {
   transactionsSubject = of<Transaction[]>([]);
   selection = new SelectionModel<Transaction>(true);
 
-  @ViewChild(MatPaginator)
+  @ViewChild(MatPaginator, { static: true })
   private paginator: MatPaginator;
   private txSubscription: Subscription;
 
