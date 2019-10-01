@@ -62,7 +62,7 @@ body {
   }
   
   /* On xs screens, force dialogs to full width. */
-  .cdk-overlay-pane {
+  .money-dialog {
     max-width: none !important;
     width: 100%;
     margin: 0 10px;

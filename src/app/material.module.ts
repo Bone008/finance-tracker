@@ -1,10 +1,11 @@
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { NgModule } from '@angular/core';
-
+import { FlexLayoutModule } from '@angular/flex-layout';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatDialogConfig, MatDialogModule, MAT_DIALOG_DEFAULT_OPTIONS } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -20,10 +21,16 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { FlexLayoutModule } from '@angular/flex-layout';
-import { DragDropModule } from '@angular/cdk/drag-drop';
+
 
 @NgModule({
+  providers: [{
+    provide: MAT_DIALOG_DEFAULT_OPTIONS,
+    useValue: <MatDialogConfig>{
+      ...new MatDialogConfig(),
+      panelClass: 'money-dialog',
+    },
+  }],
   imports: [
     DragDropModule,
     MatAutocompleteModule,
