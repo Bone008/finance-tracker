@@ -31,6 +31,7 @@ import { TransactionEditComponent } from './transactions/transaction-edit/transa
 import { AddInlineLabelComponent } from './transactions/transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transactions/transaction-labels/transaction-labels.component';
 import { TransactionsComponent } from './transactions/transactions.component';
+import { BankSyncComponent } from './bank-sync/bank-sync.component';
 
 const appRoutes: Routes = [
   { path: 'overview', component: AccountsComponent, data: { title: 'Overview' } },
@@ -79,6 +80,7 @@ const appRoutes: Routes = [
     AccountsComponent,
     AccountEditComponent,
     BalancesComponent,
+    BankSyncComponent,
   ],
   entryComponents: [
     ImportFileComponent,

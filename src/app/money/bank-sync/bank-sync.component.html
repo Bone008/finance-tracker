@@ -1,0 +1,95 @@
+<h2>Automatic bank import</h2>
+
+<p>
+  For supported banks, you can have Finance Tracker automatically check for new transactions and
+  import them by logging into your bank account and exporting them for you.
+  To use this feature, your bank login details have to be transmitted to the Finance Tracker server.
+  However, they are never stored outside of your locally encrypted database.
+</p>
+
+<form #syncForm="ngForm" (ngSubmit)="onSubmit()">
+  <div fxLayout="row" fxLayoutGap="25px" fxLayout.lt-md="column">
+    <div fxLayout="column">
+      <h4>Bank details</h4>
+      <mat-form-field>
+        <mat-select name="bankType" value="sparkasse" placeholder="Bank type" required>
+          <mat-option value="sparkasse">Sparkasse</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <input
+            matInput
+            type="text"
+            name="bankUrl"
+            value="https://www.my-bank.com/"
+            placeholder="Bank base URL"
+            required>
+        <mat-icon matSuffix matTooltip="Specify where to find Online-Banking of your bank, for example: https://www.my-bank.com/">help</mat-icon>
+      </mat-form-field>
+      <mat-form-field>
+        <input
+            matInput
+            type="text"
+            name="loginName"
+            value=""
+            placeholder="Login name"
+            required>
+      </mat-form-field>
+      <mat-form-field>
+        <input
+            matInput
+            type="password"
+            name="loginPassword"
+            value=""
+            placeholder="Login PIN"
+            required>
+      </mat-form-field>
+      <mat-form-field class="transaction-age-field">
+        <input
+            matInput
+            type="number"
+            name="maxTransactionAge"
+            value="31"
+            placeholder="Transaction age"
+            min="0"
+            required>
+        <span matSuffix>&nbsp;days</span>
+      </mat-form-field>
+    </div>
+    <div fxLayout="column">
+      <h4>
+        Account mapping
+        <mat-icon matTooltip="Specify which bank accounts should be imported into which Finance Tracker account, in the order they appear in the bank.">help</mat-icon>
+      </h4>
+      <fieldset fxLayout="column">
+        <mat-form-field *ngFor="let i of [0,1,2,3]">
+          <span matPrefix>#{{i+1}}:&nbsp;&nbsp;</span>
+          <mat-select [(ngModel)]="targetAccounts[i]" name="targetAccount">
+              <mat-select-trigger>
+                <span *ngIf="!targetAccounts[i]">Ignore</span>
+                <mat-icon>{{targetAccounts[i]?.icon}}</mat-icon>{{targetAccounts[i]?.name}}
+              </mat-select-trigger>
+              <mat-option [value]="false">Ignore</mat-option>
+              <mat-option
+                  *ngFor="let account of allAccounts$ | async"
+                  [value]="account">
+                <mat-icon>{{account.icon}}</mat-icon>{{account.name}}
+              </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </fieldset>
+    </div>
+    <div class="log-container">
+      <h4>Output</h4>
+      <button
+          mat-raised-button
+          type="submit"
+          color="primary"
+          fxFlexAlign="start"
+          [disabled]="!syncForm.valid || syncActive">
+        Start
+      </button>
+      <pre>{{syncLog}}</pre>
+    </div>
+  </div>
+</form>

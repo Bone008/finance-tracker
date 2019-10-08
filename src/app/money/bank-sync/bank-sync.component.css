@@ -1,0 +1,10 @@
+.transaction-age-field input {
+  text-align: right;
+}
+
+.log-container {
+  overflow: hidden;
+}
+.log-container pre {
+  overflow-x: auto;
+}
