@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
+import { NgStackFormsModule } from '@ng-stack/forms';
 import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
 import { AccountEditComponent } from './accounts/account-edit/account-edit.component';
@@ -13,6 +13,7 @@ import { BucketBreakdownComponent } from './analytics/bucket-breakdown.component
 import { ChartComponent } from './analytics/chart.component';
 import { DialogLabelDominanceComponent } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
 import { LabelBreakdownComponent } from './analytics/label-breakdown.component';
+import { BankSyncComponent } from './bank-sync/bank-sync.component';
 import { BillingInfoComponent } from './billing-info/billing-info.component';
 import { CommentsComponent } from './comments/comments.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
@@ -31,7 +32,7 @@ import { TransactionEditComponent } from './transactions/transaction-edit/transa
 import { AddInlineLabelComponent } from './transactions/transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transactions/transaction-labels/transaction-labels.component';
 import { TransactionsComponent } from './transactions/transactions.component';
-import { BankSyncComponent } from './bank-sync/bank-sync.component';
+import { FormsModule } from '@angular/forms';
 
 const appRoutes: Routes = [
   { path: 'overview', component: AccountsComponent, data: { title: 'Overview' } },
@@ -49,6 +50,7 @@ const appRoutes: Routes = [
     CommonModule,
     RouterModule.forRoot(appRoutes),
     FormsModule,
+    NgStackFormsModule,
     HttpClientModule,
     MaterialModule,
     PapaParseModule,
