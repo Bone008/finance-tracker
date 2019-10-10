@@ -26,6 +26,7 @@ type FileEncoding = 'windows-1252' | 'utf-8';
 })
 export class ImportFileComponent implements OnInit {
   readonly allAccounts$: Observable<Account[]>;
+  readonly forcedFileName: string | null;
 
   // Form data.
   private _file: File | null = null;
@@ -57,7 +58,7 @@ export class ImportFileComponent implements OnInit {
   errors: string[] = [];
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) data: { account?: Account | null },
+    @Inject(MAT_DIALOG_DATA) data: { account?: Account | null, file?: File },
     private readonly dataService: DataService,
     private readonly ruleService: RuleService,
     private readonly loggerService: LoggerService,
@@ -66,6 +67,12 @@ export class ImportFileComponent implements OnInit {
   ) {
     this.allAccounts$ = this.dataService.accounts$;
     this.targetAccount = data.account || null;
+    if (data.file) {
+      this.file = data.file;
+      this.forcedFileName = data.file.name;
+    } else {
+      this.forcedFileName = null;
+    }
   }
 
   ngOnInit() {
@@ -77,6 +84,7 @@ export class ImportFileComponent implements OnInit {
       this.fileEncoding = <FileEncoding>this.targetAccount.preferredFileEncoding;
     }
 
+    this.updateFilePreview();
     this.formInputChange
       .pipe(debounceTime(10))
       .subscribe(() => this.updateFilePreview());

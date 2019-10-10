@@ -7,6 +7,8 @@ import { FormGroup, FormControl, FormArray, Validators, ValidationErrors } from 
 import { BankSyncService, BankSyncRequest, BankSyncResult } from './bank-sync.service';
 import { JsonPipe } from '@angular/common';
 import { tap, catchError } from 'rxjs/operators';
+import { DialogService } from '../dialog.service';
+import * as moment from 'moment';
 
 
 interface SyncFormData {
@@ -50,7 +52,9 @@ export class BankSyncComponent implements OnInit {
 
   constructor(
     private readonly bankSyncService: BankSyncService,
-    private readonly dataService: DataService) {
+    private readonly dataService: DataService,
+    private readonly dialogService: DialogService
+  ) {
     this.allAccounts$ = this.dataService.accounts$;
   }
 
@@ -58,6 +62,11 @@ export class BankSyncComponent implements OnInit {
 
   onSubmit() {
     this.form.disable();
+    this.clearLog();
+
+    // TODO: Decouple sync logic from form input and move most of this into
+    // BankSyncService, in order to allow periodic background sync to be invoked
+    // more easily.
 
     const data = this.form.value;
     // Reduce target accounts to list of indices that we want to request.
@@ -83,7 +92,7 @@ export class BankSyncComponent implements OnInit {
       .subscribe(response => {
         if (response.success) {
           this.showLog(`Success! Received ${response.results.length} CSV files.`);
-          this.processResults(response.results);
+          this.processResults(response.results, accountMappings);
         } else {
           this.showLog('Unsuccessful!');
           this.showLog();
@@ -100,8 +109,22 @@ export class BankSyncComponent implements OnInit {
       });
   }
 
-  private processResults(results: BankSyncResult[]) {
-    // TODO: Do something with the CSV files.
+  private async processResults(results: BankSyncResult[], accountMappings: AccountMapping[]) {
+    const syncId = moment().format('YYYY-MM-DD-HH-mm-ss');
+
+    for (let i = 0; i < results.length; i++) {
+      const csvString = results[i].data;
+      const targetAccountId = accountMappings[i].localAccountId;
+      const targetAccount = this.dataService.getAccountById(targetAccountId);
+
+      const name = `autosync_${syncId}_acc${accountMappings[i].bankAccountIndex}.csv`;
+      const csvFile = new File([csvString], name, { type: 'application/octet-stream' });
+      const dialog = this.dialogService.openAccountImport(targetAccount, csvFile);
+
+      // Delay next import until dialog is closed.
+      const result = await dialog.afterClosed().toPromise();
+      this.showLog(`Import into ${targetAccount.name}: ${result ? 'DONE' : 'CANCELLED'}`);
+    }
   }
 
   private clearLog() {

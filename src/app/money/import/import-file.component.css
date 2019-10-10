@@ -1,3 +1,8 @@
+.forced-file-name {
+  font-style: italic;
+  color: rgba(0,0,0, 0.75);
+}
+
 .error {
   color: red;
 }

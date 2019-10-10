@@ -20,7 +20,8 @@
   <div class="mat-form-field-wrapper">
     <label>
       <span class="custom-field-label">Select file to import</span>
-      <input type="file" (change)="file = $event.target.files[0]">
+      <input *ngIf="!forcedFileName" type="file" (change)="file = $event.target.files[0]">
+      <span *ngIf="forcedFileName" class="forced-file-name">{{forcedFileName}}</span>
     </label>
   </div>
   <mat-form-field>
