@@ -1,12 +1,12 @@
-import { BrowserModule } from '@angular/platform-browser';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppComponent } from './app.component';
-import { MaterialModule } from './material.module';
 import { CoreModule } from './core/core.module';
+import { MaterialModule } from './material.module';
 import { MoneyModule } from './money/money.module';
+
 
 @NgModule({
   declarations: [
@@ -14,7 +14,7 @@ import { MoneyModule } from './money/money.module';
   ],
   imports: [
     BrowserModule,
-    NoopAnimationsModule,
+    BrowserAnimationsModule,
     FormsModule,
     MaterialModule,
     CoreModule,
