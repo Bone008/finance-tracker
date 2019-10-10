@@ -1,7 +1,7 @@
 <?php
 const PYTHON_EXECUTABLE = 'python3';
-const PYTHON_SCRIPT_DIR = __DIR__ . '/crawler';
-const PYTHON_SCRIPT = __DIR__ . '/crawler/kskmse.py';
+const PYTHON_SCRIPT_DIR = __DIR__ . '/banksync';
+const PYTHON_SCRIPT = PYTHON_SCRIPT_DIR . '/sparkasse.py';
 
 function run_process($command, $cwd, $stdin, &$stdout=null, &$stderr=null) {
   $proc = proc_open($command, [
@@ -72,9 +72,10 @@ Flight::route('POST /banksync', function() {
   $results = [];
   foreach($accountIndices as $accountIndex) {
     // Call Python script.
+    error_log('Calling script: ' . $scriptCommand);
     $scriptInput = $loginName . "\n" . $loginPassword . "\n" . $accountIndex . "\n";
     $exitCode = run_process($scriptCommand, PYTHON_SCRIPT_DIR, $scriptInput, $stdout, $stderr);
-    
+
     if($exitCode !== 0 || empty($stdout)) {
       Flight::json([
         'error' => trim($stdout) ?: 'An unknown error occured! Unfortunately we do not know more.',
