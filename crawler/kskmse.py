@@ -8,6 +8,14 @@ import sys
 from lxml import html
 from urllib.parse import urljoin
 
+# This is the encoding that Sparkasse uses for their CSV files.
+SERVER_FILE_ENCODING = 'windows-1252'
+# This is the encoding that we use to write CSV data to STDOUT.
+# In order for PHP to successfully encode it to JSON, it seems like this needs
+# to be set to UTF-8.
+OUTPUT_ENCODING = 'utf-8'
+
+
 def log_result_error(*msg):
   logging.error(' '.join(str(s) for s in msg))
   print(*msg)
@@ -42,6 +50,18 @@ def submit_form(session: requests.Session, form: html.FormElement):
   form_data = dict(form.fields)
   return session.post(url, data=form_data)
 
+def infer_msgerror(doc: html.HtmlElement) -> str:
+  """Extract error messages from HTML document, or return a generic error.
+  Only use when it is already known that an error occured."""
+
+  errors = [e.text_content() for e in doc.cssselect('.msgerror')]
+  if not errors:
+    return 'Cause unknown!'
+  for i in range(len(errors)):
+    if errors[i].startswith('Fehlermeldung:'):
+      errors[i] = errors[i][len('Fehlermeldung:'):]
+  return ' && '.join(errors)
+
 
 def do_login(session: requests.Session, base_url: str, user_id: str, user_pass: str):
   url = urljoin(base_url, '/de/home.html')
@@ -69,15 +89,12 @@ def do_login(session: requests.Session, base_url: str, user_id: str, user_pass: 
   if 'finanzstatus.html' in r.url:
     log_info('Login successful!')
     return True
+  elif 'pin-sperre-aufheben.html' in r.url:
+    log_result_error('Login error: Too many failed login attempts!')
+    return False
   else:
     doc = to_html(r)
-    errors = [e.text_content() for e in doc.cssselect('.msgerror')]
-    if errors:
-      log_result_error('Login error:', ' && '.join(errors))
-    elif 'pin-sperre-aufheben.html' in r.url:
-      log_result_error('Login error: Too many failed login attempts!')
-    else:
-      log_result_error('Login error: Unknown!')
+    log_result_error('Login error:', infer_msgerror(doc))
     return False
 
 
@@ -123,11 +140,13 @@ def do_load_transactions(session: requests.Session, base_url: str, date_from: st
   if 'CSV-CAMT-Format' in r.text or 'CSV-Format' in r.text:
     return to_html(r)
   else:
-    log_result_error('Search did not return the CSV export button unexpectedly!')
+    doc = to_html(r)
+    log_result_error('Search did not return the CSV export button unexpectedly!',
+        infer_msgerror(doc))
     return None
 
 
-def do_export_csv(session: requests.Session, transactions_doc: html.HtmlElement):
+def do_export_csv(session: requests.Session, transactions_doc: html.HtmlElement) -> bytes:
   # Locate form.
   search_form = find_form_by_value(transactions_doc, 'CSV-CAMT-Format')
   if search_form is None:
@@ -152,11 +171,14 @@ def do_export_csv(session: requests.Session, transactions_doc: html.HtmlElement)
   log_info('Requesting CSV export ...')
   r = submit_form(session, search_form)
   log_debug('Response URL: ', r.url)
-  log_debug('Response length: ', len(r.text))
+  log_debug('Response length: ', len(r.content), 'bytes')
   if not 'services/download?' in r.url:
-    log_result_error('Form did not lead to a download link for an unknown reason!')
+    doc = to_html(r)
+    log_result_error('Form did not lead to a download link!', infer_msgerror(doc))
     return None
-  return r.text
+  
+  # Return raw content to avoid picking any charset. Just return the data as-is.
+  return r.content
 
 
 def do_logout(session: requests.Session, last_doc: html.HtmlElement):
@@ -215,12 +237,14 @@ def main():
     return False
   
   wait()
-  csv_data = do_export_csv(session, transactions_doc)
-  if csv_data is None:
+  csv_bytes = do_export_csv(session, transactions_doc)
+  if csv_bytes is None:
     return False
 
-  print(csv_data, end='', flush=True)
-  log_info('Done! Written %d chars to stdout.' % len(csv_data))
+  reencoded_bytes = csv_bytes.decode(SERVER_FILE_ENCODING).encode(OUTPUT_ENCODING)
+  sys.stdout.buffer.write(reencoded_bytes)
+  sys.stdout.buffer.flush()
+  log_info('Done! Written %d bytes to stdout.' % len(csv_bytes))
   
   wait()
   do_logout(session, transactions_doc)
