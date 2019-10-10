@@ -3,7 +3,6 @@ import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from 
 import * as moment from 'moment';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { delay } from 'src/app/core/util';
 import { Account } from 'src/proto/model';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
@@ -62,8 +61,6 @@ export class BankSyncComponent implements OnInit {
     private readonly dialogService: DialogService
   ) {
     this.allAccounts$ = this.dataService.accounts$;
-
-    delay(1000).then(() => this.processResults([{ data: 'asdf', log: '' }], [{ localAccountId: 2, bankAccountIndex: 0 }]));
   }
 
   ngOnInit() { }
