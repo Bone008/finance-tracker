@@ -28,6 +28,7 @@ Flight::route('POST /banksync', function() {
   $loginPassword = (string)$data->loginPassword;
   $maxTransactionAge = (int)$data->maxTransactionAge;
   $accountIndices = $data->accountIndices;
+  $verbose = $data->verbose;
   
   // Validate input.
   if ($data->bankType !== 'sparkasse') {
@@ -51,12 +52,11 @@ Flight::route('POST /banksync', function() {
   $fromDate = new DateTime();
   $fromDate->sub(new DateInterval('P' . $maxTransactionAge . 'D'));
   $toDate = new DateTime();
-  $toDate->add(new DateInterval('P7D'));
+  // Note: Sparkasse does not allow the "to" date to be in the future.
   
   $fromStr = $fromDate->format('d.m.Y');
   $toStr = $toDate->format('d.m.Y');
-
-  // Call Python script.
+  
   $scriptArgs = [
     PYTHON_EXECUTABLE,
     escapeshellarg(PYTHON_SCRIPT),
@@ -64,22 +64,36 @@ Flight::route('POST /banksync', function() {
     '--from', escapeshellarg($fromStr),
     '--to', escapeshellarg($toStr),
   ];
-  $scriptInput =
-    $loginName . "\n" .
-    $loginPassword . "\n" .
-    implode(',', $accountIndices) . "\n";
-  
-  run_process(implode(' ', $scriptArgs), PYTHON_SCRIPT_DIR, $scriptInput, $stdout, $stderr);
-  // run_process('python3 -m site', NULL, PYTHON_SCRIPT_DIR, $stdout, $stderr);
+  if($verbose) {
+    $scriptArgs[] = '-v';
+  }
+  $scriptCommand = implode(' ', $scriptArgs);
+
+  $results = [];
+  foreach($accountIndices as $accountIndex) {
+    // Call Python script.
+    $scriptInput = $loginName . "\n" . $loginPassword . "\n" . $accountIndex . "\n";
+    $exitCode = run_process($scriptCommand, PYTHON_SCRIPT_DIR, $scriptInput, $stdout, $stderr);
+    
+    if($exitCode !== 0 || empty($stdout)) {
+      Flight::json([
+        'error' => trim($stdout) ?: 'An unknown error occured! Unfortunately we do not know more.',
+        'errorDetails' => 'Account index: ' . $accountIndex .
+            "\nExit code: " . $exitCode .
+            (DEBUG_MODE ? "\nCommand: " . $scriptCommand . "\n" . $stderr : ''),
+      ]);
+      return;
+    }
+
+    // Only gather successful results
+    $results[] = [
+      'data' => $stdout,
+      'log' => (DEBUG_MODE ? $stderr : ''),
+    ];
+  }
 
   Flight::json([
-    'bankUrl' => $bankUrl,
-    'loginName' => $loginName,
-    'loginPassword' => $loginPassword,
-    'from' => $fromStr,
-    'to' => $toStr,
-    'accountIndices' => $accountIndices,
-    'stdout' => $stdout,
-    'stderr' => $stderr,
+    'success' => true,
+    'results' => $results,
   ]);
 });
