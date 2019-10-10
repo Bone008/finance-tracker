@@ -25,4 +25,5 @@
   },
   "typescript.tsdk": "node_modules\\typescript\\lib",
   "search.usePCRE2": true,
+  "html.format.enable": false,
 }
