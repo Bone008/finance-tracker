@@ -1,5 +1,6 @@
 import argparse
 import getpass
+import logging
 import random
 import requests
 import time
@@ -7,8 +8,19 @@ import sys
 from lxml import html
 from urllib.parse import urljoin
 
+def log_result_error(*msg):
+  logging.error(' '.join(str(s) for s in msg))
+  print(*msg)
+
+def log_info(*msg):
+  logging.info(' '.join(str(s) for s in msg))
+
+def log_debug(*msg):
+  logging.debug(' '.join(str(s) for s in msg))
+
+
 def wait():
-  print('(Throttling ...)')
+  log_info('(Throttling ...)')
   time.sleep(2 + 2*random.random())
 
 
@@ -33,13 +45,13 @@ def submit_form(session: requests.Session, form: html.FormElement):
 
 def do_login(session: requests.Session, base_url: str, user_id: str, user_pass: str):
   url = urljoin(base_url, '/de/home.html')
-  print('Loading %s ...' % url)
+  log_info('Loading %s ...' % url)
   r = session.get(url)
   doc = to_html(r)
 
   login_form = find_form_by_value(doc, 'Anmelden')
   if login_form is None:
-    print('Could not locate login form!', file=sys.stderr)
+    log_result_error('Could not locate login form!')
     return None
   # Fill out form. Input names are randomly generated, so we have to infer them.
   for input_elem in login_form.inputs:
@@ -47,28 +59,30 @@ def do_login(session: requests.Session, base_url: str, user_id: str, user_pass: 
       input_elem.value = user_id
     elif input_elem.type == 'password':
       input_elem.value = user_pass
-    #print(input_elem.name, '->', input_elem.value)
+    #log_debug(input_elem.name + ' -> ' + input_elem.value)
   
   wait()
-  print('Logging in...')
+  log_info('Logging in...')
   r = submit_form(session, login_form)
-  print('[D] Response URL:', r.url)
+  log_debug('Response URL:', r.url)
   
   if 'finanzstatus.html' in r.url:
-    print('Login successful!')
+    log_info('Login successful!')
     return True
   else:
     doc = to_html(r)
     errors = [e.text_content() for e in doc.cssselect('.msgerror')]
     if errors:
-      print('Login error:', ' && '.join(errors), file=sys.stderr)
+      log_result_error('Login error:', ' && '.join(errors))
+    elif 'pin-sperre-aufheben.html' in r.url:
+      log_result_error('Login error: Too many failed login attempts!')
     else:
-      print('Login error: Unknown!', file=sys.stderr)
+      log_result_error('Login error: Unknown!')
     return False
 
 
 def do_load_transactions(session: requests.Session, base_url: str, date_from: str, date_to: str, account_index: int):
-  print('Navigating to transactions page ...')
+  log_info('Navigating to transactions page ...')
   url = urljoin(base_url, '/de/home/onlinebanking/umsaetze/umsaetze.html?n=true&stref=hnav')
   r = session.get(url)
   doc = to_html(r)
@@ -76,7 +90,7 @@ def do_load_transactions(session: requests.Session, base_url: str, date_from: st
   # Locate form.
   search_form = find_form_by_value(doc, 'Aktualisieren')
   if search_form is None:
-    print('Could not locate search form!', file=sys.stderr)
+    log_result_error('Could not locate search form!')
     return None
   
   # Fill out form.
@@ -87,7 +101,7 @@ def do_load_transactions(session: requests.Session, base_url: str, date_from: st
       input_elem.drop_tree()
       continue
     
-    #print(input_elem.name, '->', input_elem.value, '|', input_elem.value_options if input_elem.tag == 'select' else input_elem.type)
+    #log_debug(input_elem.name, '->', input_elem.value, '|', input_elem.value_options if input_elem.tag == 'select' else input_elem.type)
     # Set the "was already submitted" indicator.
     if input_elem.value == '0':
       input_elem.value = '1'
@@ -100,16 +114,16 @@ def do_load_transactions(session: requests.Session, base_url: str, date_from: st
       found_date_from = True
   
   if not found_date_from:
-    print('Could not locate date input!', file=sys.stderr)
+    log_result_error('Could not locate date input!')
     return None
   
   wait()
-  print('Submitting search for %s - %s ...' % (date_from, date_to))
+  log_info('Submitting search for %s - %s ...' % (date_from, date_to))
   r = submit_form(session, search_form)
-  if 'CSV-CAMT-Format' in r.text:
+  if 'CSV-CAMT-Format' in r.text or 'CSV-Format' in r.text:
     return to_html(r)
   else:
-    print('Search did not return the CSV export button unexpectedly!', file=sys.stderr)
+    log_result_error('Search did not return the CSV export button unexpectedly!')
     return None
 
 
@@ -117,7 +131,10 @@ def do_export_csv(session: requests.Session, transactions_doc: html.HtmlElement)
   # Locate form.
   search_form = find_form_by_value(transactions_doc, 'CSV-CAMT-Format')
   if search_form is None:
-    print('Could not locate search form!', file=sys.stderr)
+    # For credit cards.
+    search_form = find_form_by_value(transactions_doc, 'CSV-Format')
+  if search_form is None:
+    log_result_error('Could not locate search form!')
     return None
   
   # Fill out form.
@@ -127,44 +144,60 @@ def do_export_csv(session: requests.Session, transactions_doc: html.HtmlElement)
       input_elem.drop_tree()
       continue
     
-    #print(input_elem.name, '->', input_elem.value, '|', input_elem.value_options if input_elem.tag == 'select' else input_elem.type)
+    #log_debug(input_elem.name, '->', input_elem.value, '|', input_elem.value_options if input_elem.tag == 'select' else input_elem.type)
     # Set the "was already submitted" indicator.
     if input_elem.value == '0':
       input_elem.value = '1'
   
-  print('Requesting CSV export ...')
+  log_info('Requesting CSV export ...')
   r = submit_form(session, search_form)
-  print('[D] Response URL: ', r.url)
-  print('[D] Response length: ', len(r.text))
+  log_debug('Response URL: ', r.url)
+  log_debug('Response length: ', len(r.text))
+  if not 'services/download?' in r.url:
+    log_result_error('Form did not lead to a download link for an unknown reason!')
+    return None
   return r.text
 
 
 def do_logout(session: requests.Session, last_doc: html.HtmlElement):
-  print('Logging out ...')
+  log_info('Logging out ...')
 
   logout_form = find_form_by_value(last_doc, 'Abmelden')
   # We do not really care if it worked.
   r = submit_form(session, logout_form)
-  print('[D] Logout URL:', r.url)
+  log_debug('Post logout URL:', r.url)
 
 def main():
   parser = argparse.ArgumentParser(description='Exports bank statements from Sparkasse online banking.')
   parser.add_argument('--base', required=True, help='Base URL of the Sparkasse website.')
   parser.add_argument('--from', required=True, help='Begin of date range to export in DD.MM.YYYY format.')
   parser.add_argument('--to', required=True, help='End of date range to export in DD.MM.YYYY format.')
+  parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging.')
 
   args = parser.parse_args()
   base_url = args.base
   date_from = getattr(args, 'from')
   date_to = args.to
-  user_id = input('User ID: ')
-  if sys.stdout.isatty():
-    # Password typing suppresion only works when connected to a terminal.
-    user_pass = getpass.getpass('Password: ')
+
+  logging.basicConfig(
+    level=logging.DEBUG if args.verbose else logging.INFO,
+    format='[%(levelname)s] %(message)s'
+  )
+
+  if sys.stderr.isatty():
+    # Only print prompts when connected to terminal. Note that we want to print
+    # to stderr, which is not supported by 'input' natively.
+    print('User ID: ', file=sys.stderr, end='')
+    user_id = input()
+    print('Password: ', file=sys.stderr, end='', flush=True)
+    user_pass = getpass.getpass('')
+    print('Account index (0=first): ', file=sys.stderr, end='')
+    raw_account_index = input()
   else:
-    user_pass = input('Password: ')
-  account_index = input('Account index (0=first): ')
-  out_file = 'muhdata.csv'
+    user_id = input()
+    user_pass = input()
+    raw_account_index = input()
+  account_index = int(raw_account_index)
 
 
   user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0'
@@ -183,12 +216,11 @@ def main():
   
   wait()
   csv_data = do_export_csv(session, transactions_doc)
+  if csv_data is None:
+    return False
 
-  print('Writing to output file: %s ...', out_file)
-  with open(out_file, 'w') as f:
-    f.write(csv_data)
-  print('Done!')
-  print()
+  print(csv_data, end='', flush=True)
+  log_info('Done! Written %d chars to stdout.' % len(csv_data))
   
   wait()
   do_logout(session, transactions_doc)
@@ -197,4 +229,4 @@ def main():
 
 
 if __name__ == "__main__":
-  exit(0 if main() else 0)
+  exit(0 if main() else 2)
