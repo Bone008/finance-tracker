@@ -7,12 +7,12 @@
   However, they are never stored outside of your locally encrypted database.
 </p>
 
-<form #syncForm="ngForm" (ngSubmit)="onSubmit()">
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
   <div fxLayout="row" fxLayoutGap="25px" fxLayout.lt-md="column">
     <div fxLayout="column">
       <h4>Bank details</h4>
       <mat-form-field>
-        <mat-select name="bankType" value="sparkasse" placeholder="Bank type" required>
+        <mat-select formControlName="bankType" value="sparkasse" placeholder="Bank type" required>
           <mat-option value="sparkasse">Sparkasse</mat-option>
         </mat-select>
       </mat-form-field>
@@ -20,8 +20,7 @@
         <input
             matInput
             type="text"
-            name="bankUrl"
-            value="https://www.my-bank.com/"
+            formControlName="bankUrl"
             placeholder="Bank base URL"
             required>
         <mat-icon matSuffix matTooltip="Specify where to find Online-Banking of your bank, for example: https://www.my-bank.com/">help</mat-icon>
@@ -30,8 +29,7 @@
         <input
             matInput
             type="text"
-            name="loginName"
-            value=""
+            formControlName="loginName"
             placeholder="Login name"
             required>
       </mat-form-field>
@@ -39,8 +37,7 @@
         <input
             matInput
             type="password"
-            name="loginPassword"
-            value=""
+            formControlName="loginPassword"
             placeholder="Login PIN"
             required>
       </mat-form-field>
@@ -48,10 +45,9 @@
         <input
             matInput
             type="number"
-            name="maxTransactionAge"
-            value="31"
+            formControlName="maxTransactionAge"
             placeholder="Transaction age"
-            min="0"
+            min="1"
             required>
         <span matSuffix>&nbsp;days</span>
       </mat-form-field>
@@ -61,13 +57,13 @@
         Account mapping
         <mat-icon matTooltip="Specify which bank accounts should be imported into which Finance Tracker account, in the order they appear in the bank.">help</mat-icon>
       </h4>
-      <fieldset fxLayout="column">
-        <mat-form-field *ngFor="let i of [0,1,2,3]">
+      <fieldset formArrayName="targetAccounts" fxLayout="column">
+        <mat-form-field *ngFor="let control of targetAccountsForm.controls; let i=index">
           <span matPrefix>#{{i+1}}:&nbsp;&nbsp;</span>
-          <mat-select [(ngModel)]="targetAccounts[i]" name="targetAccount">
+          <mat-select [formControlName]="i">
               <mat-select-trigger>
-                <span *ngIf="!targetAccounts[i]">Ignore</span>
-                <mat-icon>{{targetAccounts[i]?.icon}}</mat-icon>{{targetAccounts[i]?.name}}
+                <span *ngIf="!control.value">Ignore</span>
+                <mat-icon>{{control.value?.icon}}</mat-icon>{{control.value?.name}}
               </mat-select-trigger>
               <mat-option [value]="false">Ignore</mat-option>
               <mat-option
@@ -86,7 +82,7 @@
           type="submit"
           color="primary"
           fxFlexAlign="start"
-          [disabled]="!syncForm.valid || syncActive">
+          [disabled]="!form.valid">
         Start
       </button>
       <pre>{{syncLog}}</pre>
