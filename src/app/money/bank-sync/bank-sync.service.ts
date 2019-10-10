@@ -11,6 +11,21 @@ export interface BankSyncRequest {
   accountIndices: number[];
 }
 
+export interface BankSyncResult {
+  data: string;
+  log: string;
+}
+export interface BankSyncSuccessResponse {
+  success: true;
+  results: BankSyncResult[];
+}
+export interface BankSyncErrorResponse {
+  success: undefined;
+  error: string;
+  errorDetails?: string;
+}
+export type BankSyncResponse = BankSyncSuccessResponse | BankSyncErrorResponse;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -19,7 +34,7 @@ export class BankSyncService {
     private readonly httpClient: HttpClient
   ) { }
 
-  requestSync(request: BankSyncRequest): Observable<any> {
-    return this.httpClient.post('/api/banksync', request);
+  requestSync(request: BankSyncRequest): Observable<BankSyncResponse> {
+    return this.httpClient.post<BankSyncResponse>('/api/banksync', request);
   }
 }

@@ -4,7 +4,7 @@ import { DataService } from '../data.service';
 import { Observable, throwError } from 'rxjs';
 import { Account } from 'src/proto/model';
 import { FormGroup, FormControl, FormArray, Validators, ValidationErrors } from '@ng-stack/forms';
-import { BankSyncService, BankSyncRequest } from './bank-sync.service';
+import { BankSyncService, BankSyncRequest, BankSyncResult } from './bank-sync.service';
 import { JsonPipe } from '@angular/common';
 import { tap, catchError } from 'rxjs/operators';
 
@@ -46,7 +46,7 @@ export class BankSyncComponent implements OnInit {
     targetAccounts: this.targetAccountsForm,
   });
 
-  syncLog: string | null = null;
+  syncLog: string = '';
 
   constructor(
     private readonly bankSyncService: BankSyncService,
@@ -77,38 +77,39 @@ export class BankSyncComponent implements OnInit {
       accountIndices: accountMappings.map(mapping => mapping.bankAccountIndex),
     };
 
-    this.syncLog = 'Starting bank sync ...\n';
+    this.showLog('Starting bank sync ...');
     this.bankSyncService.requestSync(request)
       .pipe(tap(() => this.form.enable(), () => this.form.enable()))
       .subscribe(response => {
-        this.syncLog += JSON.stringify(response, null, 2); + '\n';
-
-        if(response.stdout) {
-          this.syncLog += '\nSTDOUT:\n' + response.stdout + '\n';
-        }
-        if(response.stderr) {
-          this.syncLog += '\nSTDERR:\n' + response.stderr + '\n';
+        if (response.success) {
+          this.showLog(`Success! Received ${response.results.length} CSV files.`);
+          this.processResults(response.results);
+        } else {
+          this.showLog('Unsuccessful!');
+          this.showLog();
+          this.showLog(response.error);
+          if (response.errorDetails) {
+            this.showLog();
+            this.showLog("Details:")
+            this.showLog(response.errorDetails);
+          }
         }
       }, err => {
         this.syncLog += 'An error occured!\n';
         this.syncLog += JSON.stringify(err.error, null, 2);
       });
+  }
 
-    /*this.syncLog = '[DUMMY] Loading stuff ...\n';
-    this.syncLog += JSON.stringify(this.form.value) + '\n';
-    for (let i = 0; i < 4; i++) {
-      await delay(100);
-      this.syncLog += '[DUMMY] Did the login.\n';
-      await delay(70);
-      this.syncLog += '[DUMMY] Baked some cookies.\n';
-      await delay(550);
-      this.syncLog += '[DUMMY] Also some toast now.\n';
-      await delay(200);
-      this.syncLog += '[DUMMY] Saying good bye to strangers ...\n';
-    }
-    await delay(800);
-    this.syncLog += '[DUMMY] Done!\n';
-    this.form.enable();*/
+  private processResults(results: BankSyncResult[]) {
+    // TODO: Do something with the CSV files.
+  }
+
+  private clearLog() {
+    this.syncLog = '';
+  }
+
+  private showLog(message = '') {
+    this.syncLog += message + '\n';
   }
 
 }
