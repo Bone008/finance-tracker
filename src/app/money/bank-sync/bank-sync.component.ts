@@ -3,11 +3,17 @@ import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from 
 import * as moment from 'moment';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { delay } from 'src/app/core/util';
 import { Account } from 'src/proto/model';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { BankSyncResult, BankSyncService } from './bank-sync.service';
 
+/**
+ * Since the sync script reencodes all CSV files as UTF-8, we want to override
+ * the account's default setting upon import.
+ */
+const FORCED_IMPORT_ENCODING = 'utf-8';
 
 interface SyncFormData {
   bankType: 'sparkasse';
@@ -56,6 +62,8 @@ export class BankSyncComponent implements OnInit {
     private readonly dialogService: DialogService
   ) {
     this.allAccounts$ = this.dataService.accounts$;
+
+    delay(1000).then(() => this.processResults([{ data: 'asdf', log: '' }], [{ localAccountId: 2, bankAccountIndex: 0 }]));
   }
 
   ngOnInit() { }
@@ -121,7 +129,7 @@ export class BankSyncComponent implements OnInit {
 
       const name = `autosync_${syncId}_acc${accountMappings[i].bankAccountIndex}.csv`;
       const csvFile = new File([csvString], name, { type: 'application/octet-stream' });
-      const dialog = this.dialogService.openAccountImport(targetAccount, csvFile);
+      const dialog = this.dialogService.openAccountImport(targetAccount, csvFile, FORCED_IMPORT_ENCODING);
 
       // Delay next import until dialog is closed.
       const result = await dialog.afterClosed().toPromise();

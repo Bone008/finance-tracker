@@ -8,7 +8,7 @@ import { AccountEditComponent, AccountEditConfig } from './accounts/account-edit
 import { BalancesComponent } from './accounts/balances/balances.component';
 import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
-import { ImportFileComponent } from './import/import-file.component';
+import { ImportDialogData, ImportFileComponent, ImportFileEncoding } from './import/import-file.component';
 import { RuleEditComponent, RuleEditConfig } from './rules/rule-edit/rule-edit.component';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
@@ -40,9 +40,12 @@ export class DialogService {
 
   openAccountImport(
     account: Account | null,
-    file?: File
+    file?: File,
+    forcedEncoding?: ImportFileEncoding
   ): ConfirmableDialogRef<ImportFileComponent> {
-    return this.openConfirmable(ImportFileComponent, { data: { account, file } });
+    return this.openConfirmable(ImportFileComponent, {
+      data: <ImportDialogData>{ account, file, forcedEncoding },
+    });
   }
 
   openAccountEdit(account: Account, editMode: 'add' | 'edit')

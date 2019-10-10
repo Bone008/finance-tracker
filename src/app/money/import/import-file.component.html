@@ -34,7 +34,7 @@
     </mat-select>
   </mat-form-field>
   <mat-form-field>
-    <mat-select [(ngModel)]="fileEncoding" placeholder="File encoding">
+    <mat-select [(ngModel)]="fileEncoding" [disabled]="isEncodingForced" placeholder="File encoding">
       <mat-option value="utf-8">UTF-8</mat-option>
       <mat-option value="windows-1252">Windows-1252</mat-option>
     </mat-select>

@@ -15,9 +15,15 @@ import { MAPPINGS_BY_FORMAT } from './mappings';
 // const ALL_FILE_FORMATS = ['foobar', ...] as const;
 // type FileFormat = typeof ALL_FILE_FORMATS;
 const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs'];
-type FileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs';
+export type ImportFileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs';
 const ALL_FILE_ENCODINGS = ['windows-1252', 'utf-8'];
-type FileEncoding = 'windows-1252' | 'utf-8';
+export type ImportFileEncoding = 'windows-1252' | 'utf-8';
+
+export interface ImportDialogData {
+  account: Account | null;
+  file?: File;
+  forcedEncoding?: ImportFileEncoding;
+}
 
 @Component({
   selector: 'app-import-file',
@@ -26,21 +32,23 @@ type FileEncoding = 'windows-1252' | 'utf-8';
 })
 export class ImportFileComponent implements OnInit {
   readonly allAccounts$: Observable<Account[]>;
-  readonly forcedFileName: string | null;
+
+  forcedFileName: string | null = null;
+  isEncodingForced = false;
 
   // Form data.
   private _file: File | null = null;
-  private _fileFormat: FileFormat = 'ksk_camt';
-  private _fileEncoding: FileEncoding = 'windows-1252';
+  private _fileFormat: ImportFileFormat = 'ksk_camt';
+  private _fileEncoding: ImportFileEncoding = 'windows-1252';
   private _account: Account | null = null;
   private readonly formInputChange = new EventEmitter<void>();
 
   get file() { return this._file; }
   set file(value: File | null) { this._file = value; this.formInputChange.emit(); }
   get fileFormat() { return this._fileFormat; }
-  set fileFormat(value: FileFormat) { this._fileFormat = value; this.formInputChange.emit(); }
+  set fileFormat(value: ImportFileFormat) { this._fileFormat = value; this.formInputChange.emit(); }
   get fileEncoding() { return this._fileEncoding; }
-  set fileEncoding(value: FileEncoding) { this._fileEncoding = value; this.formInputChange.emit(); }
+  set fileEncoding(value: ImportFileEncoding) { this._fileEncoding = value; this.formInputChange.emit(); }
   get targetAccount() { return this._account; }
   set targetAccount(value: Account | null) { this._account = value; this.formInputChange.emit(); }
 
@@ -58,7 +66,7 @@ export class ImportFileComponent implements OnInit {
   errors: string[] = [];
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) data: { account?: Account | null, file?: File },
+    @Inject(MAT_DIALOG_DATA) data: ImportDialogData,
     private readonly dataService: DataService,
     private readonly ruleService: RuleService,
     private readonly loggerService: LoggerService,
@@ -70,20 +78,22 @@ export class ImportFileComponent implements OnInit {
     if (data.file) {
       this.file = data.file;
       this.forcedFileName = data.file.name;
-    } else {
-      this.forcedFileName = null;
+    }
+
+    if (data.forcedEncoding) {
+      this.fileEncoding = data.forcedEncoding;
+      this.isEncodingForced = true;
+    }
+    // Select account default file format & encoding if present.
+    else if (this.targetAccount && ALL_FILE_ENCODINGS.includes(this.targetAccount.preferredFileEncoding)) {
+      this.fileEncoding = <ImportFileEncoding>this.targetAccount.preferredFileEncoding;
+    }
+    if (this.targetAccount && ALL_FILE_FORMATS.includes(this.targetAccount.preferredFileFormat)) {
+      this.fileFormat = <ImportFileFormat>this.targetAccount.preferredFileFormat;
     }
   }
 
   ngOnInit() {
-    // Select account default file format & encoding if present.
-    if (this.targetAccount && ALL_FILE_FORMATS.includes(this.targetAccount.preferredFileFormat)) {
-      this.fileFormat = <FileFormat>this.targetAccount.preferredFileFormat;
-    }
-    if (this.targetAccount && ALL_FILE_ENCODINGS.includes(this.targetAccount.preferredFileEncoding)) {
-      this.fileEncoding = <FileEncoding>this.targetAccount.preferredFileEncoding;
-    }
-
     this.updateFilePreview();
     this.formInputChange
       .pipe(debounceTime(10))
@@ -110,7 +120,9 @@ export class ImportFileComponent implements OnInit {
 
     // Update account default file format & encoding.
     this.targetAccount.preferredFileFormat = this.fileFormat;
-    this.targetAccount.preferredFileEncoding = this.fileEncoding;
+    if (!this.isEncodingForced) {
+      this.targetAccount.preferredFileEncoding = this.fileEncoding;
+    }
 
     this.matDialogRef.close(true);
   }
@@ -166,7 +178,7 @@ export class ImportFileComponent implements OnInit {
     }
   }
 
-  private processFileContents(fileName: string, fileFormat: FileFormat, csvData: PapaParseResult) {
+  private processFileContents(fileName: string, fileFormat: ImportFileFormat, csvData: PapaParseResult) {
     this.loggerService.debug('csvData', csvData);
     this.resetPreview();
 
