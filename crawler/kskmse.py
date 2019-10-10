@@ -1,19 +1,15 @@
+import argparse
+import getpass
+import random
 import requests
 import time
-import random
 import sys
 from lxml import html
-
-# TODO: Pass externally.
-user_id = str(random.randint(20000000, 29999999))
-user_pass = '00000'
-date_range = ['01.09.2019', '01.10.2019']
-account_index = 0
-out_file = 'muhdata.csv'
+from urllib.parse import urljoin
 
 def wait():
   print('(Throttling ...)')
-  time.sleep(2 + 3*random.random())
+  time.sleep(2 + 2*random.random())
 
 
 def to_html(response: requests.Response):
@@ -35,13 +31,16 @@ def submit_form(session: requests.Session, form: html.FormElement):
   return session.post(url, data=form_data)
 
 
-def do_login(session: requests.Session, user_id: str, user_pass: str):
-  print('Loading www.kskmse.de ...')
-  url = 'https://www.kskmse.de/de/home.html'
+def do_login(session: requests.Session, base_url: str, user_id: str, user_pass: str):
+  url = urljoin(base_url, '/de/home.html')
+  print('Loading %s ...' % url)
   r = session.get(url)
   doc = to_html(r)
 
-  login_form = doc.forms[0]
+  login_form = find_form_by_value(doc, 'Anmelden')
+  if login_form is None:
+    print('Could not locate login form!', file=sys.stderr)
+    return None
   # Fill out form. Input names are randomly generated, so we have to infer them.
   for input_elem in login_form.inputs:
     if input_elem.label is not None and input_elem.label.text == 'Anmeldename':
@@ -68,9 +67,9 @@ def do_login(session: requests.Session, user_id: str, user_pass: str):
     return False
 
 
-def do_load_transactions(session: requests.Session, date_from: str, date_to: str, account_index: int):
+def do_load_transactions(session: requests.Session, base_url: str, date_from: str, date_to: str, account_index: int):
   print('Navigating to transactions page ...')
-  url = 'https://www.kskmse.de/de/home/onlinebanking/umsaetze/umsaetze.html?n=true&stref=hnav'
+  url = urljoin(base_url, '/de/home/onlinebanking/umsaetze/umsaetze.html?n=true&stref=hnav')
   r = session.get(url)
   doc = to_html(r)
 
@@ -149,17 +148,36 @@ def do_logout(session: requests.Session, last_doc: html.HtmlElement):
   print('[D] Logout URL:', r.url)
 
 def main():
+  parser = argparse.ArgumentParser(description='Exports bank statements from Sparkasse online banking.')
+  parser.add_argument('--base', required=True, help='Base URL of the Sparkasse website.')
+  parser.add_argument('--from', required=True, help='Begin of date range to export in DD.MM.YYYY format.')
+  parser.add_argument('--to', required=True, help='End of date range to export in DD.MM.YYYY format.')
+
+  args = parser.parse_args()
+  base_url = args.base
+  date_from = getattr(args, 'from')
+  date_to = args.to
+  user_id = input('User ID: ')
+  if sys.stdout.isatty():
+    # Password typing suppresion only works when connected to a terminal.
+    user_pass = getpass.getpass('Password: ')
+  else:
+    user_pass = input('Password: ')
+  account_index = input('Account index (0=first): ')
+  out_file = 'muhdata.csv'
+
+
   user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0'
   session = requests.Session()
   session.headers.update({'User-Agent': user_agent})
   
-  success = do_login(session, user_id, user_pass)
+  success = do_login(session, base_url, user_id, user_pass)
   if not success:
     return False
   
   wait()
   transactions_doc = \
-    do_load_transactions(session, date_range[0], date_range[1], account_index)
+    do_load_transactions(session, base_url, date_from, date_to, account_index)
   if transactions_doc is None:
     return False
   
