@@ -2,11 +2,12 @@ import argparse
 import getpass
 import logging
 import random
-import requests
-import time
 import sys
-from lxml import html
+import time
 from urllib.parse import urljoin
+
+import requests
+from lxml import html
 
 # This is the encoding that Sparkasse uses for their CSV files.
 SERVER_FILE_ENCODING = 'windows-1252'
@@ -15,6 +16,7 @@ SERVER_FILE_ENCODING = 'windows-1252'
 # to be set to UTF-8.
 OUTPUT_ENCODING = 'utf-8'
 
+ACCEPTED_EXPORT_BUTTONS = ['CSV-CAMT-Format', 'CSV-Format']
 
 def log_result_error(*msg):
   logging.error(' '.join(str(s) for s in msg))
@@ -48,7 +50,11 @@ def find_form_by_value(doc: html.HtmlElement, value: str) -> html.FormElement:
 def submit_form(session: requests.Session, form: html.FormElement):
   url = form.action
   form_data = dict(form.fields)
+  redacted_form_data = {k: '...' if v else v for k, v in form_data.items()}
+  log_debug('Submitting form to URL:', url)
+  log_debug('Form data:', redacted_form_data)
   return session.post(url, data=form_data)
+
 
 def infer_msgerror(doc: html.HtmlElement) -> str:
   """Extract error messages from HTML document, or return a generic error.
@@ -137,7 +143,7 @@ def do_load_transactions(session: requests.Session, base_url: str, date_from: st
   wait()
   log_info('Submitting search for %s - %s ...' % (date_from, date_to))
   r = submit_form(session, search_form)
-  if 'CSV-CAMT-Format' in r.text or 'CSV-Format' in r.text:
+  if any([button in r.text for button in ACCEPTED_EXPORT_BUTTONS]):
     return to_html(r)
   else:
     doc = to_html(r)
@@ -148,10 +154,11 @@ def do_load_transactions(session: requests.Session, base_url: str, date_from: st
 
 def do_export_csv(session: requests.Session, transactions_doc: html.HtmlElement) -> bytes:
   # Locate form.
-  search_form = find_form_by_value(transactions_doc, 'CSV-CAMT-Format')
-  if search_form is None:
-    # For credit cards.
-    search_form = find_form_by_value(transactions_doc, 'CSV-Format')
+  for button in ACCEPTED_EXPORT_BUTTONS:
+    search_form = find_form_by_value(transactions_doc, button)
+    if not search_form is None:
+      break
+  
   if search_form is None:
     log_result_error('Could not locate search form!')
     return None
@@ -159,7 +166,7 @@ def do_export_csv(session: requests.Session, transactions_doc: html.HtmlElement)
   # Fill out form.
   for input_elem in search_form.inputs:
     # Drop all submits other than the one we want to click.
-    if input_elem.tag == 'input' and input_elem.type == 'submit' and input_elem.value != 'CSV-CAMT-Format':
+    if input_elem.tag == 'input' and input_elem.type == 'submit' and input_elem.value not in ACCEPTED_EXPORT_BUTTONS:
       input_elem.drop_tree()
       continue
     
