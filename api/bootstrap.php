@@ -26,6 +26,7 @@ Flight::map('error', function(Exception $e) {
 });
 
 // Set up routes.
+require_once 'banksync.php';
 require_once 'storage.php';
 
 Flight::start();
