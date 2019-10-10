@@ -81,15 +81,21 @@
     </div>
     <div class="log-container">
       <h4>Output</h4>
-      <button
-          mat-raised-button
-          type="submit"
-          color="primary"
-          fxFlexAlign="start"
-          [disabled]="!form.valid">
-        Start
-      </button>
-      <pre>{{syncLog}}</pre>
+      <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
+        <button
+            mat-raised-button
+            type="submit"
+            color="primary"
+            fxFlexAlign="start"
+            [disabled]="!form.valid">
+          Start
+        </button>
+        <mat-button-toggle #viewDetailsBtn [hidden]="!syncLog">View details</mat-button-toggle>
+        <mat-spinner *ngIf="form.disabled" diameter="24"></mat-spinner>
+      </div>
+      <p class="error" [hidden]="!lastSyncError">{{lastSyncError}}</p>
+      <p [hidden]="!lastSyncSuccess">The selected accounts were successfully loaded from the bank!</p>
+      <pre *ngIf="viewDetailsBtn.checked">{{syncLog}}</pre>
     </div>
   </div>
 </form>

@@ -1,14 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { delay } from 'src/app/core/util';
-import { DataService } from '../data.service';
-import { Observable, throwError } from 'rxjs';
-import { Account } from 'src/proto/model';
-import { FormGroup, FormControl, FormArray, Validators, ValidationErrors } from '@ng-stack/forms';
-import { BankSyncService, BankSyncRequest, BankSyncResult } from './bank-sync.service';
-import { JsonPipe } from '@angular/common';
-import { tap, catchError } from 'rxjs/operators';
-import { DialogService } from '../dialog.service';
+import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from '@ng-stack/forms';
 import * as moment from 'moment';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { Account } from 'src/proto/model';
+import { DataService } from '../data.service';
+import { DialogService } from '../dialog.service';
+import { BankSyncResult, BankSyncService } from './bank-sync.service';
 
 
 interface SyncFormData {
@@ -49,6 +47,8 @@ export class BankSyncComponent implements OnInit {
   });
 
   syncLog: string = '';
+  lastSyncError = '';
+  lastSyncSuccess = false;
 
   constructor(
     private readonly bankSyncService: BankSyncService,
@@ -92,11 +92,13 @@ export class BankSyncComponent implements OnInit {
       .subscribe(response => {
         if (response.success) {
           this.showLog(`Success! Received ${response.results.length} CSV files.`);
+          this.lastSyncSuccess = true;
           this.processResults(response.results, accountMappings);
         } else {
           this.showLog('Unsuccessful!');
           this.showLog();
           this.showLog(response.error);
+          this.lastSyncError = response.error;
           if (response.errorDetails) {
             this.showLog();
             this.showLog("Details:")
@@ -129,6 +131,8 @@ export class BankSyncComponent implements OnInit {
 
   private clearLog() {
     this.syncLog = '';
+    this.lastSyncSuccess = false;
+    this.lastSyncError = '';
   }
 
   private showLog(message = '') {

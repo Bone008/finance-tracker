@@ -1,6 +1,7 @@
-import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
+import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
+import { environment } from "src/environments/environment";
 
 export interface BankSyncRequest {
   bankType: 'sparkasse';
@@ -9,6 +10,7 @@ export interface BankSyncRequest {
   loginPassword: string;
   maxTransactionAge: number;
   accountIndices: number[];
+  verbose?: boolean;
 }
 
 export interface BankSyncResult {
@@ -35,6 +37,9 @@ export class BankSyncService {
   ) { }
 
   requestSync(request: BankSyncRequest): Observable<BankSyncResponse> {
+    if (!environment.production) {
+      request.verbose = true;
+    }
     return this.httpClient.post<BankSyncResponse>('/api/banksync', request);
   }
 }
