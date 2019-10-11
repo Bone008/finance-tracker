@@ -3,6 +3,9 @@ import * as moment from 'moment';
 import * as $protobuf from "protobufjs";
 import { Date as ProtoDate, google, Money } from "../../proto/model";
 
+/** Mapped type from a proto message interface where all values are required and non-null. */
+export type RequiredProto<M> = { [K in keyof Required<M>]: NonNullable<Required<M>[K]> };
+
 /** Type alias for message classes that can encode/decode messages of type M. */
 type MessageRW<M> = {
   encode: (message: M, writer?: $protobuf.Writer) => $protobuf.Writer,

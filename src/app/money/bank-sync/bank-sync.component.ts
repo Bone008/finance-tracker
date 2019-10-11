@@ -2,26 +2,18 @@ import { Component, OnInit } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from '@ng-stack/forms';
 import * as moment from 'moment';
 import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import { Account } from 'src/proto/model';
+import { filter, map, tap } from 'rxjs/operators';
+import { RequiredProto } from 'src/app/core/proto-util';
+import { Account, BankSyncSettings, IBankSyncSettings } from 'src/proto/model';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
-import { BankSyncResult, BankSyncService } from './bank-sync.service';
+import { BankSyncRequest, BankSyncResult, BankSyncService } from './bank-sync.service';
 
 /**
  * Since the sync script reencodes all CSV files as UTF-8, we want to override
  * the account's default setting upon import.
  */
 const FORCED_IMPORT_ENCODING = 'utf-8';
-
-interface SyncFormData {
-  bankType: 'sparkasse';
-  bankUrl: string;
-  loginName: string;
-  loginPassword: string;
-  maxTransactionAge: number;
-  targetAccounts: (Account | false)[];
-}
 
 interface AccountMapping {
   bankAccountIndex: number;
@@ -36,19 +28,19 @@ interface AccountMapping {
 export class BankSyncComponent implements OnInit {
   readonly allAccounts$: Observable<Account[]>;
 
-  targetAccountsForm = new FormArray<Account | false>([
-    new FormControl(false),
-    new FormControl(false),
-    new FormControl(false),
-    new FormControl(false),
+  targetAccountsForm = new FormArray<number>([
+    new FormControl(0),
+    new FormControl(0),
+    new FormControl(0),
+    new FormControl(0),
   ], validateAnyAccounts);
-  form = new FormGroup<SyncFormData>({
+  form = new FormGroup<RequiredProto<IBankSyncSettings>>({
     bankType: new FormControl('sparkasse', Validators.required),
     bankUrl: new FormControl('', [Validators.required, validateUrl]),
     loginName: new FormControl('', Validators.required),
     loginPassword: new FormControl('', Validators.required),
-    maxTransactionAge: new FormControl(31, [Validators.required, Validators.min(1)]),
-    targetAccounts: this.targetAccountsForm,
+    maxTransactionAgeDays: new FormControl(31, [Validators.required, Validators.min(1)]),
+    targetAccountIds: this.targetAccountsForm,
   });
 
   syncLog: string = '';
@@ -61,9 +53,18 @@ export class BankSyncComponent implements OnInit {
     private readonly dialogService: DialogService
   ) {
     this.allAccounts$ = this.dataService.accounts$;
+
+    this.dataService.userSettings$
+      .pipe(filter(settings => !!settings.bankSync))
+      .pipe(map(settings => settings.bankSync!))
+      .subscribe(bankSync => {
+        this.form.patchValue(bankSync);
+      });
   }
 
   ngOnInit() { }
+
+  getAccount = this.dataService.accountFromIdFn;
 
   onSubmit() {
     this.form.disable();
@@ -74,20 +75,22 @@ export class BankSyncComponent implements OnInit {
     // more easily.
 
     const data = this.form.value;
+    this.saveSyncSettings(data);
+
     // Reduce target accounts to list of indices that we want to request.
-    const accountMappings = data.targetAccounts
-      .map((acc, i) => <AccountMapping>{
+    const accountMappings = data.targetAccountIds
+      .map((accId, i) => <AccountMapping>{
         bankAccountIndex: i,
-        localAccountId: acc ? acc.id : 0
+        localAccountId: accId,
       })
       .filter(mapping => mapping.localAccountId > 0);
 
-    const request = {
-      bankType: data.bankType,
+    const request: BankSyncRequest = {
+      bankType: 'sparkasse',
       bankUrl: data.bankUrl,
       loginName: data.loginName,
       loginPassword: data.loginPassword,
-      maxTransactionAge: data.maxTransactionAge,
+      maxTransactionAge: data.maxTransactionAgeDays,
       accountIndices: accountMappings.map(mapping => mapping.bankAccountIndex),
     };
 
@@ -132,6 +135,13 @@ export class BankSyncComponent implements OnInit {
       const result = await dialog.afterClosed().toPromise();
       this.showLog(`Import into ${targetAccount.name}: ${result ? 'DONE' : 'CANCELLED'}`);
     }
+  }
+
+  private saveSyncSettings(bankSync: IBankSyncSettings) {
+    const newSettings = new BankSyncSettings(bankSync);
+    // Clear password, we don't want to store it before e2e encryption is enabled.
+    newSettings.loginPassword = '';
+    this.dataService.getUserSettings().bankSync = newSettings;
   }
 
   private clearLog() {

@@ -48,8 +48,8 @@
         <input
             matInput
             type="number"
-            name="maxTransactionAge"
-            formControlName="maxTransactionAge"
+            name="maxTransactionAgeDays"
+            formControlName="maxTransactionAgeDays"
             placeholder="Transaction age"
             min="1"
             required>
@@ -61,18 +61,19 @@
         Account mapping
         <mat-icon matTooltip="Specify which bank accounts should be imported into which Finance Tracker account, in the order they appear in the bank.">help</mat-icon>
       </h4>
-      <fieldset formArrayName="targetAccounts" fxLayout="column">
+      <fieldset formArrayName="targetAccountIds" fxLayout="column">
         <mat-form-field *ngFor="let control of targetAccountsForm.controls; let i=index">
           <span matPrefix>#{{i+1}}:&nbsp;&nbsp;</span>
           <mat-select [formControlName]="i">
               <mat-select-trigger>
-                <span *ngIf="!control.value">Ignore</span>
-                <mat-icon>{{control.value?.icon}}</mat-icon>{{control.value?.name}}
+                {{control.value ? '' : 'Ignore'}}
+                <mat-icon>{{control.value ? getAccount(control.value).icon : ''}}</mat-icon>
+                {{control.value ? getAccount(control.value).name : ''}}
               </mat-select-trigger>
-              <mat-option [value]="false">Ignore</mat-option>
+              <mat-option [value]="0">Ignore</mat-option>
               <mat-option
                   *ngFor="let account of allAccounts$ | async"
-                  [value]="account">
+                  [value]="account.id">
                 <mat-icon>{{account.icon}}</mat-icon>{{account.name}}
               </mat-option>
           </mat-select>
