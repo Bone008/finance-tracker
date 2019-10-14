@@ -127,6 +127,15 @@ export class TransactionFilterService {
         .map(keyword => continuationPrefix + keyword + ' ');
     }
 
+    // Suggest account names.
+    else if (lastToken.startsWith('account:') || lastToken.startsWith('account=')) {
+      continuationPrefix += lastToken.substr(0, 8);
+      const accountNames = this.dataService.getCurrentAccountList()
+        .map(a => a.name.toLowerCase().replace(/(\s)/g, '\\$1'));
+      return filterFuzzyOptions(accountNames.sort(), lastToken.substr(8), true)
+        .map(keyword => continuationPrefix + keyword + ' ');
+    }
+
     // Suggest used currencies.
     else if (lastToken.startsWith('currency:') || lastToken.startsWith('currency=')) {
       continuationPrefix += lastToken.substr(0, 9);
