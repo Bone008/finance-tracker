@@ -43,6 +43,10 @@ export class TransactionEditComponent implements OnInit {
     this._isNegative = value;
     // Update sign on change.
     this.setAmount(moneyToNumber(this.singleData.amount));
+
+    if (this.presetData) {
+      this.presetData.amountIsPositive = !value;
+    }
   }
 
   constructor(

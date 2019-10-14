@@ -2,11 +2,14 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { cloneMessage, moneyToNumber, numberToMoney, timestampNow } from 'src/app/core/proto-util';
 import { delay } from 'src/app/core/util';
-import { Transaction, TransactionData, TransactionPreset } from 'src/proto/model';
+import { Money, Transaction, TransactionData, TransactionPreset } from 'src/proto/model';
 import { DataService } from '../../data.service';
 import { DialogService } from '../../dialog.service';
-import { MODE_PRESET } from '../transaction-edit/transaction-edit.component';
+import { isSingle, MONEY_EPSILON } from '../../model-util';
+import { RuleService } from '../../rule.service';
+import { MODE_ADD, MODE_PRESET } from '../transaction-edit/transaction-edit.component';
 
 @Component({
   selector: 'app-presets',
@@ -20,6 +23,7 @@ export class PresetsComponent implements OnInit {
   presetsPanelTrigger: MatAutocompleteTrigger;
 
   constructor(
+    private readonly ruleService: RuleService,
     private readonly dataService: DataService,
     private readonly dialogService: DialogService
   ) {
@@ -46,9 +50,44 @@ export class PresetsComponent implements OnInit {
       });
   }
 
-  selectPreset(preset: string) {
-    // TODO: Do something with selection.
-    console.log('selected:', preset);
+  selectPreset(preset: TransactionPreset) {
+    if (!preset) return;
+    if (!preset.transaction) {
+      throw new Error('Preset does not contain any transaction data.');
+    }
+
+    const transaction = cloneMessage(Transaction, preset.transaction);
+    if (!isSingle(transaction)) {
+      throw new Error('Preset contains a non-single transaction.');
+    }
+
+    transaction.single.date = timestampNow();
+    if (preset.allowModification) {
+      if (preset.amountIsPositive && Math.abs(moneyToNumber(transaction.single.amount)) < MONEY_EPSILON) {
+        // Make sure the dialog treats the transaction as an income by temporarily
+        // patching the amount to a positive value and then resetting it.
+        transaction.single.amount = numberToMoney(1);
+        delay(0).then(() => transaction.single.amount = new Money());
+      }
+
+      this.dialogService.openTransactionEdit(transaction, MODE_ADD)
+        .afterConfirmed().subscribe(() => this.confirmCreate(transaction));
+    }
+    else {
+      // Validate if stored account still exists.
+      const account = this.dataService.getAccountById(transaction.single.accountId);
+      if (account.id <= 0) {
+        throw new Error('Preset contains non-existing account id: ' + transaction.single.accountId);
+      }
+      this.confirmCreate(transaction);
+    }
+  }
+
+  private confirmCreate(transaction: Transaction) {
+    // Equivalent to handler in TransactionsComponent#startCopyTransaction.
+    transaction.single!.created = timestampNow();
+    this.dataService.addTransactions(transaction);
+    this.ruleService.notifyAdded(transaction);
   }
 
   async openPresetsPanel() {

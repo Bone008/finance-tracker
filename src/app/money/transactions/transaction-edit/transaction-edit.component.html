@@ -98,8 +98,8 @@
                 [ngModel]="getAbsoluteAmount() || null"
                 (ngModelChange)="setAmount($event)"
                 [ngModelOptions]="{updateOn: 'blur'}"
-                placeholder="Amount"
-                required>
+                [required]="editMode !== 'preset'"
+                placeholder="Amount">
             <span matSuffix>&nbsp;{{getCurrencySymbol()}}</span>
           </mat-form-field>
         </div>

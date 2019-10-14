@@ -13,4 +13,7 @@ message TransactionPreset {
 
   // The partially filled in transaction data. Needs to be a single transaction.
   Transaction transaction = 3;
+
+  // If true, the preset denotes an income, even if the amount field is not set.
+  bool amount_is_positive = 4;
 }

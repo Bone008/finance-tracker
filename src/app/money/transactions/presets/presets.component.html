@@ -11,7 +11,7 @@
     <mat-autocomplete #dropdown
         (optionSelected)="$event.option.value === 'new' ? startAddPreset() : selectPreset($event.option.value)">
       <mat-option *ngFor="let preset of presets$ | async" [value]="preset">{{preset.name}}</mat-option>
-      <mat-option value="new">Create preset ...</mat-option>
+      <mat-option value="new" class="create-option">Create preset ...</mat-option>
     </mat-autocomplete>
   </div>
 </div>
