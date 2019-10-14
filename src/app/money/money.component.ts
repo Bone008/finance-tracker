@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import * as moment from 'moment';
+import { ShortcutInput } from 'ng-keyboard-shortcuts';
 import { fromEvent, merge, timer } from 'rxjs';
 import { filter, mergeMap, switchMap, takeWhile } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -20,6 +21,10 @@ import { StorageService } from './storage.service';
   styleUrls: ['./money.component.css']
 })
 export class MoneyComponent implements OnInit, OnDestroy {
+  readonly shortcuts: ShortcutInput[] = [
+    { key: 'ctrl + s', command: () => this.syncData(), preventDefault: true }
+  ];
+
   hasData = false;
   status: string | null = null;
 
