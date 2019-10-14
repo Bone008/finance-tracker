@@ -48,22 +48,24 @@
         </div>
     </div>
     
-    <h2>Closed accounts</h2>
+    <ng-container *ngIf="(closedAccounts$ | async).length > 0">
+      <h2>Closed accounts</h2>
+
+      <div class="header-row">
+        <div class="cell-icon"></div>
+        <div class="cell-name">Name</div>
+        <div class="cell-balance">Balance</div>
+        <div class="cell-last-transaction">Last transaction</div>
+        <div class="cell-last-known-date">Last known balance</div>
+        <div class="cell-buttons"></div>
+      </div>
     
-    <div class="header-row">
-      <div class="cell-icon"></div>
-      <div class="cell-name">Name</div>
-      <div class="cell-balance">Balance</div>
-      <div class="cell-last-transaction">Last transaction</div>
-      <div class="cell-last-known-date">Last known balance</div>
-      <div class="cell-buttons"></div>
-    </div>
-  
-    <div
-        class="data-row"
-        *ngFor="let account of closedAccounts$ | async">
-      <ng-content *ngTemplateOutlet="accountRow; context: {account: account}"></ng-content>
-    </div>
+      <div
+          class="data-row"
+          *ngFor="let account of closedAccounts$ | async">
+        <ng-content *ngTemplateOutlet="accountRow; context: {account: account}"></ng-content>
+      </div>
+    </ng-container>
   </mat-card-content>
 </mat-card>
 

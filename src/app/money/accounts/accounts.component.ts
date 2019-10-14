@@ -124,10 +124,11 @@ export class AccountsComponent implements OnInit {
     return !!this.totalBalance && this.totalBalance < -MONEY_EPSILON;
   }
   formatTotalBalance(): string | null {
-    if (this.totalBalance === null || !this.getMainCurrency()) {
+    if (this.totalBalance === null) {
       return null;
     }
-    return this.currencyService.format(this.totalBalance, this.getMainCurrency());
+    // Note: Use EUR-defaulting main currency here, not the explicitly set one.
+    return this.currencyService.format(this.totalBalance, this.dataService.getMainCurrency());
   }
 
   formatBalance(account: Account): string {
