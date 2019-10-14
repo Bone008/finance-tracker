@@ -64,16 +64,16 @@ export class StorageService {
 
   /**
    * Attempts to load data from the storage backend.
-   * Generates a data key and returns an empty container if no data was saved yet.
+   * Returns null if no data was saved yet.
    */
-  loadData(): Promise<DataContainer> {
+  loadData(): Promise<DataContainer | null> {
     const storageSettings = this.storageSettingsService.getSettings();
     if (!storageSettings) {
       // We don't have a data key yet, return empty container and leave it unset.
       // Automatically generating one here would lead to the user not noticing
       // when localStorage was cleared while the app remains loaded and silently
       // storing their existing database under a new key.
-      return Promise.resolve(new DataContainer());
+      return Promise.resolve(null);
     }
     const dataKey = storageSettings.dataKey;
 
@@ -81,7 +81,7 @@ export class StorageService {
       .pipe(switchMap(responseData => {
         // Pass through not found.
         if (responseData === null) {
-          return Promise.resolve(new DataContainer());
+          return Promise.resolve(null);
         }
 
         // Decompress & decode if we have a response.

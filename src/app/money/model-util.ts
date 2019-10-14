@@ -1,5 +1,5 @@
 import * as moment from 'moment';
-import { BillingInfo, BillingType, Date as ProtoDate, GroupData, Transaction, TransactionData } from "../../proto/model";
+import { Account, BillingInfo, BillingType, DataContainer, Date as ProtoDate, GroupData, Transaction, TransactionData } from "../../proto/model";
 import { momentToProtoDate, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from "../core/proto-util";
 import { maxBy, pushDeduplicate, removeByValue } from '../core/util';
 import { CurrencyService } from './currency.service';
@@ -7,6 +7,17 @@ import { DataService } from './data.service';
 
 /** Monetary values closer to zero than this threshold should be considered 0. */
 export const MONEY_EPSILON = 0.005;
+
+/** Creates a DataContainer filled with default values upon first visit. */
+export function createDefaultDataContainer(): DataContainer {
+  return new DataContainer({
+    accounts: [
+      new Account({ id: 1, name: 'Cash', icon: 'money', currency: 'EUR' }),
+      new Account({ id: 2, name: 'Bank account', icon: 'assignment', currency: 'EUR' }),
+    ],
+  });
+}
+
 
 /** Type guard to check if a transaction has dataType 'single'. */
 export function isSingle(transaction: Transaction)

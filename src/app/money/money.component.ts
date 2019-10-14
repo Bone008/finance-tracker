@@ -7,11 +7,11 @@ import { ShortcutInput } from 'ng-keyboard-shortcuts';
 import { fromEvent, merge, timer } from 'rxjs';
 import { filter, mergeMap, switchMap, takeWhile } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-import { DataContainer } from '../../proto/model';
 import { LoggerService } from '../core/logger.service';
 import { timestampToDate } from '../core/proto-util';
 import { DataService } from './data.service';
 import { DialogService } from './dialog.service';
+import { createDefaultDataContainer } from './model-util';
 import { StorageSettingsService } from './storage-settings.service';
 import { StorageService } from './storage.service';
 
@@ -116,6 +116,9 @@ export class MoneyComponent implements OnInit, OnDestroy {
     this.storageService.loadData()
       .then(
         data => {
+          if (data === null) {
+            data = createDefaultDataContainer();
+          }
           if (!environment.production) {
             window['DEBUG_DATA'] = data;
           }
@@ -128,7 +131,7 @@ export class MoneyComponent implements OnInit, OnDestroy {
           }
         },
         error => {
-          this.dataService.setDataContainer(new DataContainer());
+          this.dataService.setDataContainer(createDefaultDataContainer());
           this.status = error;
         })
       .then(() => this.hasData = true);
