@@ -99,18 +99,23 @@ export function escapeRegex(input: string): string {
   return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
-export function splitQuotedString(input: string): string[] {
-  // TODO detect unterminated quotes
-
-  // Adapted from: https://stackoverflow.com/a/18647776
-  // The g flag turns on the mode where each call to exec
-  // will search starting from the last result.
-  const regex = /[^\s"]+|"([^"]*)"/g;
-  const tokens: string[] = [];
-
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(input)) !== null) {
-    tokens.push(match[1] !== undefined ? match[1] : match[0]);
+export function splitQuotedString(input: string, keepEmpty = false): string[] {
+  // Adapted from: https://stackoverflow.com/a/46946420
+  let openQuote = false;
+  let tokens = [''];
+  const matches = input.match(/\\?.|^$/g)!;
+  for (const char of matches) {
+    if (char === '"') {
+      openQuote = !openQuote;
+    } else if (!openQuote && char === ' ') {
+      // Start new token.
+      tokens.push('');
+    } else {
+      tokens[tokens.length - 1] += char.replace(/\\(.)/, "$1");
+    }
+  }
+  if (!keepEmpty) {
+    tokens = tokens.filter(t => t !== '');
   }
   return tokens;
 }
