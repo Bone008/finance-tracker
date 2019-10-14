@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { NgStackFormsModule } from '@ng-stack/forms';
+import { KeyboardShortcutsModule } from 'ng-keyboard-shortcuts';
 import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
 import { AccountEditComponent } from './accounts/account-edit/account-edit.component';
@@ -32,7 +34,6 @@ import { TransactionEditComponent } from './transactions/transaction-edit/transa
 import { AddInlineLabelComponent } from './transactions/transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transactions/transaction-labels/transaction-labels.component';
 import { TransactionsComponent } from './transactions/transactions.component';
-import { FormsModule } from '@angular/forms';
 
 const appRoutes: Routes = [
   { path: 'overview', component: AccountsComponent, data: { title: 'Overview' } },
@@ -49,6 +50,7 @@ const appRoutes: Routes = [
   imports: [
     CommonModule,
     RouterModule.forRoot(appRoutes),
+    KeyboardShortcutsModule.forRoot(),
     FormsModule,
     NgStackFormsModule,
     HttpClientModule,

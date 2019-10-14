@@ -4,6 +4,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
 import * as moment from 'moment';
+import { ShortcutInput } from 'ng-keyboard-shortcuts';
 import { combineLatest, of, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { makeSharedObject, patchObject } from 'src/app/core/util';
@@ -32,6 +33,31 @@ interface TransactionViewCache {
   styleUrls: ['./transactions.component.css'],
 })
 export class TransactionsComponent implements AfterViewInit {
+  readonly shortcuts: ShortcutInput[] = [
+    // Selection
+    { key: 'ctrl + a', command: () => this.isAllSelected() || this.masterToggle(), preventDefault: true },
+    { key: 'ctrl + d', command: () => this.selection.clear(), preventDefault: true },
+    {
+      key: 'l',
+      command: () => {
+        // Focus "add label" text field of first selected transaction.
+        // Not the Angular way, but effective.
+        const firstLabelInput = document.querySelector('.data-row.selected .add-inline-label input');
+        if (firstLabelInput instanceof HTMLElement) {
+          firstLabelInput.focus();
+        }
+      },
+      preventDefault: true,
+    },
+    // CRUD actions.
+    { key: ['c', 'n'], command: () => this.startAddTransaction() },
+    { key: 'e', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startEditTransaction(this.selection.selected[0]) },
+    { key: 's', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startSplitTransaction(this.selection.selected[0]) },
+    { key: 'd', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startCopyTransaction(this.selection.selected[0]) },
+    { key: 'g', command: () => !this.canGroup(this.selection.selected) && !this.canUngroup(this.selection.selected) || this.groupOrUngroupTransactions(this.selection.selected) },
+    { key: 'del', command: () => this.selection.selected.length === 0 || this.deleteTransactions(this.selection.selected) },
+  ];
+
   readonly filterState = new FilterState();
   readonly transactionsDataSource = new MatTableDataSource<Transaction>();
   transactionsSubject = of<Transaction[]>([]);
