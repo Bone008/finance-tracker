@@ -5,7 +5,6 @@ import { FormatMapping, FormatMappingBuilder } from "./format-mapping";
 /** Dictionary that contains configurations for each supported import format. */
 export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
   'ksk_camt': new FormatMappingBuilder<KskCamtRow>()
-    .addConstantMapping("isCash", false)
     .addMapping("date", "Valutadatum", parseDate)
     .addMapping("amount", "Betrag", parseAmount)
     .addMapping("reason", "Verwendungszweck")
@@ -14,7 +13,6 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     .addMapping("bookingText", "Buchungstext")
     .build(),
   'ksk_creditcard': new FormatMappingBuilder<KskCreditcardRow>()
-    .addConstantMapping("isCash", false)
     .addMapping("date", "Belegdatum", parseDate)
     .addMapping("amount", "Buchungsbetrag", parseAmount)
     .addMapping("who", "Transaktionsbeschreibung Zusatz")
@@ -36,7 +34,6 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     })
     .build(),
   'mlp': new FormatMappingBuilder<MlpRow>()
-    .addConstantMapping("isCash", false)
     .addMapping("date", "Valuta", parseDate)
     .addMapping("reason", "Vorgang/Verwendungszweck", input => input.replace('\n', ''))
     .addMapping("who", "Empfänger/Zahlungspflichtiger")
@@ -54,7 +51,6 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     })
     .build(),
   'dkb': new FormatMappingBuilder<DkbRow>()
-    .addConstantMapping("isCash", false)
     .addMapping("date", "Wertstellung", parseDate)
     .addMapping("reason", "Verwendungszweck")
     .addMapping("who", "Auftraggeber / Begünstigter")
@@ -63,7 +59,6 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     .addMapping("bookingText", "Buchungstext")
     .build(),
   'ubs': new FormatMappingBuilder<UbsRow>()
-    .addConstantMapping("isCash", false)
     .addMapping("date", "Abschluss", parseDate)
     .addMapping("reason", "Beschreibung 3")
     .addMapping("who", "Beschreibung 2")

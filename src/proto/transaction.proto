@@ -59,10 +59,6 @@ message TransactionData {
   // The id of the Account that this transaction belongs to.
   // A value of 0 means that the transaction is linked to the default account.
   uint32 account_id = 7;
-  
-  // DEPRECATED. This value is now represented by the account association.
-  // Whether the transaction happened through cash or a bank statement (or equivalent).
-  bool is_cash = 9;
 
   // Automatic, readonly value that keeps track of when this entry was first recorded.
   Timestamp created = 20;
@@ -79,4 +75,7 @@ message TransactionData {
   // A user-supplied comment about this transaction.
   // Must not be filled automatically on import.
   string comment = 30;
+
+  // Removed fields.
+  reserved 9;
 }

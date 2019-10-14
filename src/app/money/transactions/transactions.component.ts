@@ -145,7 +145,6 @@ export class TransactionsComponent implements AfterViewInit {
     this.startCopyTransaction(new Transaction({
       single: new TransactionData({
         date: timestampNow(),
-        isCash: true,
         accountId: this.dataService.getUserSettings().defaultAccountIdOnAdd,
       }),
     }));

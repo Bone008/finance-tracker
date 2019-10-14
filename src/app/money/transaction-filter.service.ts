@@ -21,7 +21,7 @@ const TOKEN_KEYWORDS = [
   'is', 'billing', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'iban', 'bookingtext', 'comment', 'label', 'account', 'currency'
 ].sort();
 const TOKEN_IS_KEYWORDS = [
-  'cash', 'bank', 'mixed', 'single', 'group', 'expense', 'income'
+  'single', 'group', 'expense', 'income'
 ].sort();
 const TOKEN_BILLING_KEYWORDS = [
   'default', 'none', 'day', 'month', 'year', 'relative', 'absolute', 'individual', 'multiple'
@@ -251,9 +251,6 @@ export class TransactionFilterService {
       case 'is':
         if (operator !== ':') return null;
         switch (value.toLowerCase()) {
-          case 'cash': return (_, dataList) => dataList.some(data => data.isCash);
-          case 'bank': return (_, dataList) => dataList.some(data => !data.isCash);
-          case 'mixed': return (_, dataList) => dataList.some(data => data.isCash) && dataList.some(data => !data.isCash);
           case 'single': return isSingle;
           case 'group': return isGroup;
           case 'expense': return transaction =>
