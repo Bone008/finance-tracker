@@ -1,4 +1,9 @@
 
+/* Necessary for placement of nested preset-dropdown-origin. */
+.mat-card-title {
+  position: relative;
+}
+
 .filter-input {
   width: 100%;
 }

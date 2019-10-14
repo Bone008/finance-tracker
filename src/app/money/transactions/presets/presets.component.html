@@ -1,0 +1,17 @@
+<button
+    mat-fab
+    (click)="trigger.panelOpen || openPresetsPanel()"
+    matTooltip="Presets">
+  <mat-icon [class.upsidedown]="trigger.panelOpen">arrow_drop_down</mat-icon>
+</button>
+
+<div class="preset-dropdown-origin-wrapper">
+  <div class="preset-dropdown-origin" #origin="matAutocompleteOrigin" matAutocompleteOrigin>
+    <input type="hidden" #trigger="matAutocompleteTrigger" [matAutocomplete]="dropdown" [matAutocompleteConnectedTo]="origin">
+    <mat-autocomplete #dropdown
+        (optionSelected)="$event.option.value === 'new' ? addNewPreset() : selectPreset($event.option.value)">
+      <mat-option value="1">TODO</mat-option>
+      <mat-option value="new">Create preset ...</mat-option>
+    </mat-autocomplete>
+  </div>
+</div>

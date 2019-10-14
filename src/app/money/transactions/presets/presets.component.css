@@ -1,0 +1,18 @@
+.preset-dropdown-origin-wrapper {
+  position: absolute;
+  left: 0;
+  right: 66px;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  place-content: flex-end;
+  align-items: flex-end;
+}
+
+.preset-dropdown-origin {
+  flex: 0 1 400px;
+}
+
+.upsidedown {
+  transform: rotate(180deg);
+}
