@@ -99,7 +99,13 @@ export function escapeRegex(input: string): string {
   return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
-export function splitQuotedString(input: string, keepEmpty = false): string[] {
+/**
+ * Splits a string on spaces, respecting quotes and escape codes.
+ * If detectUnterminatedQuote is true, will return null for invalid input.
+ */
+export function splitQuotedString(input: string, detectUnterminatedQuote: true): string[] | null;
+export function splitQuotedString(input: string, detectUnterminatedQuote?: false): string[];
+export function splitQuotedString(input: string, detectUnterminatedQuote = false): string[] | null {
   // Adapted from: https://stackoverflow.com/a/46946420
   let openQuote = false;
   let tokens = [''];
@@ -114,10 +120,10 @@ export function splitQuotedString(input: string, keepEmpty = false): string[] {
       tokens[tokens.length - 1] += char.replace(/\\(.)/, "$1");
     }
   }
-  if (!keepEmpty) {
-    tokens = tokens.filter(t => t !== '');
+  if (detectUnterminatedQuote && openQuote) {
+    return null;
   }
-  return tokens;
+  return tokens.filter(t => t !== '');
 }
 
 /**

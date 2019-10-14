@@ -10,6 +10,9 @@ export class FilterFormatValidatorDirective implements Validator {
   constructor(private readonly filterService: TransactionFilterService) { }
 
   validate(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null;
+    }
     const errors = this.filterService.validateFilter(control.value);
     if (errors.length > 0) {
       return { filterFormat: errors.join(', ') };

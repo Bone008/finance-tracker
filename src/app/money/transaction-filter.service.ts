@@ -93,18 +93,25 @@ export class TransactionFilterService {
       continuationPrefix += '-';
     }
 
+    // TODO Minor issues:
+    // - Reduce code duplication by mapping from prefix to keyword handlers.
+    // - Standardize escaping of spaces for tokens, e.g. labels with spaces.
+    // - Respect start quotes entered on lastToken.
+
     // Suggest special "is:" filters.
     if (lastToken.startsWith('is:')) {
       continuationPrefix += 'is:';
       return filterFuzzyOptions(TOKEN_IS_KEYWORDS, lastToken.substr(3), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
+
     // Suggest special "billing:" filters.
     else if (lastToken.startsWith('billing:')) {
       continuationPrefix += 'billing:';
       return filterFuzzyOptions(TOKEN_BILLING_KEYWORDS, lastToken.substr(8), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
+
     // Suggest special "date:" filters.
     else if (lastToken.startsWith('date:') || lastToken.startsWith('created:') || lastToken.startsWith('modified:')) {
       const c = lastToken.indexOf(':') + 1;
@@ -112,12 +119,14 @@ export class TransactionFilterService {
       return filterFuzzyOptions(TOKEN_DATE_KEYWORDS, lastToken.substr(c), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
+
     // Suggest labels.
     else if (lastToken.startsWith('label:') || lastToken.startsWith('label=')) {
       continuationPrefix += lastToken.substr(0, 6);
       return filterFuzzyOptions(this.dataService.getAllLabels().sort(), lastToken.substr(6), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
+
     // Suggest used currencies.
     else if (lastToken.startsWith('currency:') || lastToken.startsWith('currency=')) {
       continuationPrefix += lastToken.substr(0, 9);
@@ -127,6 +136,7 @@ export class TransactionFilterService {
       return filterFuzzyOptions(Array.from(usedCurrencies).sort(), lastToken.substr(9), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
+
     else {
       const keywordMatches = filterFuzzyOptions(TOKEN_KEYWORDS, lastToken);
       if (keywordMatches.length === 1) {
@@ -143,14 +153,16 @@ export class TransactionFilterService {
 
   /** Returns list of invalid tokens in the raw filter. */
   validateFilter(filter: string): string[] {
-    const rawTokens = splitQuotedString(filter);
+    const rawTokens = splitQuotedString(filter, true);
+    if (rawTokens === null) {
+      return ['Unterminated quote!'];
+    }
     const [_, errorIndices] = this.parseTokens(rawTokens);
     return errorIndices.map(i => rawTokens[i]);
   }
 
   /** Applies a raw filter to a collection of transactions. */
   applyFilter(transactions: Transaction[], filter: string): Transaction[] {
-    // TODO handle partially quoted tokens, such as: ="foobar" who:"Hans Wurst"
     const rawTokens = splitQuotedString(filter);
     const [parsedFilter, errorIndices] = this.parseTokens(rawTokens);
     if (errorIndices.length > 0) {
