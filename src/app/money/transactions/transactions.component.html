@@ -101,7 +101,7 @@
         </mat-checkbox>
 
         <div class="cell-date">
-          <span [matTooltip]="getTransactionDate(transaction) | date:'medium'">
+          <span [matTooltip]="getTransactionDate(transaction) | date:'full'">
             {{getTransactionDate(transaction) | date}}
           </span>
           <span *ngIf="isTransactionGroup(transaction)" class="grouped-comment">
