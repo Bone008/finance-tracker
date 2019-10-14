@@ -55,12 +55,16 @@ export class FilterState {
 
   followFragment(route: ActivatedRoute, router: Router) {
     const prefix = 'q=';
+    let lastFragmentValue = '';
+
     // Fragment change --> value change.
     route.fragment.subscribe(fragment => {
       const newValue = fragment && fragment.startsWith(prefix)
         ? fragment.substr(prefix.length)
         : '';
-      if (newValue == this.getCurrentValue().trim()) {
+
+      lastFragmentValue = newValue;
+      if (newValue === this.getCurrentValue().trim()) {
         return;
       }
       this.setValueNow(newValue);
@@ -69,10 +73,20 @@ export class FilterState {
     // Value change --> fragment change.
     this.value$.subscribe(value => {
       const q = value.trim();
-      router.navigate([], {
-        fragment: q ? prefix + q : undefined,
-        queryParamsHandling: 'preserve',
-      });
+      if (q === lastFragmentValue) {
+        return;
+      }
+      if (q) {
+        router.navigate([], { fragment: prefix + q, queryParamsHandling: 'preserve' });
+      } else {
+        // Workaround for https://github.com/Bone008/finance-tracker/issues/158.
+        // The router has a quirk where it calls "replaceState" instead of
+        // "pushState" if the new URL contains no hash.
+        // Traced to this: https://github.com/angular/angular/blob/c88305d2ebd5c8be3065dc356f7edbe4069d4ef3/packages/common/src/location/location.ts#L112
+        // Setting the hash is also not great, as it might retain the '#' as the
+        // last character of the URL, but it seems to do its job so far.
+        window.location.hash = '';
+      }
     });
   }
 }
