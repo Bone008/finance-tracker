@@ -1,5 +1,5 @@
-<div fxLayout="row" fxLayout.xs="column" fxLayoutGap.xs="10px">
-  <div fxFlex="50" fxLayout="column">
+<div fxLayout="row" fxLayout.lt-md="column" fxLayoutGap.lt-md="10px">
+  <div fxFlex="50" fxLayout="column" [hidden]="hasData[1] && !hasData[0]">
     <h3 fxFlexAlign="center">Expenses</h3>
     <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="5px">
       <button
@@ -22,7 +22,7 @@
         (elementClick)="onElementClick(0, $event)">
     </app-chart>
   </div>
-  <div fxFlex="50" fxLayout="column">
+  <div fxFlex="50" fxLayout="column" [hidden]="hasData[0] && !hasData[1]">
     <h3 fxFlexAlign="center">Income</h3>
     <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="5px">
       <button

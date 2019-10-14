@@ -32,6 +32,8 @@ export class LabelBreakdownComponent implements OnChanges {
   @Output()
   groupAltClick = new EventEmitter<string[]>();
 
+  /** Whether there exists any data in chartData below. */
+  hasData: [boolean, boolean] = [false, false];
   /** Data for pie charts passed to the AppChart component. */
   chartData: [ChartData, ChartData] = [{}, {}];
   /** Tooltip config for pie charts passed to the AppChart component. */
@@ -132,6 +134,7 @@ export class LabelBreakdownComponent implements OnChanges {
       // Transactions with amount exactly 0 are ignored.
     }
 
+    this.hasData = [expensesGroups.length > 0, incomeGroups.length > 0];
     this.chartData = [
       this.generateLabelBreakdownChart(expensesGroups, this.labelChartGroupLimits[0]),
       this.generateLabelBreakdownChart(incomeGroups, this.labelChartGroupLimits[1]),
