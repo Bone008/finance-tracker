@@ -30,6 +30,7 @@
 
 .footer-row {
   border-top: 4px double rgba(0,0,0,.24);
+  border-bottom: 4px double rgba(0,0,0,.24);
   font-weight: bold;
 }
 

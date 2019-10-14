@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Account, BillingInfo, Money, Transaction, TransactionData } from '../../../../proto/model';
 import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
 import { makeSharedDate, pushDeduplicate } from '../../../core/util';
@@ -16,7 +17,12 @@ export const MODE_EDIT = 'edit';
   styleUrls: ['./transaction-edit.component.css']
 })
 export class TransactionEditComponent implements OnInit {
-  readonly allAccounts$: Observable<Account[]>;
+  readonly accountCandidates$: Observable<Account[]>;
+  /**
+   * If the dialog is opened with a closed account preselected, this contains
+   * that account so it can be part of the dropdown.
+   */
+  readonly closedAccountCandidate: Account | null;
 
   transaction: Transaction;
   /** the value of transaction.single for easier access */
@@ -40,11 +46,14 @@ export class TransactionEditComponent implements OnInit {
     if (data.transaction.dataType !== "single") {
       throw new Error("cannot edit group transactions yet");
     }
-    this.allAccounts$ = this.dataService.accounts$;
-
     this.transaction = data.transaction;
     this.singleData = data.transaction.single!;
     this.editMode = data.editMode;
+
+    this.accountCandidates$ = this.dataService.accounts$
+      .pipe(map(accounts => accounts.filter(acc => !acc.closed)));
+    this.closedAccountCandidate = this.getAccount().closed
+      ? this.getAccount() : null;
 
     if (!this.transaction.billing) {
       this.transaction.billing = new BillingInfo();

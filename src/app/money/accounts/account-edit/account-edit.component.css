@@ -2,3 +2,9 @@
 .preview-icon {
   overflow: hidden;
 }
+
+@media screen and (min-width: 600px) {
+  .mat-dialog-content {
+    min-width: 400px;
+  }
+}

@@ -9,7 +9,7 @@
     </button>
   </mat-card-title>
 
-  <mat-card-content class="accounts-container" *ngIf="accounts$ | async as currentAccounts">
+  <mat-card-content class="accounts-container">
     <div class="header-row">
       <div class="cell-icon"></div>
       <div class="cell-name">Name</div>
@@ -21,61 +21,13 @@
 
     <div
         class="data-row"
-        *ngFor="let account of currentAccounts">
-      <mat-icon class="cell-icon">{{account.icon}}</mat-icon>
-      <div class="cell-name">
-        {{account.name}}
-        <span class="account-iban" *ngIf="account.iban">{{account.iban}}</span>
-        <span class="account-comment" *ngIf="account.comment">{{account.comment}}</span>
-      </div>
-      <div
-          class="cell-balance amount"
-          [class.negative]="getAccountInfo(account).balance < 0">
-        <a href
-            class="amount-link"
-            matTooltip="Click to record new known balance"
-            (click)="$event.preventDefault(); openBalances(account)">{{formatBalance(account)}}</a>
-      </div>
-      <div class="cell-last-transaction">
-        {{getAccountInfo(account).lastTransactionMoment?.format('ll') || '-'}}
-      </div>
-      <div class="cell-last-known-date">
-        {{getAccountInfo(account).lastKnownBalanceMoment?.format('ll') || '-'}}
-        <br>
-        <span class="secondary" *ngIf="getAccountInfo(account).lastKnownBalanceMoment">
-          {{getAccountInfo(account).numTransactionsSinceLastKnown}}
-          transaction{{getAccountInfo(account).numTransactionsSinceLastKnown === 1 ? '' : 's'}}
-          since then
-        </span>
-      </div>
-      <div class="cell-buttons">
-        <button
-            mat-icon-button
-            color="primary"
-            matTooltip="Import transactions from CSV"
-            (click)="startImport(account)">
-          <mat-icon>attachment</mat-icon>
-        </button>
-        <button
-            mat-icon-button
-            color="primary"
-            matTooltip="Edit account details"
-            (click)="startEdit(account)">
-          <mat-icon>edit</mat-icon>
-        </button>
-        <button
-            mat-icon-button
-            color="primary"
-            matTooltip="Delete account"
-            (click)="delete(account)">
-          <mat-icon>delete</mat-icon>
-        </button>
-      </div>
+        *ngFor="let account of openAccounts$ | async">
+      <ng-content *ngTemplateOutlet="accountRow; context: {account: account}"></ng-content>
     </div>
 
     <div class="footer-row">
         <div class="cell-icon"></div>
-        <div class="cell-name">All accounts:</div>
+        <div class="cell-name">All open accounts:</div>
         <div class="cell-balance" [class.negative]="isTotalBalanceNegative()">{{formatTotalBalance()}}</div>
         <div class="cell-last-transaction"></div>
         <div class="cell-last-known-date"></div>
@@ -95,5 +47,74 @@
           </mat-form-field>
         </div>
     </div>
+    
+    <h2>Closed accounts</h2>
+    
+    <div class="header-row">
+      <div class="cell-icon"></div>
+      <div class="cell-name">Name</div>
+      <div class="cell-balance">Balance</div>
+      <div class="cell-last-transaction">Last transaction</div>
+      <div class="cell-last-known-date">Last known balance</div>
+      <div class="cell-buttons"></div>
+    </div>
+  
+    <div
+        class="data-row"
+        *ngFor="let account of closedAccounts$ | async">
+      <ng-content *ngTemplateOutlet="accountRow; context: {account: account}"></ng-content>
+    </div>
   </mat-card-content>
 </mat-card>
+
+<ng-template let-account="account" #accountRow>
+  <mat-icon class="cell-icon">{{account.icon}}</mat-icon>
+  <div class="cell-name">
+    {{account.name}}
+    <span class="account-iban" *ngIf="account.iban">{{account.iban}}</span>
+    <span class="account-comment" *ngIf="account.comment">{{account.comment}}</span>
+  </div>
+  <div
+      class="cell-balance amount"
+      [class.negative]="getAccountInfo(account).balance < 0">
+    <a href
+        class="amount-link"
+        matTooltip="Click to record new known balance"
+        (click)="$event.preventDefault(); openBalances(account)">{{formatBalance(account)}}</a>
+  </div>
+  <div class="cell-last-transaction">
+    {{getAccountInfo(account).lastTransactionMoment?.format('ll') || '-'}}
+  </div>
+  <div class="cell-last-known-date">
+    {{getAccountInfo(account).lastKnownBalanceMoment?.format('ll') || '-'}}
+    <br>
+    <span class="secondary" *ngIf="getAccountInfo(account).lastKnownBalanceMoment">
+      {{getAccountInfo(account).numTransactionsSinceLastKnown}}
+      transaction{{getAccountInfo(account).numTransactionsSinceLastKnown === 1 ? '' : 's'}}
+      since then
+    </span>
+  </div>
+  <div class="cell-buttons">
+    <button
+        mat-icon-button
+        color="primary"
+        matTooltip="Import transactions from CSV"
+        (click)="startImport(account)">
+      <mat-icon>attachment</mat-icon>
+    </button>
+    <button
+        mat-icon-button
+        color="primary"
+        matTooltip="Edit account details"
+        (click)="startEdit(account)">
+      <mat-icon>edit</mat-icon>
+    </button>
+    <button
+        mat-icon-button
+        color="primary"
+        matTooltip="Delete account"
+        (click)="delete(account)">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
+</ng-template>

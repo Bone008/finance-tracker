@@ -6,6 +6,19 @@
   </div>
 
   <mat-dialog-content fxLayout="column">
+    <div fxLayoutAlign="end" fxLayout="row" fxLayoutGap="0.5em">
+      <mat-checkbox
+          name="closed"
+          [(ngModel)]="account.closed"
+          [value]="true">
+        Mark as closed
+      </mat-checkbox>
+      <mat-icon
+          class="help-icon"
+          matTooltip="Closed accounts will not add to the total balance and no new transactions can be added to them.">
+        help
+      </mat-icon>
+    </div>
     <mat-form-field>
       <input
           matInput

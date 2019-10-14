@@ -16,6 +16,14 @@
   padding-bottom: 1.25em;
 }
 
+.closed-warning {
+  margin-bottom: 1em;
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  background: #eee;
+  color: #960;
+}
+
 app-transaction-labels {
   padding-top: 11px;
   padding-bottom: 1.25em;

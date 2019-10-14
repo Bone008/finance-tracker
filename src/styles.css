@@ -49,6 +49,11 @@ body {
     -webkit-appearance: none;
 }
 
+.help-icon {
+  cursor: help;
+  color: rgba(0, 0, 0, 0.5);
+}
+
 /* Middle align icons by default. */
 .mat-icon {
   vertical-align: middle;

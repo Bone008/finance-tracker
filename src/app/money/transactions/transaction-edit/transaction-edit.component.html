@@ -23,9 +23,15 @@
               [(ngModel)]="singleData.accountId"
               placeholder="Account">
             <mat-select-trigger><mat-icon>{{getAccount().icon}}</mat-icon>&nbsp;{{getAccount().name}}</mat-select-trigger>
-            <mat-option disabled hidden [value]="0">Default</mat-option>
+            <mat-option disabled hidden [value]="0">???</mat-option>
             <mat-option
-                *ngFor="let account of allAccounts$ | async"
+                *ngIf="closedAccountCandidate"
+                [value]="closedAccountCandidate.id">
+              <mat-icon>{{closedAccountCandidate.icon}}</mat-icon>&nbsp;{{closedAccountCandidate.name}}
+              &nbsp;<mat-icon>warning</mat-icon>
+            </mat-option>
+            <mat-option
+                *ngFor="let account of accountCandidates$ | async"
                 [value]="account.id">
               <mat-icon>{{account.icon}}</mat-icon>&nbsp;{{account.name}}
             </mat-option>
@@ -39,6 +45,10 @@
             Set default
           </button>
         </mat-form-field>
+        <div *ngIf="getAccount().closed" class="closed-warning">
+          <mat-icon>warning</mat-icon>
+          This account is closed!
+        </div>
         <div fxLayout="row" fxLayoutGap="10px" fxLayout.xs="column" fxLayoutGap.xs="0">
           <mat-form-field fxFlex="none" fxFlex.gt-xs="50">
             <input

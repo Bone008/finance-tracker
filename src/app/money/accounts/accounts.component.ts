@@ -23,9 +23,11 @@ export interface AccountInfo {
   styleUrls: ['./accounts.component.css']
 })
 export class AccountsComponent implements OnInit {
-  // Observable of all accounts in the db.
-  readonly accounts$: Observable<Account[]>;
-  // Observable of all unique used currencies of the accounts.
+  // Observable of all open accounts in the db.
+  readonly openAccounts$: Observable<Account[]>;
+  // Observable of all closed accounts in the db.
+  readonly closedAccounts$: Observable<Account[]>;
+  // Observable of all unique used currencies of all accounts.
   readonly usedCurrencies$: Observable<string[]>;
 
   private totalBalance: number | null = null;
@@ -42,8 +44,12 @@ export class AccountsComponent implements OnInit {
     const accountsObservable = combineLatest(this.dataService.accounts$, this.accountEditSubject)
       .pipe(map(([accounts, _]) => accounts));
 
-    this.accounts$ = accountsObservable.pipe(
-      tap(accounts => this.computeAccountInfos(accounts))
+    this.openAccounts$ = accountsObservable.pipe(
+      tap(accounts => this.computeAccountInfos(accounts)),
+      map(accounts => accounts.filter(acc => !acc.closed))
+    );
+    this.closedAccounts$ = accountsObservable.pipe(
+      map(accounts => accounts.filter(acc => acc.closed))
     );
     this.usedCurrencies$ = accountsObservable.pipe(
       map(accounts => Array.from(new Set<string>(accounts.map(a => a.currency))).sort())
@@ -138,8 +144,10 @@ export class AccountsComponent implements OnInit {
     this.accountInfosById = [];
     for (const account of accounts) {
       const info = this.computeInfo(account);
-      this.totalBalance += this.currencyService.convertAmount(
-        info.balance, account.currency, this.dataService.getMainCurrency()) || 0;
+      if (!account.closed) {
+        this.totalBalance += this.currencyService.convertAmount(
+          info.balance, account.currency, this.dataService.getMainCurrency()) || 0;
+      }
 
       this.accountInfosById[account.id] = info;
     }
