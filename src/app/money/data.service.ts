@@ -80,6 +80,10 @@ export class DataService {
     return this.data.transactions;
   }
 
+  getCurrentAccountList(): Account[] {
+    return this.data.accounts;
+  }
+
   readonly accountFromTxDataFn = (data: TransactionData) => this.getAccountById(data.accountId);
   readonly accountFromIdFn = (accountId: number) => this.getAccountById(accountId);
   readonly currencyFromTxDataFn = (data: TransactionData) => this.getAccountById(data.accountId).currency;

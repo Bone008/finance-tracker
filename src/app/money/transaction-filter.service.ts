@@ -18,7 +18,7 @@ const TOKEN_REGEX = /^(\w+)(:|=|<=?|>=?)(.*)$/;
 // List of valid filter keywords used for autocomplete.
 // Note: Alphabetically sorted by calling sort() immediately after initializer.
 const TOKEN_KEYWORDS = [
-  'is', 'billing', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'iban', 'bookingtext', 'comment', 'label', 'account'
+  'is', 'billing', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'iban', 'bookingtext', 'comment', 'label', 'account', 'currency'
 ].sort();
 const TOKEN_IS_KEYWORDS = [
   'cash', 'bank', 'mixed', 'single', 'group', 'expense', 'income'
@@ -43,6 +43,7 @@ const TOKEN_OPERATORS_BY_KEYWORD: { [keyword: string]: MatcherOperator[] } = {
   'comment': [':', '='],
   'label': [':', '='],
   'account': [':', '='],
+  'currency': [':', '='],
 };
 
 const MOMENT_YEAR_REGEX = /^\d{4}$/;
@@ -115,6 +116,15 @@ export class TransactionFilterService {
     else if (lastToken.startsWith('label:') || lastToken.startsWith('label=')) {
       continuationPrefix += lastToken.substr(0, 6);
       return filterFuzzyOptions(this.dataService.getAllLabels().sort(), lastToken.substr(6), true)
+        .map(keyword => continuationPrefix + keyword + ' ');
+    }
+    // Suggest used currencies.
+    else if (lastToken.startsWith('currency:') || lastToken.startsWith('currency=')) {
+      continuationPrefix += lastToken.substr(0, 9);
+      const usedCurrencies = new Set<string>(
+        this.dataService.getCurrentAccountList().map(a => a.currency.toLowerCase()));
+      usedCurrencies.add('mixed');
+      return filterFuzzyOptions(Array.from(usedCurrencies).sort(), lastToken.substr(9), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
     else {
@@ -285,6 +295,9 @@ export class TransactionFilterService {
           dataList.some(data => test(this.dataService.getAccountById(data.accountId).name))
         );
 
+      case 'currency':
+        return this.makeCurrencyMatcher(value, operator);
+
       case null:
         // Generic matcher that searches all relevant fields.
         return this.makeRegexMatcher(value, operator, (test, transaction, dataList) =>
@@ -330,6 +343,30 @@ export class TransactionFilterService {
       // invalid regex
       return null;
     }
+  }
+
+  /** Tries to create a matcher for currencies. */
+  private makeCurrencyMatcher(value: string, operator: MatcherOperator): FilterMatcher | null {
+    if (operator !== ':' && operator !== '=') {
+      // Invalid operator.
+      return null;
+    }
+
+    if (value.toLowerCase() === 'mixed') {
+      return (_, dataList) => {
+        if (dataList.length < 2) return false; // Fast path.
+        const currencies =
+          new Set<string>(dataList.map(this.dataService.currencyFromTxDataFn));
+        return currencies.size > 1;
+      };
+    }
+    // Match currency codes and symbols by regex.
+    return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
+      dataList.some(data => {
+        const account = this.dataService.getAccountById(data.accountId);
+        return test(account.currency) || test(this.currencyService.getSymbol(account.currency));
+      })
+    );
   }
 
   /** Tries to create a matcher for the billing field. */
