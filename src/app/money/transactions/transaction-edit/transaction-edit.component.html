@@ -1,11 +1,33 @@
 <form #editForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
   <div class="title-container" fxLayout="row" fxLayoutAlign="stretch start">
-    <h2 mat-dialog-title fxFlex>{{editMode==='edit' ? 'Edit' : 'Add'}} transaction</h2>
+    <h2 mat-dialog-title fxFlex [ngSwitch]="editMode">
+      <ng-container *ngSwitchCase="'add'">Add transaction</ng-container>
+      <ng-container *ngSwitchCase="'edit'">Edit transaction</ng-container>
+      <ng-container *ngSwitchCase="'preset'">Add preset</ng-container>
+    </h2>
     <button mat-button mat-dialog-close>Cancel</button>
     <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
   </div>
 
   <mat-dialog-content fxLayout="column">
+    <div *ngIf="presetData" fxLayout="row" fxLayoutAlign="stretch center" fxLayout.xs="column" fxLayoutAlign.xs="stretch">
+      <mat-form-field fxFlex>
+        <input
+            matInput
+            name="presetName"
+            [(ngModel)]="presetData.name"
+            placeholder="Preset name"
+            required>
+      </mat-form-field>
+      <mat-checkbox
+          name="presetSkipDialog"
+          [(ngModel)]="presetData.allowModification"
+          [value]="true">
+        Allow modifications
+        <mat-icon class="help-icon" matTooltip="If this is checked, selecting the preset will open this dialog to allow adjusting the values of the new transaction. Otherwise, the transaction will be added with a single click.">help</mat-icon>
+      </mat-checkbox>
+    </div>
+
     <mat-tab-group
         fxFlex="none"
         [selectedIndex]="isNegative ? 0 : 1"
@@ -55,6 +77,7 @@
                 matInput
                 type="date"
                 name="date"
+                [disabled]="editMode === 'preset'"
                 [ngModel]="getDate() | date:'yyyy-MM-dd'"
                 (ngModelChange)="setDate($event)"
                 placeholder="Date"

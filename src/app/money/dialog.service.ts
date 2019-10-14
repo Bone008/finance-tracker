@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
-import { Account, ProcessingRule, Transaction, TransactionData } from '../../proto/model';
+import { Account, ProcessingRule, Transaction, TransactionData, TransactionPreset } from '../../proto/model';
 import { AccountEditComponent, AccountEditConfig } from './accounts/account-edit/account-edit.component';
 import { BalancesComponent } from './accounts/balances/balances.component';
 import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
@@ -12,7 +12,7 @@ import { ImportDialogData, ImportFileComponent, ImportFileEncoding } from './imp
 import { RuleEditComponent, RuleEditConfig } from './rules/rule-edit/rule-edit.component';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
-import { TransactionEditComponent } from './transactions/transaction-edit/transaction-edit.component';
+import { TransactionEditComponent, TransactionEditConfig } from './transactions/transaction-edit/transaction-edit.component';
 
 export type ConfirmableDialogRef<T> =
   MatDialogRef<T, boolean> & {
@@ -60,10 +60,10 @@ export class DialogService {
     });
   }
 
-  openTransactionEdit(transaction: Transaction, editMode: typeof TransactionEditComponent.prototype.editMode)
+  openTransactionEdit(transaction: Transaction, editMode: TransactionEditConfig['editMode'], preset?: TransactionPreset)
     : ConfirmableDialogRef<TransactionEditComponent> {
     return this.openConfirmable(TransactionEditComponent, {
-      data: { transaction, editMode },
+      data: <TransactionEditConfig>{ transaction, editMode, preset },
     });
   }
 

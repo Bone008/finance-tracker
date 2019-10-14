@@ -2,7 +2,7 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Account, BillingInfo, Money, Transaction, TransactionData } from '../../../../proto/model';
+import { Account, BillingInfo, Money, Transaction, TransactionData, TransactionPreset } from '../../../../proto/model';
 import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
 import { makeSharedDate, pushDeduplicate } from '../../../core/util';
 import { CurrencyService } from '../../currency.service';
@@ -10,6 +10,13 @@ import { DataService } from '../../data.service';
 
 export const MODE_ADD = 'add';
 export const MODE_EDIT = 'edit';
+export const MODE_PRESET = 'preset';
+
+export interface TransactionEditConfig {
+  transaction: Transaction;
+  editMode: typeof MODE_ADD | typeof MODE_EDIT | typeof MODE_PRESET;
+  preset?: TransactionPreset;
+}
 
 @Component({
   selector: 'app-transaction-edit',
@@ -27,7 +34,8 @@ export class TransactionEditComponent implements OnInit {
   transaction: Transaction;
   /** the value of transaction.single for easier access */
   singleData: TransactionData;
-  editMode: typeof MODE_ADD | typeof MODE_EDIT;
+  presetData: TransactionPreset | null;
+  editMode: typeof MODE_ADD | typeof MODE_EDIT | typeof MODE_PRESET;
 
   private _isNegative: boolean;
   get isNegative(): boolean { return this._isNegative; }
@@ -38,7 +46,7 @@ export class TransactionEditComponent implements OnInit {
   }
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) data: { transaction: Transaction, editMode: typeof MODE_ADD | typeof MODE_EDIT },
+    @Inject(MAT_DIALOG_DATA) data: TransactionEditConfig,
     private readonly dataService: DataService,
     private readonly currencyService: CurrencyService,
     private readonly matDialogRef: MatDialogRef<TransactionEditComponent>,
@@ -48,6 +56,7 @@ export class TransactionEditComponent implements OnInit {
     }
     this.transaction = data.transaction;
     this.singleData = data.transaction.single!;
+    this.presetData = data.preset || null;
     this.editMode = data.editMode;
 
     this.accountCandidates$ = this.dataService.accounts$
@@ -87,6 +96,9 @@ export class TransactionEditComponent implements OnInit {
   }
 
   getDate = makeSharedDate(() => {
+    if (!this.singleData.date) {
+      return null;
+    }
     return timestampToDate(this.singleData.date);
   });
 

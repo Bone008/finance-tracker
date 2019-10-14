@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "transaction.proto";
+
+message TransactionPreset {
+  // User-defined name of the preset. Required.
+  string name = 1;
+
+  // If true, transactions created from this preset are first presented to the
+  // user for further modification. Otherwise, they are immediately created from
+  // the preset's values only.
+  bool allow_modification = 2;
+
+  // The partially filled in transaction data. Needs to be a single transaction.
+  Transaction transaction = 3;
+}
