@@ -24,7 +24,7 @@
             (click)="$event.stopPropagation(); startEdit(preset)"
             matTooltip="Edit preset ...">
           <mat-icon>edit</mat-icon>
-      </button>
+        </button>
         {{preset.name}}{{preset.allowModification ? ' ...' : ''}}
       </mat-option>
       <mat-option value="new" class="create-option">Create preset ...</mat-option>

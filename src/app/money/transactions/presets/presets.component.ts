@@ -28,7 +28,7 @@ export class PresetsComponent implements OnInit {
     private readonly dialogService: DialogService
   ) {
     this.presets$ = this.dataService.transactionPresets$
-      .pipe(map(presets => presets.sort((a, b) => a.name.localeCompare(b.name))));
+      .pipe(map(presets => presets.slice().sort((a, b) => a.name.localeCompare(b.name))));
   }
 
   ngOnInit() {
@@ -46,6 +46,7 @@ export class PresetsComponent implements OnInit {
 
     this.dialogService.openTransactionEdit(preset.transaction!, MODE_PRESET, preset)
       .afterConfirmed().subscribe(() => {
+        preset.created = timestampNow();
         this.dataService.addTransactionPresets(preset);
       });
   }
@@ -61,6 +62,7 @@ export class PresetsComponent implements OnInit {
       .afterConfirmed().subscribe(() => {
         // Shallow copy is ok, we can take the entire cloned Transaction message.
         Object.assign(preset, temp);
+        preset.modified = timestampNow();
       });
   }
 
@@ -82,7 +84,7 @@ export class PresetsComponent implements OnInit {
     if (preset.allowModification) {
       this.patchAmountIfNecessary(preset.amountIsPositive, transaction.single);
       this.dialogService.openTransactionEdit(transaction, MODE_ADD)
-        .afterConfirmed().subscribe(() => this.confirmCreate(transaction));
+        .afterConfirmed().subscribe(() => this.confirmCreate(preset, transaction));
     }
     else {
       // Validate if stored account still exists.
@@ -90,11 +92,13 @@ export class PresetsComponent implements OnInit {
       if (account.id <= 0) {
         throw new Error('Preset contains non-existing account id: ' + transaction.single.accountId);
       }
-      this.confirmCreate(transaction);
+      this.confirmCreate(preset, transaction);
     }
   }
 
-  private confirmCreate(transaction: Transaction) {
+  private confirmCreate(preset: TransactionPreset, transaction: Transaction) {
+    preset.lastUsed = timestampNow();
+    preset.usedCount++;
     // Equivalent to handler in TransactionsComponent#startCopyTransaction.
     transaction.single!.created = timestampNow();
     this.dataService.addTransactions(transaction);

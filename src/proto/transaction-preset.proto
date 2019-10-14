@@ -16,4 +16,18 @@ message TransactionPreset {
 
   // If true, the preset denotes an income, even if the amount field is not set.
   bool amount_is_positive = 4;
+
+  // Automatic, readonly value that keeps track of when this preset was first created.
+  Timestamp created = 10;
+
+  // Automatic, mutable, optional value that is updated whenever this preset is changed.
+  // Initially unset when the preset is first created.
+  Timestamp modified = 11;
+
+  // Automatic, mutable, optional value that is updated whenever this preset is used
+  // to create a transaction.
+  Timestamp last_used = 12;
+
+  // Automatic value that counts how often this preset has been used to create a transaction.
+  uint32 used_count = 13;
 }
