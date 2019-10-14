@@ -81,7 +81,7 @@
       [class.negative]="getAccountInfo(account).balance < 0">
     <a href
         class="amount-link"
-        matTooltip="Click to record new known balance"
+        matTooltip="Click to record new known balance ..."
         (click)="$event.preventDefault(); openBalances(account)">{{formatBalance(account)}}</a>
   </div>
   <div class="cell-last-transaction">
@@ -100,14 +100,14 @@
     <button
         mat-icon-button
         color="primary"
-        matTooltip="Import transactions from CSV"
+        matTooltip="Import transactions from CSV ..."
         (click)="startImport(account)">
       <mat-icon>attachment</mat-icon>
     </button>
     <button
         mat-icon-button
         color="primary"
-        matTooltip="Edit account details"
+        matTooltip="Edit account details ..."
         (click)="startEdit(account)">
       <mat-icon>edit</mat-icon>
     </button>

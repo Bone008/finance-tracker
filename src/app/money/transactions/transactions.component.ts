@@ -529,9 +529,9 @@ export class TransactionsComponent implements AfterViewInit {
   }
 
   getGroupTooltip(selected: Transaction[]): string {
-    if (this.canGroup(selected)) return "Group selected";
-    if (this.canUngroup(selected)) return "Ungroup selected";
-    return "Group/ungroup selected";
+    if (this.canGroup(selected)) return "Group";
+    if (this.canUngroup(selected)) return "Ungroup";
+    return "Group/ungroup";
   }
 
   getSelectionSummary = makeSharedObject<object>(() => {
