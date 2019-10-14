@@ -34,7 +34,7 @@ export class PresetsComponent implements OnInit {
   ngOnInit() {
   }
 
-  startAddPreset() {
+  startAdd() {
     const preset = new TransactionPreset({
       allowModification: true,
       transaction: new Transaction({
@@ -50,8 +50,25 @@ export class PresetsComponent implements OnInit {
       });
   }
 
+  startEdit(preset: TransactionPreset) {
+    const temp = cloneMessage(TransactionPreset, preset);
+    if (!isSingle(temp.transaction!)) {
+      throw new Error('Preset contains a non-single transaction.');
+    }
+
+    this.patchAmountIfNecessary(preset.amountIsPositive, temp.transaction.single);
+    this.dialogService.openTransactionEdit(temp.transaction, MODE_PRESET, temp)
+      .afterConfirmed().subscribe(() => {
+        // Shallow copy is ok, we can take the entire cloned Transaction message.
+        Object.assign(preset, temp);
+      });
+  }
+
+  delete(preset: TransactionPreset) {
+    this.dataService.removeTransactionPresets(preset);
+  }
+
   selectPreset(preset: TransactionPreset) {
-    if (!preset) return;
     if (!preset.transaction) {
       throw new Error('Preset does not contain any transaction data.');
     }
@@ -63,13 +80,7 @@ export class PresetsComponent implements OnInit {
 
     transaction.single.date = timestampNow();
     if (preset.allowModification) {
-      if (preset.amountIsPositive && Math.abs(moneyToNumber(transaction.single.amount)) < MONEY_EPSILON) {
-        // Make sure the dialog treats the transaction as an income by temporarily
-        // patching the amount to a positive value and then resetting it.
-        transaction.single.amount = numberToMoney(1);
-        delay(0).then(() => transaction.single.amount = new Money());
-      }
-
+      this.patchAmountIfNecessary(preset.amountIsPositive, transaction.single);
       this.dialogService.openTransactionEdit(transaction, MODE_ADD)
         .afterConfirmed().subscribe(() => this.confirmCreate(transaction));
     }
@@ -88,6 +99,15 @@ export class PresetsComponent implements OnInit {
     transaction.single!.created = timestampNow();
     this.dataService.addTransactions(transaction);
     this.ruleService.notifyAdded(transaction);
+  }
+
+  private patchAmountIfNecessary(isPositive: boolean, singleData: TransactionData) {
+    if (isPositive && Math.abs(moneyToNumber(singleData.amount)) < MONEY_EPSILON) {
+      // Make sure the dialog treats the transaction as an income by temporarily
+      // patching the amount to a positive value and then resetting it.
+      singleData.amount = numberToMoney(1);
+      delay(0).then(() => singleData.amount = new Money());
+    }
   }
 
   async openPresetsPanel() {

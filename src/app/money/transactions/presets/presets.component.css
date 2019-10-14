@@ -17,8 +17,12 @@
   transform: rotate(180deg);
 }
 
+.mat-option .mat-icon {
+  margin-right: 0;
+}
+
 .create-option {
   border-top: 1px solid rgba(0, 0, 0, 0.1);
-  color: rgba(0, 0, 0, 0.5) !important;
+  color: rgba(0, 0, 0, 0.66) !important;
   text-align: center;
 }

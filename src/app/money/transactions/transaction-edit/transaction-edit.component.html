@@ -3,7 +3,7 @@
     <h2 mat-dialog-title fxFlex [ngSwitch]="editMode">
       <ng-container *ngSwitchCase="'add'">Add transaction</ng-container>
       <ng-container *ngSwitchCase="'edit'">Edit transaction</ng-container>
-      <ng-container *ngSwitchCase="'preset'">Add preset</ng-container>
+      <ng-container *ngSwitchCase="'preset'">Edit preset</ng-container>
     </h2>
     <button mat-button mat-dialog-close>Cancel</button>
     <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
@@ -98,7 +98,7 @@
                 [ngModel]="getAbsoluteAmount() || null"
                 (ngModelChange)="setAmount($event)"
                 [ngModelOptions]="{updateOn: 'blur'}"
-                [required]="editMode !== 'preset'"
+                [required]="editMode !== 'preset' || !presetData.allowModification"
                 placeholder="Amount">
             <span matSuffix>&nbsp;{{getCurrencySymbol()}}</span>
           </mat-form-field>

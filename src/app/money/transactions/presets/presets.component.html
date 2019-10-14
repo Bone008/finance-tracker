@@ -9,8 +9,24 @@
   <div class="preset-dropdown-origin" #origin="matAutocompleteOrigin" matAutocompleteOrigin>
     <input type="hidden" #trigger="matAutocompleteTrigger" [matAutocomplete]="dropdown" [matAutocompleteConnectedTo]="origin">
     <mat-autocomplete #dropdown
-        (optionSelected)="$event.option.value === 'new' ? startAddPreset() : selectPreset($event.option.value)">
-      <mat-option *ngFor="let preset of presets$ | async" [value]="preset">{{preset.name}}</mat-option>
+        (optionSelected)="$event.option.value === 'new' ? startAdd() : selectPreset($event.option.value)">
+      <mat-option *ngFor="let preset of presets$ | async" [value]="preset">
+        <button
+            mat-icon-button
+            color="accent"
+            (click)="$event.stopPropagation(); delete(preset)"
+            matTooltip="Delete preset">
+          <mat-icon>delete</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            color="accent"
+            (click)="$event.stopPropagation(); startEdit(preset)"
+            matTooltip="Edit preset ...">
+          <mat-icon>edit</mat-icon>
+      </button>
+        {{preset.name}}{{preset.allowModification ? ' ...' : ''}}
+      </mat-option>
       <mat-option value="new" class="create-option">Create preset ...</mat-option>
     </mat-autocomplete>
   </div>
