@@ -129,16 +129,6 @@ export class TransactionsComponent implements AfterViewInit {
     this.filterState.setValueNow(newFilter);
   }
 
-  startImportCsv() {
-    const dialogRef = this.dialogService.openAccountImport(null);
-    dialogRef.afterConfirmed().subscribe(() => {
-      this.selection.clear();
-      for (const entry of dialogRef.componentInstance.entriesToImport) {
-        this.selection.select(entry.transaction);
-      }
-    });
-  }
-
   /** Opens dialog to create a new transaction. */
   startAddTransaction() {
     // Adding is equivalent to copying from an empty transaction.
