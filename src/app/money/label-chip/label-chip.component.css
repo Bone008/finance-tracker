@@ -36,11 +36,16 @@
   width: 1em;
   height: 1em;
   font-size: inherit;
-  transform: translateY(0.15em);
 }
 
 @media screen and (max-width: 959px) {
   :host {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  .label-delete-button {
+    margin-top: -3px;
+    margin-bottom: -3px;
     padding-top: 3px;
     padding-bottom: 3px;
   }
