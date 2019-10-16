@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from '@ng-stack/forms';
 import * as moment from 'moment';
 import { Observable } from 'rxjs';
-import { filter, map, tap } from 'rxjs/operators';
+import { filter, finalize, map } from 'rxjs/operators';
 import { RequiredProto } from 'src/app/core/proto-util';
 import { Account, BankSyncSettings, IBankSyncSettings } from 'src/proto/model';
 import { DataService } from '../data.service';
@@ -69,6 +69,7 @@ export class BankSyncComponent implements OnInit {
   onSubmit() {
     this.form.disable();
     this.clearLog();
+    const startTime = moment();
 
     // TODO: Decouple sync logic from form input and move most of this into
     // BankSyncService, in order to allow periodic background sync to be invoked
@@ -96,7 +97,11 @@ export class BankSyncComponent implements OnInit {
 
     this.showLog('Starting bank sync ...');
     this.bankSyncService.requestSync(request)
-      .pipe(tap(() => this.form.enable(), () => this.form.enable()))
+      .pipe(finalize(() => {
+        this.form.enable();
+        const duration = moment().diff(startTime, 'seconds');
+        this.showLog(`Execution time: ${Math.round(duration)} s`);
+      }))
       .subscribe(response => {
         if (response.success) {
           this.showLog(`Success! Received ${response.results.length} CSV files.`);
