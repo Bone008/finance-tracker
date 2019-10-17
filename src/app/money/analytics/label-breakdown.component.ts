@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { ChartData, ChartTooltipCallback, ChartTooltipItem } from 'chart.js';
+import { getPaletteColor } from 'src/app/core/color-util';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
-import { getRandomInt } from '../../core/util';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { extractAllLabels, getDominantLabels, MONEY_EPSILON } from '../model-util';
@@ -163,7 +163,7 @@ export class LabelBreakdownComponent implements OnChanges {
     return {
       datasets: [{
         data: descendingEntries.map(entry => entry[1]),
-        backgroundColor: descendingEntries.map(generateColor),
+        backgroundColor: descendingEntries.map((_, i) => getPaletteColor(i)),
       }],
       labels: descendingEntries.map(entry => entry[0]),
     };
@@ -193,11 +193,4 @@ export class LabelBreakdownComponent implements OnChanges {
       },
     }
   }
-}
-
-function generateColor(): string {
-  return 'rgb('
-    + getRandomInt(0, 256) + ','
-    + getRandomInt(0, 256) + ','
-    + getRandomInt(0, 256) + ')';
 }
