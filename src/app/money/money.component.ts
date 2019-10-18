@@ -4,9 +4,10 @@ import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import * as moment from 'moment';
 import { ShortcutInput } from 'ng-keyboard-shortcuts';
-import { fromEvent, merge, Subject, timer } from 'rxjs';
-import { filter, mergeMap, switchMap, takeWhile, tap } from 'rxjs/operators';
+import { from, fromEvent, merge, of, Subject, timer } from 'rxjs';
+import { catchError, filter, map, mergeMap, switchMap, takeWhile, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { DataContainer } from 'src/proto/model';
 import { LoggerService } from '../core/logger.service';
 import { timestampToDate } from '../core/proto-util';
 import { DataService } from './data.service';
@@ -80,29 +81,35 @@ export class MoneyComponent implements OnInit, OnDestroy {
     // React to all kinds of refresh attempts, using switchMap against races.
     this.refreshSubject
       .pipe(tap(() => this.status = "Loading ..."))
-      .pipe(switchMap(() => this.storageService.loadData()))
-      .pipe(tap(() => this.hasData = true, () => this.hasData = true))
-      .subscribe(
-        data => {
+      .pipe(switchMap(() => from(this.storageService.loadData())
+        .pipe(map(data => {
           if (data === null) {
-            data = createDefaultDataContainer();
-          }
-          if (!environment.production) {
-            window['DEBUG_DATA'] = data;
-          }
-
-          this.dataService.setDataContainer(data);
-          if (data.lastModified) {
-            this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
+            return <[DataContainer, string | null]>[createDefaultDataContainer(), 'No saved data'];
           } else {
-            this.status = "No saved data";
+            return <[DataContainer, string | null]>[data, null];
           }
-        },
-        error => {
+        }))
+        // Note: catchError needs to be bound to the Observable WITHIN switchMap,
+        // otherwise the main observable gets killed after an error.
+        .pipe(catchError(error => {
           this.loggerService.error(error);
-          this.dataService.setDataContainer(createDefaultDataContainer());
-          this.status = '' + error;
-        });
+          return of(<[DataContainer, string | null]>[createDefaultDataContainer(), '' + error]);
+        }))))
+      .subscribe(([data, error]) => {
+        if (!environment.production) {
+          window['DEBUG_DATA'] = data;
+        }
+
+        this.hasData = true;
+        this.dataService.setDataContainer(data);
+        if (data.lastModified) {
+          this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
+        } else if (!error) {
+          this.status = "No saved data";
+        } else {
+          this.status = error;
+        }
+      });
 
 
     const periodicTimer = timer(0, 60 * 1000)
