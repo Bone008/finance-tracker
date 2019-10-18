@@ -37,7 +37,8 @@ export class StorageService {
   }
 
   async convertToEncryptionKey(dataKey: string, password: string): Promise<CryptoKey> {
-    const responseData = await this.sendLoadData(dataKey).toPromise();
+    const responseData = await this.sendLoadData(dataKey).toPromise()
+      .catch(() => null);
     if (responseData === null || !isCryptoPayload(responseData)) {
       // No stored cryptotext yet, so we are free to generate a fresh key.
       this.loggerService.log('Creating new encryption key.');
@@ -50,6 +51,9 @@ export class StorageService {
       this.loggerService.log('Deriving encryption key from stored metadata.');
       const meta = getPasswordInfoFromPayload(responseData);
       const key = await createKnownEncryptionKey(password, meta);
+
+      // Attempt decryption to check if the password matches.
+      await decryptWithKey(responseData, key);
       this.lastPasswordInfo = meta;
       return key;
     }

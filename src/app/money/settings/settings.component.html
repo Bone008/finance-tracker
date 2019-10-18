@@ -10,7 +10,7 @@
       to the server. To access your data on a different device, enter this key
       in the settings of that device.
     </p>
-    <form #settingsForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
+    <form #settingsForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column" fxLayoutAlign="start start">
       <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
         <mat-form-field>
           <input
@@ -30,6 +30,37 @@
         </button>
       </div>
 
+      <div
+          fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px"
+          [hidden]="newPassword !== null || hasStorageChanges() || !storageSettings.encryptionKey">
+        <mat-form-field>
+          <input
+              matInput
+              name="dummy"
+              value="valid"
+              placeholder="Encryption password"
+              disabled>
+        </mat-form-field>
+        <button
+            mat-raised-button
+            type="button"
+            color="primary"
+            (click)="newPassword = ''">
+          Change
+        </button>
+      </div>
+
+      <mat-form-field [hidden]="!(newPassword !== null || hasStorageChanges() || !storageSettings.encryptionKey)">
+        <input
+            #encryptionPassword
+            type="password"
+            matInput
+            name="encryptionPassword"
+            [(ngModel)]="newPassword"
+            placeholder="Encryption password"
+            required>
+      </mat-form-field>
+
       <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
         <button
             fxFlexAlign="start"
@@ -45,6 +76,9 @@
         <span class="error" *ngIf="dataKey.invalid && dataKey.touched && dataKey.errors.pattern">
           The pattern of the data key is incorrect.
           It should have the form XXXX-XXXX-XXXX-XXXX.
+        </span>
+        <span class="error" *ngIf="hasPasswordError">
+          The password does not seem to be correct!
         </span>
       </div>
     </form>

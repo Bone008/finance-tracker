@@ -15,6 +15,7 @@ import { StorageService } from '../storage.service';
 export class SettingsComponent implements OnInit {
   readonly dataKeyPattern = DATA_KEY_REGEXP;
   storageSettings: StorageSettings;
+  newPassword: string | null = null;
 
   hasPasswordError = false;
 
@@ -45,17 +46,23 @@ export class SettingsComponent implements OnInit {
   }
 
   hasStorageChanges(): boolean {
-    return !this.originalSettings || this.originalSettings.dataKey !== this.storageSettings.dataKey;
+    return this.newPassword !== null || !this.originalSettings || this.originalSettings.dataKey !== this.storageSettings.dataKey;
   }
 
-  async onSubmit(): Promise<void> {
+  onSubmit() {
+    this.updateSettings().catch(e => this.loggerService.error(e));
+  }
+
+  async updateSettings(): Promise<void> {
     if (!this.hasStorageChanges()) { return; }
+    if (!this.newPassword) { return; }
 
-    const newPassword = '123456';
-
+    // TODO: Like this you cannot change the password for an existing DB.
     try {
-      const key = await this.storageService.convertToEncryptionKey(this.storageSettings.dataKey, newPassword);
+      const key = await this.storageService.convertToEncryptionKey(this.storageSettings.dataKey, this.newPassword);
       this.storageSettings.encryptionKey = key;
+      this.newPassword = null;
+      this.hasPasswordError = false;
     } catch (e) {
       this.loggerService.error('Error trying to validate new storage settings:', e);
       this.hasPasswordError = true;
