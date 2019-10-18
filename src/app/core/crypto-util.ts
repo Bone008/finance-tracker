@@ -42,15 +42,6 @@ export function createKnownEncryptionKey(password: string, meta: PasswordMetadat
   return deriveEncryptionKey(password, meta.salt, meta.iterations);
 }
 
-export async function encryptWithPassword(data: ArrayBuffer, password: string): Promise<{ key: CryptoKey, payload: ArrayBuffer }> {
-  // Generates: salt, iterations, iv
-  const salt = window.crypto.getRandomValues(new Uint8Array(SALT_LENGTH_BYTES));
-  const key = await deriveEncryptionKey(password, salt, PBKDF2_ITERATIONS);
-  const payload = await encryptWithKey(data, key, { salt, iterations: PBKDF2_ITERATIONS });
-  // Returns: derived encryptionKey  +  payload
-  return { key, payload };
-}
-
 export async function encryptWithKey(data: ArrayBuffer, key: CryptoKey, meta: PasswordMetadata): Promise<ArrayBuffer> {
   // Generates: iv
   const iv = window.crypto.getRandomValues(new Uint8Array(AES_IV_LENGTH_BYTES));
@@ -59,15 +50,6 @@ export async function encryptWithKey(data: ArrayBuffer, key: CryptoKey, meta: Pa
 
   // Returns: payload
   return concatPayload({ meta, iv: iv.buffer, ciphertext });
-}
-
-export async function decryptWithPassword(payload: ArrayBuffer, password: string): Promise<{ key: CryptoKey, data: ArrayBuffer }> {
-  // Extracts from payload: salt, iterations, iv, ciphertext
-  const meta = getPasswordInfoFromPayload(payload);
-  const key = await deriveEncryptionKey(password, meta.salt, meta.iterations);
-  const data = await decryptWithKey(payload, key);
-  // Returns: derived encryptionKey  +  data
-  return { key, data };
 }
 
 export async function decryptWithKey(payload: ArrayBuffer, key: CryptoKey): Promise<ArrayBuffer> {
@@ -88,6 +70,7 @@ export function isCryptoPayload(buffer: ArrayBuffer): boolean {
   return String.fromCharCode(...payloadHeader) === String.fromCharCode(...HEADER);
 }
 
+// Only exported for test.
 export function concatPayload(payloadData: StructuredPayload): ArrayBuffer {
   console.assert(payloadData.meta.salt.byteLength === SALT_LENGTH_BYTES, 'invalid salt length');
   console.assert(payloadData.iv.byteLength === AES_IV_LENGTH_BYTES, 'invalid IV length');
@@ -115,6 +98,7 @@ export function concatPayload(payloadData: StructuredPayload): ArrayBuffer {
   return payload;
 }
 
+// Only exported for test.
 export function splitPayload(payload: ArrayBuffer): StructuredPayload {
   const bytes = new Uint8Array(payload);
   const view = new DataView(payload);

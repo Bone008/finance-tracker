@@ -53,8 +53,6 @@ export class SettingsComponent implements OnInit {
 
     const newPassword = '123456';
 
-    // Try to load and decrypt existing data.
-    let hasData: boolean;
     try {
       const key = await this.storageService.convertToEncryptionKey(this.storageSettings.dataKey, newPassword);
       this.storageSettings.encryptionKey = key;
