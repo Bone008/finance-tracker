@@ -4,6 +4,7 @@ import { gzip, ungzip } from "pako";
 import { Observable, of, throwError } from "rxjs";
 import { catchError, map, mergeMap, switchMap } from "rxjs/operators";
 import { DataContainer } from "../../proto/model";
+import { createEncryptionKey, createKnownEncryptionKey, decryptWithKey, encryptWithKey, getPasswordInfoFromPayload, isCryptoPayload, PasswordMetadata } from "../core/crypto-util";
 import { LoggerService } from "../core/logger.service";
 import { timestampNow } from "../core/proto-util";
 import { delay } from "../core/util";
@@ -26,12 +27,32 @@ interface SaveStorageResponse extends ApiResponse {
 })
 export class StorageService {
   private lastKnownHash: string | null = null;
+  private lastPasswordInfo: PasswordMetadata | null = null;
 
   constructor(
     private readonly storageSettingsService: StorageSettingsService,
     private readonly httpClient: HttpClient,
     private readonly loggerService: LoggerService
   ) {
+  }
+
+  async convertToEncryptionKey(dataKey: string, password: string): Promise<CryptoKey> {
+    const responseData = await this.sendLoadData(dataKey).toPromise();
+    if (responseData === null || !isCryptoPayload(responseData)) {
+      // No stored cryptotext yet, so we are free to generate a fresh key.
+      this.loggerService.log('Creating new encryption key.');
+      const info = await createEncryptionKey(password);
+      this.lastPasswordInfo = info.meta;
+      return info.key;
+    }
+    else {
+      // Use metadata for key derivation from crypto payload.
+      this.loggerService.log('Deriving encryption key from stored metadata.');
+      const meta = getPasswordInfoFromPayload(responseData);
+      const key = await createKnownEncryptionKey(password, meta);
+      this.lastPasswordInfo = meta;
+      return key;
+    }
   }
 
   private logAndRethrowAs(error: HttpErrorResponse, friendlyError: string): Observable<never> {
@@ -49,12 +70,12 @@ export class StorageService {
   /**
    * Attempts to determine if our local view of the data is out of date.
    */
-  checkIsDataStale(): Promise<boolean> {
+  async checkIsDataStale(): Promise<boolean> {
     if (!this.storageSettingsService.hasSettings() || !this.lastKnownHash) {
       return Promise.resolve(false);
     }
-
-    return this.sendLoadData(this.storageSettingsService.getSettings()!.dataKey)
+    const settings = await this.storageSettingsService.getSettings();
+    return this.sendLoadData(settings!.dataKey)
       .pipe(
         switchMap(responseData => responseData ? calculateHash(responseData) : of(null)),
         map(hash => hash !== null && hash !== this.lastKnownHash)
@@ -66,49 +87,52 @@ export class StorageService {
    * Attempts to load data from the storage backend.
    * Returns null if no data was saved yet.
    */
-  loadData(): Promise<DataContainer | null> {
-    const storageSettings = this.storageSettingsService.getSettings();
+  async loadData(): Promise<DataContainer | null> {
+    const storageSettings = await this.storageSettingsService.getSettings();
     if (!storageSettings) {
       // We don't have a data key yet, return empty container and leave it unset.
       // Automatically generating one here would lead to the user not noticing
       // when localStorage was cleared while the app remains loaded and silently
       // storing their existing database under a new key.
+      return null;
+    }
+
+    const responseData = await this.sendLoadData(storageSettings.dataKey).toPromise();
+    // Pass through not found.
+    if (responseData === null) {
       return Promise.resolve(null);
     }
-    const dataKey = storageSettings.dataKey;
 
-    return this.sendLoadData(dataKey)
-      .pipe(switchMap(responseData => {
-        // Pass through not found.
-        if (responseData === null) {
-          return Promise.resolve(null);
-        }
+    // Decrypt (if we have a key).
+    let decryptedData: ArrayBuffer;
+    if (storageSettings.encryptionKey && isCryptoPayload(responseData)) {
+      decryptedData = await decryptWithKey(responseData, storageSettings.encryptionKey);
+      this.lastPasswordInfo = getPasswordInfoFromPayload(responseData);
+    } else {
+      decryptedData = responseData;
+    }
 
-        // Decompress & decode if we have a response.
-        let uncompressedData: Uint8Array;
-        try {
-          uncompressedData = ungzip(new Uint8Array(responseData));
-        } catch (e) {
-          this.loggerService.error("Failed to decompress:", e);
-          // Attempt to decode without decompressing, the data may have been
-          // saved without compression.
-          uncompressedData = new Uint8Array(responseData);
-        }
+    // Decompress & decode if we have a response.
+    let uncompressedData: Uint8Array;
+    try {
+      uncompressedData = ungzip(new Uint8Array(decryptedData));
+    } catch (e) {
+      this.loggerService.error("Failed to decompress:", e);
+      // Attempt to decode without decompressing, the data may have been
+      // saved without compression.
+      uncompressedData = new Uint8Array(decryptedData);
+    }
 
-        try {
-          const data = DataContainer.decode(uncompressedData);
+    try {
+      const data = DataContainer.decode(uncompressedData);
 
-          // Upon success, calculate response hash and remember it.
-          return calculateHash(responseData).then(hash => {
-            this.lastKnownHash = hash;
-            return data;
-          });
-        } catch (e) {
-          this.loggerService.error("Failed to decode:", e);
-          return Promise.reject("Error decoding loaded data!");
-        }
-      }))
-      .toPromise();
+      // Upon success, calculate response hash and remember it.
+      this.lastKnownHash = await calculateHash(responseData);
+      return data;
+    } catch (e) {
+      this.loggerService.error("Failed to decode:", e);
+      return Promise.reject("Error decoding loaded data!");
+    }
   }
 
   /** Sends the GET request for data and handles HTTP errors. */
@@ -121,15 +145,30 @@ export class StorageService {
       .pipe(catchError(e => this.logAndRethrowAs(e, "Error loading data!")));
   }
 
-  saveData(data: DataContainer): Promise<void> {
-    const settings = this.storageSettingsService.getSettings();
+  async saveData(data: DataContainer): Promise<void> {
+    const settings = await this.storageSettingsService.getSettings();
     if (!settings) {
       return Promise.reject("No data key! Please set one in settings.");
     }
 
     data.lastModified = timestampNow();
     const compressedData = this.encodeAndCompressData(data);
-    const dataBlob = new Blob([compressedData], { type: 'application/octet-stream' });
+
+    let finalData: ArrayBuffer;
+    if (settings.encryptionKey) {
+      if (!this.lastPasswordInfo) {
+        return Promise.reject('Password settings not available for encryption!');
+      }
+      finalData = await encryptWithKey(compressedData, settings.encryptionKey, this.lastPasswordInfo);
+    } else {
+      // Do not encrypt.
+      if (!confirm('Warning: No encryption password is set. Your data will sent to the server without encryption! Continue?')) {
+        return Promise.reject('Please set encryption password in settings!');
+      }
+      finalData = compressedData;
+    }
+
+    const dataBlob = new Blob([finalData], { type: 'application/octet-stream' });
     const formData = new FormData();
     formData.set('data', dataBlob, settings.dataKey);
     if (this.lastKnownHash !== null) {
@@ -148,7 +187,7 @@ export class StorageService {
         }
 
         // On success, update stored hash.
-        return calculateHash(compressedData).then(hash => {
+        return calculateHash(finalData).then(hash => {
           this.lastKnownHash = hash;
         });
       })).toPromise();

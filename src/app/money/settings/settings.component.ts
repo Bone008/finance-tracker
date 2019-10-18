@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import * as moment from 'moment';
+import { LoggerService } from 'src/app/core/logger.service';
 import { delay } from 'src/app/core/util';
 import { DataService } from '../data.service';
 import { DATA_KEY_REGEXP, StorageSettings, StorageSettingsService } from '../storage-settings.service';
@@ -13,20 +14,27 @@ import { StorageService } from '../storage.service';
 })
 export class SettingsComponent implements OnInit {
   readonly dataKeyPattern = DATA_KEY_REGEXP;
-  readonly storageSettings: StorageSettings;
+  storageSettings: StorageSettings;
+
+  hasPasswordError = false;
+
+  private originalSettings: StorageSettings | null = null;
 
   constructor(
     private readonly storageSettingsService: StorageSettingsService,
     private readonly storageService: StorageService,
     private readonly dataService: DataService,
+    private readonly loggerService: LoggerService,
     private readonly router: Router
   ) {
-    // Storage service returns an independent copy, so we can modify the object
-    // directly.
-    this.storageSettings = this.storageSettingsService.getSettings()
-      || {
-        dataKey: '',
-      };
+    this.storageSettings = { dataKey: '', encryptionKey: undefined };
+
+    this.storageSettingsService.getSettings().then(settings => {
+      this.originalSettings = settings;
+      if (settings) {
+        this.storageSettings = Object.assign({}, settings);
+      }
+    });
   }
 
   ngOnInit() {
@@ -37,20 +45,32 @@ export class SettingsComponent implements OnInit {
   }
 
   hasStorageChanges(): boolean {
-    const originalSettings = this.storageSettingsService.getSettings();
-    return !originalSettings || originalSettings.dataKey !== this.storageSettings.dataKey;
+    return !this.originalSettings || this.originalSettings.dataKey !== this.storageSettings.dataKey;
   }
 
-  onSubmit() {
+  async onSubmit(): Promise<void> {
     if (!this.hasStorageChanges()) { return; }
 
+    const newPassword = '123456';
+
+    // Try to load and decrypt existing data.
+    let hasData: boolean;
+    try {
+      const key = await this.storageService.convertToEncryptionKey(this.storageSettings.dataKey, newPassword);
+      this.storageSettings.encryptionKey = key;
+    } catch (e) {
+      this.loggerService.error('Error trying to validate new storage settings:', e);
+      this.hasPasswordError = true;
+      return;
+    }
+
     // Data will be refreshed automatically by the subscriber in MoneyComponent.
-    this.storageSettingsService.setSettings(this.storageSettings);
+    await this.storageSettingsService.setSettings(this.storageSettings);
     this.router.navigate(['/']);
   }
 
-  exportData() {
-    const persistedSettings = this.storageSettingsService.getSettings();
+  async exportData(): Promise<void> {
+    const persistedSettings = await this.storageSettingsService.getSettings();
     if (!persistedSettings) {
       alert('No saved storage key found!');
       return;
@@ -70,9 +90,8 @@ export class SettingsComponent implements OnInit {
       const file = new File([binaryData], fileName, { type: 'application/octet-stream' });
       const url = window.URL.createObjectURL(file);
       window.location.assign(url);
-      delay(1000).then(() => {
-        window.URL.revokeObjectURL(url);
-      });
+      await delay(1000);
+      window.URL.revokeObjectURL(url);
     }
   }
 }

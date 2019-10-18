@@ -4,8 +4,8 @@ import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import * as moment from 'moment';
 import { ShortcutInput } from 'ng-keyboard-shortcuts';
-import { fromEvent, merge, timer } from 'rxjs';
-import { filter, mergeMap, switchMap, takeWhile } from 'rxjs/operators';
+import { fromEvent, merge, Subject, timer } from 'rxjs';
+import { filter, mergeMap, switchMap, takeWhile, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { LoggerService } from '../core/logger.service';
 import { timestampToDate } from '../core/proto-util';
@@ -32,6 +32,7 @@ export class MoneyComponent implements OnInit, OnDestroy {
   private _mobileQueryListener: () => void;
   private alive = true;
   private isStaleNotificationPending = false;
+  private readonly refreshSubject = new Subject<void>();
 
   constructor(
     private readonly dataService: DataService,
@@ -68,12 +69,41 @@ export class MoneyComponent implements OnInit, OnDestroy {
 
     // On first visit, initialize data key so the user can immediately start.
     if (!this.storageSettingsService.hasSettings()) {
-      this.storageSettingsService.getOrInitSettings();
+      this.storageSettingsService.getOrInitSettings().catch(e =>
+        this.loggerService.error('Unable to perform initial load of settings.', e));
     }
     // Attempt refresh whenever data key changes (also initially).
     this.storageSettingsService.settings$.subscribe(() => {
       this.refreshData();
     });
+
+    // React to all kinds of refresh attempts, using switchMap against races.
+    this.refreshSubject
+      .pipe(tap(() => this.status = "Loading ..."))
+      .pipe(switchMap(() => this.storageService.loadData()))
+      .pipe(tap(() => this.hasData = true, () => this.hasData = true))
+      .subscribe(
+        data => {
+          if (data === null) {
+            data = createDefaultDataContainer();
+          }
+          if (!environment.production) {
+            window['DEBUG_DATA'] = data;
+          }
+
+          this.dataService.setDataContainer(data);
+          if (data.lastModified) {
+            this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
+          } else {
+            this.status = "No saved data";
+          }
+        },
+        error => {
+          this.loggerService.error(error);
+          this.dataService.setDataContainer(createDefaultDataContainer());
+          this.status = '' + error;
+        });
+
 
     const periodicTimer = timer(0, 60 * 1000)
       .pipe(
@@ -111,30 +141,7 @@ export class MoneyComponent implements OnInit, OnDestroy {
       const choice = confirm("Refreshing data from the server will overwrite all unsaved changes. Are you sure?");
       if (!choice) return;
     }
-
-    this.status = "Loading ...";
-    this.storageService.loadData()
-      .then(
-        data => {
-          if (data === null) {
-            data = createDefaultDataContainer();
-          }
-          if (!environment.production) {
-            window['DEBUG_DATA'] = data;
-          }
-
-          this.dataService.setDataContainer(data);
-          if (data.lastModified) {
-            this.status = "Last saved " + this.formatDate(timestampToDate(data.lastModified));
-          } else {
-            this.status = "No saved data";
-          }
-        },
-        error => {
-          this.dataService.setDataContainer(createDefaultDataContainer());
-          this.status = error;
-        })
-      .then(() => this.hasData = true);
+    this.refreshSubject.next();
   }
 
   async syncData(): Promise<void> {
