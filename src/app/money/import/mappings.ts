@@ -2,8 +2,14 @@ import { escapeRegex } from "src/app/core/util";
 import { dateToTimestamp, numberToMoney } from "../../core/proto-util";
 import { FormatMapping, FormatMappingBuilder } from "./format-mapping";
 
+// TODO Once we upgrade to TypeScript 3.4+, this can be rewritten to:
+// const ALL_FILE_FORMATS = ['foobar', ...] as const;
+// type FileFormat = typeof ALL_FILE_FORMATS;
+export const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs', 'deutsche_bank'];
+export type ImportFileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs' | 'deutsche_bank';
+
 /** Dictionary that contains configurations for each supported import format. */
-export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
+export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
   'ksk_camt': new FormatMappingBuilder<KskCamtRow>()
     .addMapping("date", "Valutadatum", parseDate)
     .addMapping("amount", "Betrag", parseAmount)
@@ -77,6 +83,23 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
         amount.subunits *= -1;
       }
       return amount;
+    })
+    .build(),
+  'deutsche_bank': new FormatMappingBuilder<DeutscheBankRow>()
+    .skipUntilPattern(/^Buchungstag;Wert;Umsatzart;/m)
+    .setRowFilter(row => row['Buchungstag'] !== 'Kontostand')
+    .addMapping("date", "Wert", parseDate)
+    .addMapping("reason", "Verwendungszweck")
+    .addMapping("who", "Begünstigter / Auftraggeber")
+    .addMapping("whoIdentifier", "IBAN")
+    .addMapping("bookingText", "Umsatzart")
+    .addRawMapping("amount", ["Soll", "Haben"], row => {
+      const expense = row["Soll"];
+      const income = row["Haben"];
+      if (!expense && !income) {
+        throw new Error('found neither "Soll" nor "Haben"');
+      }
+      return parseAmount(expense || income);
     })
     .build(),
 };
@@ -202,4 +225,26 @@ interface UbsRow {
   "Belastung": string;
   "Gutschrift": string;
   "Saldo": string;
+}
+
+interface DeutscheBankRow {
+  "Buchungstag": string;
+  "Wert": string;
+  "Umsatzart": string;
+  "Begünstigter / Auftraggeber": string;
+  "Verwendungszweck": string;
+  "IBAN": string;
+  "BIC": string;
+  "Kundenreferenz": string;
+  "Mandatsreferenz ": string;
+  "Gläubiger ID": string;
+  "Fremde Gebühren": string;
+  "Betrag": string;
+  "Abweichender Empfänger": string;
+  "Anzahl der Aufträge": string;
+  "Anzahl der Schecks": string;
+  "Soll": string;
+  "Haben": string;
+  "Währung": string;
+
 }

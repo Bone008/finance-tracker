@@ -9,14 +9,9 @@ import { timestampNow, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { RuleService } from '../rule.service';
 import { FormatMapping } from './format-mapping';
-import { MAPPINGS_BY_FORMAT } from './mappings';
+import { ALL_FILE_FORMATS, ImportFileFormat, MAPPINGS_BY_FORMAT } from './mappings';
 
-// TODO Once we upgrade to TypeScript 3.4+, this can be rewritten to:
-// const ALL_FILE_FORMATS = ['foobar', ...] as const;
-// type FileFormat = typeof ALL_FILE_FORMATS;
-const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs'];
-export type ImportFileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs';
-const ALL_FILE_ENCODINGS = ['windows-1252', 'utf-8'];
+export const ALL_FILE_ENCODINGS = ['windows-1252', 'utf-8'];
 export type ImportFileEncoding = 'windows-1252' | 'utf-8';
 
 export interface ImportDialogData {
@@ -202,6 +197,10 @@ export class ImportFileComponent implements OnInit {
     // Process rows.
     for (let i = 0; i < csvData.data.length; i++) {
       const row = csvData.data[i] as { [column: string]: string };
+
+      if (mapping.rowFilter && !mapping.rowFilter(row)) {
+        continue;
+      }
 
       if (this.isDuplicate(row, existingRows, mapping)) {
         this.duplicateCount++;

@@ -5,18 +5,20 @@ import { ITransactionData } from "../../../proto/model";
  * a TransactionData entity.
  */
 export interface FormatMapping {
-  readonly requiredColumns: string[];
-  readonly mappings: { [K in keyof ITransactionData]: (row: { [column: string]: string }) => any };
   /** Optional regular expression that matches where the actual CSV header starts. */
   readonly startPattern?: RegExp;
+  readonly requiredColumns: string[];
+  readonly mappings: { [K in keyof ITransactionData]: (row: { [column: string]: string }) => any };
+  readonly rowFilter?: (row: { [column: string]: string }) => boolean;
 }
 
 /** Utility for configuring FormatMapping instances. */
 export class FormatMappingBuilder<R> {
 
-  private startPattern: RegExp | undefined = undefined;
   private requiredColumns: string[] = [];
   private mappings: { [K in keyof ITransactionData]: (row: R) => any } = {};
+  private startPattern: RegExp | undefined = undefined;
+  private rowFilter?: (row: R) => boolean;
 
   addMapping<K extends keyof ITransactionData>(
       /**/ transactionKey: K,
@@ -53,15 +55,21 @@ export class FormatMappingBuilder<R> {
     return this;
   }
 
+  setRowFilter(callback: (row: R) => boolean): this {
+    this.rowFilter = callback;
+    return this;
+  }
+
   build(): FormatMapping {
+    // Strip away strong typing based on R, since it has no use during the
+    // dynamic mapping that clients of this class perform.
+    // The strong typing of R is only used for type-safe construction within
+    // this builder.
     return {
-      requiredColumns: this.requiredColumns,
-      // Strip away strong typing based on R, since it has no use during the
-      // dynamic mapping that clients of this class perform.
-      // The strong typing of R is only used for type-safe construction within
-      // this builder.
-      mappings: <FormatMapping['mappings']><any>this.mappings,
       startPattern: this.startPattern,
+      requiredColumns: this.requiredColumns,
+      mappings: <FormatMapping['mappings']><any>this.mappings,
+      rowFilter: <FormatMapping['rowFilter']><any>this.rowFilter,
     };
   }
 }
