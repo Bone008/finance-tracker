@@ -10,7 +10,7 @@
       to the server. To access your data on a different device, enter this key
       in the settings of that device.
     </p>
-    <form #settingsForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column" fxLayoutAlign="start start">
+    <form #settingsForm="ngForm" action="#" (ngSubmit)="onSubmit()" fxLayout="column" fxLayoutAlign="start start">
       <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
         <mat-form-field>
           <input
@@ -30,45 +30,37 @@
         </button>
       </div>
 
-      <div
-          fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px"
-          [hidden]="newPassword !== null || hasStorageChanges() || !storageSettings.encryptionKey">
-        <mat-form-field>
+      <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
+        <mat-form-field floatLabel="always" class="password-form-field">
           <input
+              #encryptionPassword
+              type="password"
               matInput
-              name="dummy"
-              value="valid"
+              name="encryptionPassword"
+              [(ngModel)]="newPassword"
+              [disabled]="!isEnteringPassword()"
               placeholder="Encryption password"
-              disabled>
+              required>
+            <mat-icon matSuffix [hidden]="isEnteringPassword()">check_circle</mat-icon>
         </mat-form-field>
         <button
             mat-raised-button
             type="button"
             color="primary"
-            (click)="newPassword = ''">
+            [hidden]="isEnteringPassword()"
+            (click)="newPassword = ''; encryptionPassword.focus()">
           Change
         </button>
       </div>
-
-      <mat-form-field [hidden]="!(newPassword !== null || hasStorageChanges() || !storageSettings.encryptionKey)">
-        <input
-            #encryptionPassword
-            type="password"
-            matInput
-            name="encryptionPassword"
-            [(ngModel)]="newPassword"
-            placeholder="Encryption password"
-            required>
-      </mat-form-field>
 
       <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
         <button
             fxFlexAlign="start"
             mat-raised-button
             type="submit"
-            [disabled]="!settingsForm.valid || !hasStorageChanges()"
-            color="primary">
-          Save
+            color="primary"
+            [disabled]="!settingsForm.valid || !hasStorageChanges()">
+          {{hasChangePasswordIntent() ? 'Change password' : 'Save'}}
         </button>
         <span class="error" *ngIf="dataKey.invalid && dataKey.touched && dataKey.errors.required">
           Please enter a data key.

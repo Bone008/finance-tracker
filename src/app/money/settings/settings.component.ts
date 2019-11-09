@@ -49,6 +49,20 @@ export class SettingsComponent implements OnInit {
     return this.newPassword !== null || !this.originalSettings || this.originalSettings.dataKey !== this.storageSettings.dataKey;
   }
 
+  isEnteringPassword(): boolean {
+    // Reason for check for this.storageService.getLastLoadSuccessful():
+    // If the already stored key is no longer correct, the user needs to enter
+    // the correct password, without falling into the "change password" flow.
+    return this.newPassword !== null || this.hasStorageChanges() || !this.storageSettings.encryptionKey || !this.storageService.getLastLoadSuccessful();
+  }
+
+  hasChangePasswordIntent(): boolean {
+    return !!this.originalSettings && this.originalSettings.dataKey === this.storageSettings.dataKey
+      && !!this.storageSettings.encryptionKey
+      && this.newPassword !== null
+      && this.storageService.getLastLoadSuccessful();
+  }
+
   onSubmit() {
     this.updateSettings().catch(e => this.loggerService.error(e));
   }
@@ -56,18 +70,32 @@ export class SettingsComponent implements OnInit {
   async updateSettings(): Promise<void> {
     if (!this.hasStorageChanges()) { return; }
     if (!this.newPassword) { return; }
+    this.hasPasswordError = false;
 
-    // TODO: Like this you cannot change the password for an existing DB.
-    try {
-      const key = await this.storageService.convertToEncryptionKey(this.storageSettings.dataKey, this.newPassword);
+    if (this.hasChangePasswordIntent()) {
+      const key = await this.storageService.convertToEncryptionKey(null, this.newPassword);
       this.storageSettings.encryptionKey = key;
-      this.newPassword = null;
-      this.hasPasswordError = false;
-    } catch (e) {
-      this.loggerService.error('Error trying to validate new storage settings:', e);
-      this.hasPasswordError = true;
-      return;
+      // Immediately save data with the new password.
+      try {
+        await this.storageService.saveData(this.dataService.getDataContainer(), this.storageSettings);
+        alert("The password has been changed successfully!");
+      }
+      catch (e) {
+        alert("Failed to change password: " + e);
+        return;
+      }
     }
+    else {
+      try {
+        const key = await this.storageService.convertToEncryptionKey(this.storageSettings.dataKey, this.newPassword);
+        this.storageSettings.encryptionKey = key;
+      } catch (e) {
+        this.loggerService.error('Error trying to validate new storage settings:', e);
+        this.hasPasswordError = true;
+        return;
+      }
+    }
+    this.newPassword = null;
 
     // Data will be refreshed automatically by the subscriber in MoneyComponent.
     await this.storageSettingsService.setSettings(this.storageSettings);

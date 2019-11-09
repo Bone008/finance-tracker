@@ -8,7 +8,7 @@ import { createEncryptionKey, createKnownEncryptionKey, decryptWithKey, encryptW
 import { LoggerService } from "../core/logger.service";
 import { timestampNow } from "../core/proto-util";
 import { delay } from "../core/util";
-import { StorageSettingsService } from "./storage-settings.service";
+import { StorageSettings, StorageSettingsService } from "./storage-settings.service";
 
 const LEGACY_STORAGE_KEY = "money_data_container";
 
@@ -26,6 +26,7 @@ interface SaveStorageResponse extends ApiResponse {
   providedIn: 'root'
 })
 export class StorageService {
+  private lastLoadSuccessful = true;
   private lastKnownHash: string | null = null;
   private lastPasswordInfo: PasswordMetadata | null = null;
 
@@ -36,9 +37,24 @@ export class StorageService {
   ) {
   }
 
-  async convertToEncryptionKey(dataKey: string, password: string): Promise<CryptoKey> {
-    const responseData = await this.sendLoadData(dataKey).toPromise()
-      .catch(() => null);
+  getLastLoadSuccessful(): boolean {
+    return this.lastLoadSuccessful;
+  }
+
+  /**
+   * Attempts to turn password into a usable key:
+   * - If dataKey is null or new, generates metadata and remembers it for the next save.
+   * - If dataKey is found to be an existing encrypted databases, extracts metadata
+   *   from it and validates that the password matches.
+   */
+  async convertToEncryptionKey(dataKey: string | null, password: string): Promise<CryptoKey> {
+    let responseData: ArrayBuffer | null = null;
+
+    if (dataKey) {
+      responseData = await this.sendLoadData(dataKey).toPromise()
+        .catch(() => null);
+    }
+
     if (responseData === null || !isCryptoPayload(responseData)) {
       // No stored cryptotext yet, so we are free to generate a fresh key.
       this.loggerService.log('Creating new encryption key.');
@@ -91,7 +107,12 @@ export class StorageService {
    * Attempts to load data from the storage backend.
    * Returns null if no data was saved yet.
    */
-  async loadData(): Promise<DataContainer | null> {
+  loadData(): Promise<DataContainer | null> {
+    const result = this.doLoadData();
+    result.then(() => this.lastLoadSuccessful = true, () => this.lastLoadSuccessful = false);
+    return result;
+  }
+  private async doLoadData(): Promise<DataContainer | null> {
     const storageSettings = await this.storageSettingsService.getSettings();
     if (!storageSettings) {
       // We don't have a data key yet, return empty container and leave it unset.
@@ -107,10 +128,17 @@ export class StorageService {
       return Promise.resolve(null);
     }
 
-    // Decrypt (if we have a key).
+    // Decrypt (if we received a cryptotext).
     let decryptedData: ArrayBuffer;
-    if (storageSettings.encryptionKey && isCryptoPayload(responseData)) {
-      decryptedData = await decryptWithKey(responseData, storageSettings.encryptionKey);
+    if (isCryptoPayload(responseData)) {
+      if (!storageSettings.encryptionKey) {
+        return Promise.reject("Error: Data is encrypted!");
+      }
+      try {
+        decryptedData = await decryptWithKey(responseData, storageSettings.encryptionKey);
+      } catch (e) {
+        return Promise.reject("Error: Data could not be decrypted! Did the password change?");
+      }
       this.lastPasswordInfo = getPasswordInfoFromPayload(responseData);
     } else {
       decryptedData = responseData;
@@ -149,8 +177,8 @@ export class StorageService {
       .pipe(catchError(e => this.logAndRethrowAs(e, "Error loading data!")));
   }
 
-  async saveData(data: DataContainer): Promise<void> {
-    const settings = await this.storageSettingsService.getSettings();
+  async saveData(data: DataContainer, overrideSettings?: StorageSettings): Promise<void> {
+    const settings = overrideSettings || await this.storageSettingsService.getSettings();
     if (!settings) {
       return Promise.reject("No data key! Please set one in settings.");
     }
