@@ -1,6 +1,12 @@
 <h2 mat-dialog-title>Import CSV</h2>
 
 <mat-dialog-content fxLayout="column">
+  <p style="margin-top: 0;">
+    Every bank has their own CSV format. For now, support for a new bank has to be manually added.<br>
+    If your bank is not listed under "File format", please
+    <a href="https://github.com/Bone008/finance-tracker/issues/new" target="_blank">open an issue on GitHub</a>.
+  </p>
+
   <mat-form-field floatLabel="always">
     <mat-select
         name="account"

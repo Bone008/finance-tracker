@@ -7,18 +7,21 @@ import { ITransactionData } from "../../../proto/model";
 export interface FormatMapping {
   readonly requiredColumns: string[];
   readonly mappings: { [K in keyof ITransactionData]: (row: { [column: string]: string }) => any };
+  /** Optional regular expression that matches where the actual CSV header starts. */
+  readonly startPattern?: RegExp;
 }
 
 /** Utility for configuring FormatMapping instances. */
 export class FormatMappingBuilder<R> {
 
+  private startPattern: RegExp | undefined = undefined;
   private requiredColumns: string[] = [];
   private mappings: { [K in keyof ITransactionData]: (row: R) => any } = {};
 
   addMapping<K extends keyof ITransactionData>(
       /**/ transactionKey: K,
       /**/ column: keyof R,
-      /**/ converterCallback?: (rawValue: string) => ITransactionData[K]): FormatMappingBuilder<R> {
+      /**/ converterCallback?: (rawValue: string) => ITransactionData[K]): this {
     if (converterCallback) {
       this.mappings[transactionKey] = row => converterCallback(String(row[column]));
     } else {
@@ -32,7 +35,7 @@ export class FormatMappingBuilder<R> {
   addRawMapping<K extends keyof ITransactionData>(
       /**/ transactionKey: K,
       /**/ requiredColumns: (keyof R)[],
-      /**/ mappingCallback: (row: R) => ITransactionData[K]): FormatMappingBuilder<R> {
+      /**/ mappingCallback: (row: R) => ITransactionData[K]): this {
     this.mappings[transactionKey] = mappingCallback;
     this.requiredColumns.push(...<string[]>requiredColumns);
     return this;
@@ -40,8 +43,13 @@ export class FormatMappingBuilder<R> {
 
   addConstantMapping<K extends keyof ITransactionData>(
       /**/ transactionKey: K,
-      /**/ constantValue: ITransactionData[K]): FormatMappingBuilder<R> {
+      /**/ constantValue: ITransactionData[K]): this {
     this.mappings[transactionKey] = _ => constantValue;
+    return this;
+  }
+
+  skipUntilPattern(regex: RegExp): this {
+    this.startPattern = regex;
     return this;
   }
 
@@ -53,6 +61,7 @@ export class FormatMappingBuilder<R> {
       // The strong typing of R is only used for type-safe construction within
       // this builder.
       mappings: <FormatMapping['mappings']><any>this.mappings,
+      startPattern: this.startPattern,
     };
   }
 }

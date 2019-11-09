@@ -34,6 +34,7 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     })
     .build(),
   'mlp': new FormatMappingBuilder<MlpRow>()
+    .skipUntilPattern(/^"Buchungstag";"Valuta";"Auftraggeber/m)
     .addMapping("date", "Valuta", parseDate)
     .addMapping("reason", "Vorgang/Verwendungszweck", input => input.replace('\n', ''))
     .addMapping("who", "Empfänger/Zahlungspflichtiger")
@@ -51,6 +52,7 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     })
     .build(),
   'dkb': new FormatMappingBuilder<DkbRow>()
+    .skipUntilPattern(/^"Buchungstag";"Wertstellung";/m)
     .addMapping("date", "Wertstellung", parseDate)
     .addMapping("reason", "Verwendungszweck")
     .addMapping("who", "Auftraggeber / Begünstigter")

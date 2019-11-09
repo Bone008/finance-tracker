@@ -154,39 +154,39 @@ export class ImportFileComponent implements OnInit {
   }
 
   private updateFilePreview() {
-    if (this.file) {
-      const file = this.file;
-      const fileFormat = this.fileFormat;
-      this.papaService.parse(file, {
-        beforeFirstChunk: firstChunk => {
-          // Special case for MLP format: Strip preamble before header row.
-          if (fileFormat === 'mlp' && firstChunk.includes('"Buchungstag";"Valuta";"Auftraggeber')) {
-            firstChunk = firstChunk.substr(firstChunk.indexOf('"Buchungstag";"Valuta";"Auftraggeber'));
-          }
-          else if (fileFormat === 'dkb' && firstChunk.includes('"Buchungstag";"Wertstellung";')) {
-            firstChunk = firstChunk.substr(firstChunk.indexOf('"Buchungstag";"Wertstellung";'));
-          }
-          return firstChunk;
-        },
-        header: true,
-        skipEmptyLines: true,
-        encoding: this.fileEncoding,
-        complete: result => this.processFileContents(file.name, fileFormat, result),
-      });
-    } else {
-      this.resetPreview();
-    }
-  }
-
-  private processFileContents(fileName: string, fileFormat: ImportFileFormat, csvData: PapaParseResult) {
-    this.loggerService.debug('csvData', csvData);
     this.resetPreview();
+    if (!this.file) {
+      return;
+    }
 
-    const mapping = MAPPINGS_BY_FORMAT[fileFormat];
+    const mapping = MAPPINGS_BY_FORMAT[this.fileFormat];
     if (!mapping) {
       this.reportError("Invalid file format.");
       return;
     }
+
+    const file = this.file;
+    this.papaService.parse(file, {
+      beforeFirstChunk: firstChunk => {
+        if (!mapping.startPattern) return firstChunk;
+        const match = mapping.startPattern.exec(firstChunk);
+        if (!match) {
+          this.reportError("Warning: Could not detect file header, this may be the wrong file format! "
+            + "Expected header: " + String(mapping.startPattern));
+          return firstChunk;
+        }
+
+        return firstChunk.substr(match.index);
+      },
+      header: true,
+      skipEmptyLines: true,
+      encoding: this.fileEncoding,
+      complete: result => this.processFileContents(file.name, mapping, result),
+    });
+  }
+
+  private processFileContents(fileName: string, mapping: FormatMapping, csvData: PapaParseResult) {
+    this.loggerService.debug('csvData', csvData);
 
     if (!this.validateRequiredColumns(csvData.meta.fields, mapping)) {
       return;
