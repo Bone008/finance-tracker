@@ -1,5 +1,5 @@
 import * as moment from 'moment';
-import { Account, BillingInfo, BillingType, DataContainer, Date as ProtoDate, GroupData, Transaction, TransactionData } from "../../proto/model";
+import { Account, BillingInfo, BillingType, DataContainer, Date as ProtoDate, GroupData, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { momentToProtoDate, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from "../core/proto-util";
 import { maxBy, pushDeduplicate, removeByValue } from '../core/util';
 import { CurrencyService } from './currency.service';
@@ -15,6 +15,7 @@ export function createDefaultDataContainer(): DataContainer {
       new Account({ id: 1, name: 'Cash', icon: 'money', currency: 'EUR' }),
       new Account({ id: 2, name: 'Bank account', icon: 'assignment', currency: 'EUR' }),
     ],
+    userSettings: new UserSettings({ defaultAccountIdOnAdd: 1 }),
   });
 }
 
