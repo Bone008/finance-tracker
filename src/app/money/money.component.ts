@@ -72,6 +72,8 @@ export class MoneyComponent implements OnInit, OnDestroy {
     if (!this.storageSettingsService.hasSettings()) {
       this.storageSettingsService.getOrInitSettings().catch(e =>
         this.loggerService.error('Unable to perform initial load of settings.', e));
+
+      this.dialogService.openWelcome();
     }
     // Attempt refresh whenever data key changes (also initially).
     this.storageSettingsService.settings$.subscribe(() => {
@@ -144,7 +146,7 @@ export class MoneyComponent implements OnInit, OnDestroy {
   }
 
   refreshData() {
-    if (this.hasData) {
+    if (this.hasData && this.storageService.getLastLoadSuccessful()) {
       const choice = confirm("Refreshing data from the server will overwrite all unsaved changes. Are you sure?");
       if (!choice) return;
     }

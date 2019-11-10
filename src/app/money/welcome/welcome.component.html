@@ -1,0 +1,36 @@
+<h2 mat-dialog-title>Welcome to Finance Tracker!</h2>
+
+<mat-dialog-content>
+  <p style="margin-top: 0">
+    It looks like this is the first time you are using this tool. Here is a few
+    tips to help you get started:
+  </p>
+  <div class="hints-container">
+    <div class="hints-row">
+      <mat-icon>save</mat-icon>
+      <span><strong>You have to press Save manually!</strong><br>
+        <small>This will likely change in the future.</small></span>
+    </div>
+    <div class="hints-row">
+      <mat-icon>settings</mat-icon>
+      <span>Your data is stored under a <em>data key</em>, displayed on the Settings page.
+        Please write it down somewhere.<br>
+      <small>If you have already entered data on a different device, use the same data key here.</small></span>
+    </div>
+    <div class="hints-row">
+      <mat-icon>enhanced_encryption</mat-icon>
+      <span>You should set an end-to-end encryption password to make sure only you can access your database.<br>
+      <strong>Do not lose your password!</strong> There is no way to access your data if you lose it.</span>
+    </div>
+    <div class="hints-row">
+      <mat-icon>code</mat-icon>
+      <span>Finance Tracker is still in early development. If you have questions or suggestions,
+      please contact the developer <a href="https://github.com/Bone008/finance-tracker/issues" target="_blank">on GitHub</a>
+      or <a href="mailto:financetracker@bonauer.me" target="_blank">via email</a>.</span>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
+  <button mat-button mat-dialog-close color="primary">Get started</button>
+</mat-dialog-actions>

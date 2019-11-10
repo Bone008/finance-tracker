@@ -30,11 +30,12 @@ import { RulesComponent } from './rules/rules.component';
 import { SettingsComponent } from './settings/settings.component';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
+import { PresetsComponent } from './transactions/presets/presets.component';
 import { TransactionEditComponent } from './transactions/transaction-edit/transaction-edit.component';
 import { AddInlineLabelComponent } from './transactions/transaction-labels/add-inline-label.component';
 import { TransactionLabelsComponent } from './transactions/transaction-labels/transaction-labels.component';
 import { TransactionsComponent } from './transactions/transactions.component';
-import { PresetsComponent } from './transactions/presets/presets.component';
+import { WelcomeComponent } from './welcome/welcome.component';
 
 const appRoutes: Routes = [
   { path: 'overview', component: AccountsComponent, data: { title: 'Overview' } },
@@ -87,6 +88,7 @@ const appRoutes: Routes = [
     BalancesComponent,
     BankSyncComponent,
     PresetsComponent,
+    WelcomeComponent,
   ],
   entryComponents: [
     ImportFileComponent,
@@ -98,6 +100,7 @@ const appRoutes: Routes = [
     DialogSplitTransactionComponent,
     DialogLabelDominanceComponent,
     DialogStaleDataComponent,
+    WelcomeComponent,
   ],
   exports: [
     MoneyComponent,

@@ -13,6 +13,7 @@ import { RuleEditComponent, RuleEditConfig } from './rules/rule-edit/rule-edit.c
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
 import { TransactionEditComponent, TransactionEditConfig } from './transactions/transaction-edit/transaction-edit.component';
+import { WelcomeComponent } from './welcome/welcome.component';
 
 export type ConfirmableDialogRef<T> =
   MatDialogRef<T, boolean> & {
@@ -33,6 +34,10 @@ export type ConfirmableDialogRef<T> =
 export class DialogService {
 
   constructor(private readonly matDialog: MatDialog) { }
+
+  openWelcome(): MatDialogRef<WelcomeComponent> {
+    return this.matDialog.open(WelcomeComponent);
+  }
 
   openStaleData(): ConfirmableDialogRef<DialogStaleDataComponent> {
     return this.openConfirmable(DialogStaleDataComponent);

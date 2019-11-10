@@ -1,0 +1,20 @@
+.mat-dialog-content {
+  max-width: 650px;
+  line-height: 140%;
+}
+
+.hints-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 0.8em;
+}
+
+.hints-row .mat-icon {
+  margin-right: 0.5em;
+  color: rgba(0,0,0, 0.66);
+}
+
+.hints-row small {
+  color: rgba(0,0,0, 0.75);
+}
