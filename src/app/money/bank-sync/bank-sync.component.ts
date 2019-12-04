@@ -7,6 +7,7 @@ import { RequiredProto } from 'src/app/core/proto-util';
 import { Account, BankSyncSettings, IBankSyncSettings } from 'src/proto/model';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
+import { StorageSettingsService } from '../storage-settings.service';
 import { BankSyncRequest, BankSyncResult, BankSyncService } from './bank-sync.service';
 
 /**
@@ -50,6 +51,7 @@ export class BankSyncComponent implements OnInit {
   constructor(
     private readonly bankSyncService: BankSyncService,
     private readonly dataService: DataService,
+    private readonly storageSettingsService: StorageSettingsService,
     private readonly dialogService: DialogService
   ) {
     this.allAccounts$ = this.dataService.accounts$;
@@ -144,8 +146,6 @@ export class BankSyncComponent implements OnInit {
 
   private saveSyncSettings(bankSync: IBankSyncSettings) {
     const newSettings = new BankSyncSettings(bankSync);
-    // Clear password, we don't want to store it before e2e encryption is enabled.
-    newSettings.loginPassword = '';
     this.dataService.getUserSettings().bankSync = newSettings;
   }
 
