@@ -6,9 +6,14 @@
   <!-- Note: No flex layout here to retain box layout / collapsing margins / hr, etc. -->
   <mat-card-content>
     <p>
-      The data key identifies your personal finance database when syncing it
-      to the server. To access your data on a different device, enter this key
-      in the settings of that device.
+      The data key identifies your personal finance database when syncing it to the server.
+      To access your data on a different device, enter this key in the settings of that device.
+    </p>
+    <p>
+      By setting an end-to-end encryption password, you ensure that only you can access your database.
+      <strong>Do not lose your password!</strong> There is no way to access your data if you lose it.
+      Please use a strong password and take note of it in a secure location, preferably by using a
+      password manager.
     </p>
     <form #settingsForm="ngForm" action="#" (ngSubmit)="onSubmit()" fxLayout="column" fxLayoutAlign="start start">
       <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
@@ -88,6 +93,10 @@
       <a href="https://github.com/Bone008/finance-tracker/tree/master/src/proto" target="_blank">
         proto message types on GitHub.
       </a>
+    </p>
+    <p>
+      Backups are <a href="https://github.com/Bone008/finance-tracker/issues/174" target="_blank">currently</a>
+      not encrypted.
     </p>
     <button
         mat-raised-button
