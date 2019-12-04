@@ -97,7 +97,6 @@
                 step="0.01"
                 [ngModel]="getAbsoluteAmount() || null"
                 (ngModelChange)="setAmount($event)"
-                [ngModelOptions]="{updateOn: 'blur'}"
                 [required]="editMode !== 'preset' || (presetData && !presetData.allowModification)"
                 placeholder="Amount">
             <span matSuffix>&nbsp;{{getCurrencySymbol()}}</span>
