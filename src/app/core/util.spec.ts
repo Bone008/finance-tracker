@@ -36,4 +36,21 @@ describe('splitQuotedString', () => {
     const result = splitQuotedString('foo\\"bar string" with \\"escapes\\" wow"');
     expect(result).toEqual(['foo"bar', 'string with "escapes" wow']);
   });
+
+  it('retains backslashes', () => {
+    // Raw input: foo:\bbar\b baz
+    const result = splitQuotedString('foo:\\bbar\\b baz');
+    expect(result).toEqual(['foo:\\bbar\\b', 'baz']);
+  });
+
+  it('retains double backslashes', () => {
+    // Raw input: foo:A\\B baz
+    const result = splitQuotedString('foo:A\\\\B baz');
+    expect(result).toEqual(['foo:A\\\\B', 'baz']);
+  });
+
+  it('handles a single backslash', () => {
+    const result = splitQuotedString('\\');
+    expect(result).toEqual(['\\']);
+  });
 });

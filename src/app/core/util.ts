@@ -116,8 +116,12 @@ export function splitQuotedString(input: string, detectUnterminatedQuote = false
     } else if (!openQuote && char === ' ') {
       // Start new token.
       tokens.push('');
+    } else if (char === '\\"' || char === '\\ ') {
+      // Turn escaped control character into character literal.
+      tokens[tokens.length - 1] += char.substr(1);
     } else {
-      tokens[tokens.length - 1] += char.replace(/\\(.)/, "$1");
+      // Append all other characters unchanged, to preserve non-escaping \.
+      tokens[tokens.length - 1] += char;
     }
   }
   if (detectUnterminatedQuote && openQuote) {
