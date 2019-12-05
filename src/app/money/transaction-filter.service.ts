@@ -170,16 +170,21 @@ export class TransactionFilterService {
     return errorIndices.map(i => rawTokens[i]);
   }
 
-  /** Applies a raw filter to a collection of transactions. */
-  applyFilter(transactions: Transaction[], filter: string): Transaction[] {
+  /** Parses a raw filter and returns a predicate that can filter transactions. */
+  makeFilterPredicate(filter: string): (transaction: Transaction) => boolean {
     const rawTokens = splitQuotedString(filter);
     const [parsedFilter, errorIndices] = this.parseTokens(rawTokens);
     if (errorIndices.length > 0) {
       // Empty results on error
-      return [];
+      return transaction => false;
     } else {
-      return transactions.filter(t => this.matchesParsedFilter(t, parsedFilter));
+      return transaction => this.matchesParsedFilter(transaction, parsedFilter);
     }
+  }
+
+  /** Applies a raw filter to a collection of transactions. */
+  applyFilter(transactions: Transaction[], filter: string): Transaction[] {
+    return transactions.filter(this.makeFilterPredicate(filter));
   }
 
   /** Tests if a single transaction matches a raw filter. */

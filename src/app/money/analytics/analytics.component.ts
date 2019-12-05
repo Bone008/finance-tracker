@@ -323,12 +323,11 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     // Create a fake transaction that is billed during the bucket's month
     // and check if it would pass the date filter.
     const dummyBilling = new BillingInfo({ periodType: BillingType.MONTH });
-    const dummyTransactionList = [new Transaction({ billing: dummyBilling, single: new TransactionData() })];
+    const dummyTransaction = new Transaction({ billing: dummyBilling, single: new TransactionData() });
     for (const [key, billedTransactions] of billedBuckets.getEntries()) {
       const keyMoment = moment(key);
       dummyBilling.date = momentToProtoDate(keyMoment);
-      const result = this.filterService.applyFilter(dummyTransactionList, this.dateRestrictingFilter);
-      if (result.length === 0) {
+      if (!this.filterService.matchesFilter(dummyTransaction, this.dateRestrictingFilter)) {
         // This bucket does not pass the filter.
         billedBuckets.delete(key);
         this.hasFilteredPartiallyBilledTransactions = true;

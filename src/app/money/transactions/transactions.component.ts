@@ -66,6 +66,7 @@ export class TransactionsComponent implements AfterViewInit {
   @ViewChild(MatPaginator, { static: true })
   private paginator: MatPaginator;
   private txSubscription: Subscription;
+  private forceShowTransactions = new Set<Transaction>();
 
   constructor(
     private readonly dataService: DataService,
@@ -90,15 +91,19 @@ export class TransactionsComponent implements AfterViewInit {
     // grouping transactions while on a different page is annoying.
     this.filterState.value$.subscribe(() => {
       this.transactionsDataSource.paginator!.firstPage();
+      // No longer force any transactions to remain visible.
+      this.forceShowTransactions.clear();
     });
 
     // Listen to updates of both the data source and the filter.
     this.txSubscription = combineLatest(this.dataService.transactions$, this.filterState.value$)
       .pipe(
-        map(([transactions, filterValue]) =>
-          this.filterService.applyFilter(transactions, filterValue)),
-        map(transactions => transactions.sort(
-          (a, b) => this.compareTransactions(a, b)))
+        map(([transactions, filterValue]) => {
+          const filterPredicate = this.filterService.makeFilterPredicate(filterValue);
+          const results = transactions.filter(t => filterPredicate(t) || this.forceShowTransactions.has(t));
+          results.sort((a, b) => this.compareTransactions(a, b));
+          return results;
+        })
       )
       .subscribe(value => {
         this.transactionsDataSource.data = value;
@@ -152,6 +157,7 @@ export class TransactionsComponent implements AfterViewInit {
     this.dialogService.openTransactionEdit(transaction, MODE_ADD)
       .afterConfirmed().subscribe(() => {
         transaction.single!.created = timestampNow();
+        this.forceShowTransactions.add(transaction);
         this.dataService.addTransactions(transaction);
         this.ruleService.notifyAdded(transaction);
       });
@@ -186,6 +192,8 @@ export class TransactionsComponent implements AfterViewInit {
       newTransaction.single!.modified = now;
       data.modified = now;
 
+      this.forceShowTransactions.add(transaction);
+      this.forceShowTransactions.add(newTransaction);
       this.dataService.addTransactions(newTransaction);
       this.ruleService.notifyModified([transaction, newTransaction]);
 
@@ -270,6 +278,7 @@ export class TransactionsComponent implements AfterViewInit {
     }
 
     this.selection.clear();
+    this.forceShowTransactions.add(newTransaction);
     this.dataService.removeTransactions(transactions);
     this.dataService.addTransactions(newTransaction);
     this.ruleService.notifyModified([newTransaction]);
@@ -287,6 +296,7 @@ export class TransactionsComponent implements AfterViewInit {
       }));
 
     this.selection.deselect(transaction);
+    newTransactions.forEach(this.forceShowTransactions.add, this.forceShowTransactions);
     this.dataService.removeTransactions(transaction);
     this.dataService.addTransactions(newTransactions);
     this.ruleService.notifyModified(newTransactions);
