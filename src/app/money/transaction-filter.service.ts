@@ -21,7 +21,7 @@ const TOKEN_KEYWORDS = [
   'is', 'billing', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'iban', 'bookingtext', 'comment', 'label', 'account', 'currency'
 ].sort();
 const TOKEN_IS_KEYWORDS = [
-  'single', 'group', 'expense', 'income'
+  'single', 'group', 'expense', 'income', 'imported'
 ].sort();
 const TOKEN_BILLING_KEYWORDS = [
   'default', 'none', 'day', 'month', 'year', 'relative', 'absolute', 'individual', 'multiple'
@@ -262,6 +262,8 @@ export class TransactionFilterService {
             getTransactionAmount(transaction, this.dataService, this.currencyService) < -MONEY_EPSILON;
           case 'income': return transaction =>
             getTransactionAmount(transaction, this.dataService, this.currencyService) > MONEY_EPSILON;
+          case 'imported':
+            return (_, dataList) => dataList.some(data => data.importedRowId > 0);
           default:
             // invalid 'is' keyword
             return null;
