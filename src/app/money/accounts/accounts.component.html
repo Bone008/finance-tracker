@@ -97,6 +97,14 @@
     </span>
   </div>
   <div class="cell-buttons">
+    <a
+        routerLink="/transactions"
+        fragment="q={{getAccountFilterString(account)}}"
+        mat-icon-button
+        color="primary"
+        matTooltip="Show transactions">
+      <mat-icon>list</mat-icon>
+    </a>
     <button
         mat-icon-button
         color="primary"

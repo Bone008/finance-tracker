@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import * as moment from 'moment';
 import { BillingType, ITransactionData, Transaction, TransactionData } from "../../proto/model";
 import { protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
-import { filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
+import { escapeQuotedString, filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
 import { CurrencyService } from "./currency.service";
 import { DataService } from "./data.service";
 import { extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, MONEY_EPSILON, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
@@ -131,7 +131,7 @@ export class TransactionFilterService {
     else if (lastToken.startsWith('account:') || lastToken.startsWith('account=')) {
       continuationPrefix += lastToken.substr(0, 8);
       const accountNames = this.dataService.getCurrentAccountList()
-        .map(a => a.name.toLowerCase().replace(/(\s)/g, '\\$1'));
+        .map(account => escapeQuotedString(account.name));
       return filterFuzzyOptions(accountNames.sort(), lastToken.substr(8), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }

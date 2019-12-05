@@ -99,6 +99,11 @@ export function escapeRegex(input: string): string {
   return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
+/** Escapes a string so it is interpreted as a single literal token by splitQuotedString. */
+export function escapeQuotedString(input: string) {
+  return input.replace(/([ "])/g, '\\$1');
+}
+
 /**
  * Splits a string on spaces, respecting quotes and escape codes.
  * If detectUnterminatedQuote is true, will return null for invalid input.

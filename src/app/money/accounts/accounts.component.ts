@@ -3,7 +3,7 @@ import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { cloneMessage, moneyToNumber, protoDateToMoment, timestampToMilliseconds, timestampToMoment } from 'src/app/core/proto-util';
-import { maxBy } from 'src/app/core/util';
+import { escapeQuotedString, maxBy } from 'src/app/core/util';
 import { Account, KnownBalance, TransactionData } from 'src/proto/model';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
@@ -137,6 +137,10 @@ export class AccountsComponent implements OnInit {
 
   getAccountInfo(account: Account): AccountInfo {
     return this.accountInfosById[account.id];
+  }
+
+  getAccountFilterString(account: Account): string {
+    return 'account=' + escapeQuotedString(account.name);
   }
 
   /** Updates the accountInfosById and totalBalance field with new calculations. */
