@@ -46,6 +46,8 @@ export class LabelBreakdownComponent implements OnChanges {
 
   /** Maximum number of groups to display in charts. */
   private labelChartGroupLimits: [number, number] = [6, 6];
+  /** Remembers palette colors that were assigned for each displayed label. */
+  private labelColorsCache: { [label: string]: string } = {};
 
   constructor(
     private readonly currencyService: CurrencyService,
@@ -160,10 +162,18 @@ export class LabelBreakdownComponent implements OnChanges {
       // Sort descending by amount.
       || Math.abs(b[1]) - Math.abs(a[1]));
 
+    const entryBackgrounds = descendingEntries.map(([label, _]) => {
+      if (!this.labelColorsCache.hasOwnProperty(label)) {
+        const nextIndex = Object.keys(this.labelColorsCache).length;
+        this.labelColorsCache[label] = getPaletteColor(nextIndex);
+      }
+      return this.labelColorsCache[label];
+    });
+
     return {
       datasets: [{
         data: descendingEntries.map(entry => entry[1]),
-        backgroundColor: descendingEntries.map((_, i) => getPaletteColor(i)),
+        backgroundColor: entryBackgrounds,
       }],
       labels: descendingEntries.map(entry => entry[0]),
     };
