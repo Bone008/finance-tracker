@@ -17,6 +17,7 @@ SERVER_FILE_ENCODING = 'windows-1252'
 OUTPUT_ENCODING = 'utf-8'
 
 ACCEPTED_EXPORT_BUTTONS = ['CSV-CAMT-Format', 'CSV-Format']
+THROTTLE_DELAY_RANGE = (1, 2.5)
 
 def log_result_error(*msg):
   logging.error(' '.join(str(s) for s in msg))
@@ -31,7 +32,7 @@ def log_debug(*msg):
 
 def wait():
   log_info('(Throttling ...)')
-  time.sleep(2 + 2*random.random())
+  time.sleep(random.uniform(*THROTTLE_DELAY_RANGE))
 
 
 def to_html(response: requests.Response):
