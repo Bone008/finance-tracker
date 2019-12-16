@@ -49,13 +49,14 @@ Flight::route('POST /banksync', function() {
   }
 
   // Infer and format dates as required by Python script.
-  $fromDate = new DateTime();
+  $tz = new DateTimeZone('Europe/Berlin');
+  $fromDate = new DateTime('now', $tz);
   $fromDate->sub(new DateInterval('P' . $maxTransactionAge . 'D'));
-  $toDate = new DateTime();
+  $toDate = new DateTime('now', $tz);
   // Note: Sparkasse does not allow the "to" date to be in the future.
   
-  $fromStr = $fromDate->format('d.m.Y');
   $toStr = $toDate->format('d.m.Y');
+  $fromStr = $fromDate->format('d.m.Y');
   
   $scriptArgs = [
     PYTHON_EXECUTABLE,
