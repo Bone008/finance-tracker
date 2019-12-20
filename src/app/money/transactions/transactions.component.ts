@@ -50,7 +50,7 @@ export class TransactionsComponent implements AfterViewInit {
       preventDefault: true,
     },
     // CRUD actions.
-    { key: ['c', 'n'], command: () => this.startAddTransaction() },
+    { key: ['c', 'n', 'plus'], command: () => this.startAddTransaction() },
     { key: 'e', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startEditTransaction(this.selection.selected[0]) },
     { key: 's', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startSplitTransaction(this.selection.selected[0]) },
     { key: 'd', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startCopyTransaction(this.selection.selected[0]) },
