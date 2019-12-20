@@ -36,7 +36,14 @@ export class TransactionsComponent implements AfterViewInit {
   readonly shortcuts: ShortcutInput[] = [
     // Selection
     { key: 'ctrl + a', command: () => this.isAllSelected() || this.masterToggle(), preventDefault: true },
-    { key: 'ctrl + d', command: () => this.selection.clear(), preventDefault: true },
+    {
+      key: 'ctrl + d', command: e => {
+        if (this.selection.selected.length > 0) {
+          e.event.preventDefault();
+        }
+        this.selection.clear();
+      }
+    },
     {
       key: 'l',
       command: () => {
