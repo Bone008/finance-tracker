@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
-import { Account, DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, UserSettings } from "../../proto/model";
+import { Account, BillingInfo, DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, TransactionPreset, UserSettings } from "../../proto/model";
 import { pluralizeArgument, removeByValue } from "../core/util";
 import { MigrationsService } from "./migrations.service";
 import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
@@ -23,12 +23,14 @@ export class DataService {
   private highestImportedRowId = 0;
   private readonly accountsSubject = new BehaviorSubject<Account[]>([]);
   private readonly transactionsSubject = new BehaviorSubject<Transaction[]>([]);
+  private readonly transactionPresetsSubject = new BehaviorSubject<TransactionPreset[]>([]);
   private readonly processingRulesSubject = new BehaviorSubject<ProcessingRule[]>([]);
   private readonly globalCommentsSubject = new BehaviorSubject<GlobalComment[]>([]);
   private readonly userSettingsSubject = new BehaviorSubject<UserSettings>(new UserSettings());
 
   readonly accounts$ = this.accountsSubject.asObservable();
   readonly transactions$ = this.transactionsSubject.asObservable().pipe(debounceTime(0));
+  readonly transactionPresets$ = this.transactionPresetsSubject.asObservable();
   readonly processingRules$ = this.processingRulesSubject.asObservable();
   readonly globalComments$ = this.globalCommentsSubject.asObservable();
   readonly userSettings$ = this.userSettingsSubject.asObservable();
@@ -51,6 +53,7 @@ export class DataService {
     this.updateHighestImportedRowId();
     this.notifyAccounts();
     this.notifyTransactions();
+    this.notifyTransactionPresets();
     this.notifyProcessingRules();
     this.notifyGlobalComments();
     this.notifyUserSettings();
@@ -78,6 +81,10 @@ export class DataService {
 
   getCurrentTransactionList(): Transaction[] {
     return this.data.transactions;
+  }
+
+  getCurrentAccountList(): Account[] {
+    return this.data.accounts;
   }
 
   readonly accountFromTxDataFn = (data: TransactionData) => this.getAccountById(data.accountId);
@@ -130,7 +137,7 @@ export class DataService {
     forEachTransactionData(toAdd,
       data => this.validateImportedRowId(data.importedRowId));
 
-    this.data.transactions = this.data.transactions.concat(toAdd);
+    this.data.transactions.push(...pluralizeArgument(toAdd));
     this.notifyTransactions();
   }
 
@@ -178,6 +185,12 @@ export class DataService {
     return this.data.labelConfigs[label];
   }
 
+  /** Returns a label's configured billing info, or a default billing if unset. */
+  getLabelBilling(label: string): BillingInfo {
+    const labelConfig = this.getLabelConfig(label);
+    return (labelConfig && labelConfig.billing) || new BillingInfo();
+  }
+
   getImportedRowById(id: number): ImportedRow | null {
     return this.data.importedRows.find(row => row.id === id) || null;
   }
@@ -199,6 +212,18 @@ export class DataService {
 
   getTransactionDataReferringToImportedRow(importedRowId: number): TransactionData[] {
     return extractTransactionData(this.data.transactions).filter(data => data.importedRowId === importedRowId);
+  }
+
+  addTransactionPresets(toAdd: TransactionPreset | TransactionPreset[]) {
+    this.data.transactionPresets.push(...pluralizeArgument(toAdd));
+    this.notifyTransactionPresets();
+  }
+
+  removeTransactionPresets(toRemove: TransactionPreset | TransactionPreset[]) {
+    for (const entity of pluralizeArgument(toRemove)) {
+      removeByValue(this.data.transactionPresets, entity);
+    }
+    this.notifyTransactionPresets();
   }
 
   addProcessingRules(toAdd: ProcessingRule | ProcessingRule[]) {
@@ -234,6 +259,10 @@ export class DataService {
 
   private notifyTransactions() {
     this.transactionsSubject.next(this.data.transactions);
+  }
+
+  private notifyTransactionPresets() {
+    this.transactionPresetsSubject.next(this.data.transactionPresets);
   }
 
   private notifyProcessingRules() {

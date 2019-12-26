@@ -1,16 +1,13 @@
+<ng-keyboard-shortcuts [shortcuts]="shortcuts"></ng-keyboard-shortcuts>
+
 <mat-card class="main-card">
   <mat-card-title fxLayout="row" fxLayoutGap="10px">
     <span fxFlex>Transactions</span>
-    <button
-        (click)="startImportCsv()"
-        mat-fab
-        matTooltip="Import CSV">
-        <mat-icon>attachment</mat-icon>
-    </button>
+    <app-presets></app-presets>
     <button
         (click)="startAddTransaction()"
         mat-fab
-        matTooltip="Add transaction">
+        matTooltip="Add transaction (+) ...">
         <mat-icon>add</mat-icon>
     </button>
   </mat-card-title>
@@ -23,7 +20,8 @@
         <mat-checkbox
             (change)="$event ? masterToggle() : null"
             [checked]="selection.hasValue() && isAllSelected()"
-            [indeterminate]="selection.hasValue() && !isAllSelected()">
+            [indeterminate]="selection.hasValue() && !isAllSelected()"
+            matTooltip="Select all (Ctrl + A) / none (Ctrl + D)">
         </mat-checkbox>
         <span fxFlex></span>
         <div
@@ -46,15 +44,15 @@
         <button
             mat-icon-button
             color="primary"
-            matTooltip="Edit selected ..."
-            [disabled]="selection.selected.length !== 1 || isTransactionGroup(selection.selected[0])"
+            matTooltip="Edit selected (E) ..."
+            [disabled]="selection.selected.length !== 1 || !selection.selected[0].single"
             (click)="startEditTransaction(selection.selected[0])">
           <mat-icon>edit</mat-icon>
         </button>
         <button
             mat-icon-button
             color="primary"
-            matTooltip="Split selected ..."
+            matTooltip="Split selected (S) ..."
             [disabled]="selection.selected.length !== 1 || !selection.selected[0].single"
             (click)="startSplitTransaction(selection.selected[0])">
           <mat-icon>call_split</mat-icon>
@@ -62,7 +60,15 @@
         <button
             mat-icon-button
             color="primary"
-            [matTooltip]="getGroupTooltip(selection.selected)"
+            matTooltip="Duplicate selected (D) ..."
+            [disabled]="selection.selected.length !== 1 || !selection.selected[0].single"
+            (click)="startCopyTransaction(selection.selected[0])">
+          <mat-icon>file_copy</mat-icon>
+        </button>
+        <button
+            mat-icon-button
+            color="primary"
+            matTooltip="{{getGroupTooltip(selection.selected)}} selected (G)"
             [disabled]="!canGroup(selection.selected) && !canUngroup(selection.selected)"
             (click)="groupOrUngroupTransactions(selection.selected)">
           <mat-icon>ballot</mat-icon>
@@ -70,15 +76,7 @@
         <button
             mat-icon-button
             color="primary"
-            matTooltip="Create copy from selected ..."
-            [disabled]="selection.selected.length !== 1"
-            (click)="startCopyTransaction(selection.selected[0])">
-          <mat-icon>file_copy</mat-icon>
-        </button>
-        <button
-            mat-icon-button
-            color="primary"
-            matTooltip="Delete selected"
+            matTooltip="Delete selected (Del)"
             [disabled]="selection.selected.length === 0"
             (click)="deleteTransactions(selection.selected)">
           <mat-icon>delete</mat-icon>
@@ -98,7 +96,7 @@
         </mat-checkbox>
 
         <div class="cell-date">
-          <span [matTooltip]="getTransactionDate(transaction) | date:'medium'">
+          <span [matTooltip]="getTransactionDate(transaction) | date:'full'">
             {{getTransactionDate(transaction) | date}}
           </span>
           <span *ngIf="isTransactionGroup(transaction)" class="grouped-comment">

@@ -1,3 +1,5 @@
+<ng-keyboard-shortcuts [shortcuts]="shortcuts"></ng-keyboard-shortcuts>
+
 <mat-toolbar color="primary" class="primary-toolbar">
   <button type="button"
       fxHide.gt-sm
@@ -11,11 +13,8 @@
   <button mat-icon-button (click)="refreshData()" matTooltip="Refresh">
     <mat-icon>refresh</mat-icon>
   </button>
-  <button mat-icon-button (click)="syncData()" matTooltip="Save">
+  <button mat-icon-button (click)="syncData()" matTooltip="Save (Ctrl + S)">
     <mat-icon>save</mat-icon>
-  </button>
-  <button mat-icon-button (click)="openSettings()" matTooltip="Settings">
-    <mat-icon>settings</mat-icon>
   </button>
 </mat-toolbar>
 
@@ -46,6 +45,9 @@
       </a>
       <a mat-list-item routerLink="/comments" routerLinkActive="active" (click)="mobileQuery.matches && sidenav.close()">
         <mat-icon>message</mat-icon>&nbsp;Comments
+      </a>
+      <a mat-list-item routerLink="/settings" routerLinkActive="active" (click)="mobileQuery.matches && sidenav.close()">
+        <mat-icon>settings</mat-icon>&nbsp;Settings
       </a>
     </mat-nav-list>
   </mat-sidenav>

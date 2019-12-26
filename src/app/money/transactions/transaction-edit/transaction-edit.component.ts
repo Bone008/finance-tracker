@@ -1,7 +1,8 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
-import { Account, BillingInfo, Money, Transaction, TransactionData } from '../../../../proto/model';
+import { map } from 'rxjs/operators';
+import { Account, BillingInfo, Money, Transaction, TransactionData, TransactionPreset } from '../../../../proto/model';
 import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
 import { makeSharedDate, pushDeduplicate } from '../../../core/util';
 import { CurrencyService } from '../../currency.service';
@@ -9,6 +10,13 @@ import { DataService } from '../../data.service';
 
 export const MODE_ADD = 'add';
 export const MODE_EDIT = 'edit';
+export const MODE_PRESET = 'preset';
+
+export interface TransactionEditConfig {
+  transaction: Transaction;
+  editMode: typeof MODE_ADD | typeof MODE_EDIT | typeof MODE_PRESET;
+  preset?: TransactionPreset;
+}
 
 @Component({
   selector: 'app-transaction-edit',
@@ -16,12 +24,18 @@ export const MODE_EDIT = 'edit';
   styleUrls: ['./transaction-edit.component.css']
 })
 export class TransactionEditComponent implements OnInit {
-  readonly allAccounts$: Observable<Account[]>;
+  readonly accountCandidates$: Observable<Account[]>;
+  /**
+   * If the dialog is opened with a closed account preselected, this contains
+   * that account so it can be part of the dropdown.
+   */
+  readonly closedAccountCandidate: Account | null;
 
   transaction: Transaction;
   /** the value of transaction.single for easier access */
   singleData: TransactionData;
-  editMode: typeof MODE_ADD | typeof MODE_EDIT;
+  presetData: TransactionPreset | null;
+  editMode: typeof MODE_ADD | typeof MODE_EDIT | typeof MODE_PRESET;
 
   private _isNegative: boolean;
   get isNegative(): boolean { return this._isNegative; }
@@ -29,10 +43,14 @@ export class TransactionEditComponent implements OnInit {
     this._isNegative = value;
     // Update sign on change.
     this.setAmount(moneyToNumber(this.singleData.amount));
+
+    if (this.presetData) {
+      this.presetData.amountIsPositive = !value;
+    }
   }
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) data: { transaction: Transaction, editMode: typeof MODE_ADD | typeof MODE_EDIT },
+    @Inject(MAT_DIALOG_DATA) data: TransactionEditConfig,
     private readonly dataService: DataService,
     private readonly currencyService: CurrencyService,
     private readonly matDialogRef: MatDialogRef<TransactionEditComponent>,
@@ -40,11 +58,15 @@ export class TransactionEditComponent implements OnInit {
     if (data.transaction.dataType !== "single") {
       throw new Error("cannot edit group transactions yet");
     }
-    this.allAccounts$ = this.dataService.accounts$;
-
     this.transaction = data.transaction;
     this.singleData = data.transaction.single!;
+    this.presetData = data.preset || null;
     this.editMode = data.editMode;
+
+    this.accountCandidates$ = this.dataService.accounts$
+      .pipe(map(accounts => accounts.filter(acc => !acc.closed)));
+    this.closedAccountCandidate = this.getAccount().closed
+      ? this.getAccount() : null;
 
     if (!this.transaction.billing) {
       this.transaction.billing = new BillingInfo();
@@ -78,6 +100,9 @@ export class TransactionEditComponent implements OnInit {
   }
 
   getDate = makeSharedDate(() => {
+    if (!this.singleData.date) {
+      return null;
+    }
     return timestampToDate(this.singleData.date);
   });
 

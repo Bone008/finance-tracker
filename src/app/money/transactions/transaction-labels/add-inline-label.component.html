@@ -1,6 +1,6 @@
 <mat-form-field
-    (focusin)="setIsOpen(true)"
-    (focusout)="setIsOpen(false)"
+    (focusin)="onFocusIn()"
+    (focusout)="onFocusOut(labelAutocomplete.isOpen)"
     (click)="$event.stopPropagation()"
     floatLabel="never"
     fxFill>
@@ -38,7 +38,8 @@
   <mat-autocomplete
       #labelAutocomplete="matAutocomplete"
       autoActiveFirstOption
-      (optionSelected)="confirmAdd()">
+      (optionSelected)="confirmAdd()"
+      (closed)="onAutocompleteClose()">
     <mat-option *ngFor="let label of allLabelsFiltered$ | async" [value]="label">{{label}}</mat-option>
   </mat-autocomplete>
 </mat-form-field>

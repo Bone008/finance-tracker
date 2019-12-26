@@ -1,20 +1,19 @@
 import { ComponentType } from '@angular/cdk/portal';
 import { Injectable } from '@angular/core';
-import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
-import { Account, ProcessingRule, Transaction, TransactionData } from '../../proto/model';
+import { Account, ProcessingRule, Transaction, TransactionData, TransactionPreset } from '../../proto/model';
 import { AccountEditComponent, AccountEditConfig } from './accounts/account-edit/account-edit.component';
 import { BalancesComponent } from './accounts/balances/balances.component';
 import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
-import { DialogSettingsComponent } from './dialog-settings/dialog-settings.component';
 import { DialogStaleDataComponent } from './dialog-stale-data/dialog-stale-data.component';
+import { ImportDialogData, ImportFileComponent, ImportFileEncoding } from './import/import-file.component';
 import { RuleEditComponent, RuleEditConfig } from './rules/rule-edit/rule-edit.component';
-import { StorageSettings } from './storage-settings.service';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
-import { FormImportComponent } from './transactions/form-import/form-import.component';
-import { TransactionEditComponent } from './transactions/transaction-edit/transaction-edit.component';
+import { TransactionEditComponent, TransactionEditConfig } from './transactions/transaction-edit/transaction-edit.component';
+import { WelcomeComponent } from './welcome/welcome.component';
 
 export type ConfirmableDialogRef<T> =
   MatDialogRef<T, boolean> & {
@@ -36,18 +35,22 @@ export class DialogService {
 
   constructor(private readonly matDialog: MatDialog) { }
 
-  openSettings(storageSettings: StorageSettings): ConfirmableDialogRef<DialogSettingsComponent> {
-    return this.openConfirmable(DialogSettingsComponent, {
-      data: { storageSettings },
-    });
+  openWelcome(): MatDialogRef<WelcomeComponent> {
+    return this.matDialog.open(WelcomeComponent);
   }
 
   openStaleData(): ConfirmableDialogRef<DialogStaleDataComponent> {
     return this.openConfirmable(DialogStaleDataComponent);
   }
 
-  openFormImport(): ConfirmableDialogRef<FormImportComponent> {
-    return this.openConfirmable(FormImportComponent);
+  openAccountImport(
+    account: Account | null,
+    file?: File,
+    forcedEncoding?: ImportFileEncoding
+  ): ConfirmableDialogRef<ImportFileComponent> {
+    return this.openConfirmable(ImportFileComponent, {
+      data: <ImportDialogData>{ account, file, forcedEncoding },
+    });
   }
 
   openAccountEdit(account: Account, editMode: 'add' | 'edit')
@@ -62,10 +65,10 @@ export class DialogService {
     });
   }
 
-  openTransactionEdit(transaction: Transaction, editMode: typeof TransactionEditComponent.prototype.editMode)
+  openTransactionEdit(transaction: Transaction, editMode: TransactionEditConfig['editMode'], preset?: TransactionPreset)
     : ConfirmableDialogRef<TransactionEditComponent> {
     return this.openConfirmable(TransactionEditComponent, {
-      data: { transaction, editMode },
+      data: <TransactionEditConfig>{ transaction, editMode, preset },
     });
   }
 

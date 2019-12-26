@@ -1,11 +1,13 @@
 import { SelectionModel } from '@angular/cdk/collections';
 import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
-import { MatPaginator, MatTableDataSource } from '@angular/material';
-import { ActivatedRoute } from '@angular/router';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatTableDataSource } from '@angular/material/table';
+import { ActivatedRoute, Router } from '@angular/router';
 import * as moment from 'moment';
+import { ShortcutInput } from 'ng-keyboard-shortcuts';
 import { combineLatest, of, Subscription } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
-import { makeSharedObject } from 'src/app/core/util';
+import { map } from 'rxjs/operators';
+import { makeSharedObject, patchObject } from 'src/app/core/util';
 import { google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
@@ -18,22 +20,60 @@ import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
 
+// Extension of Transaction class to hold objects used by the view.
+interface TransactionViewCache {
+  __date?: Date;
+  __formattedNotes?: [string, string][];
+  __transferInfo?: object;
+}
+
 @Component({
   selector: 'app-transactions',
   templateUrl: './transactions.component.html',
   styleUrls: ['./transactions.component.css'],
 })
 export class TransactionsComponent implements AfterViewInit {
-  private static lastFilterValue = "";
+  readonly shortcuts: ShortcutInput[] = [
+    // Selection
+    { key: 'ctrl + a', command: () => this.isAllSelected() || this.masterToggle(), preventDefault: true },
+    {
+      key: 'ctrl + d', command: e => {
+        if (this.selection.selected.length > 0) {
+          e.event.preventDefault();
+        }
+        this.selection.clear();
+      }
+    },
+    {
+      key: 'l',
+      command: () => {
+        // Focus "add label" text field of first selected transaction.
+        // Not the Angular way, but effective.
+        const firstLabelInput = document.querySelector('.data-row.selected .add-inline-label input');
+        if (firstLabelInput instanceof HTMLElement) {
+          firstLabelInput.focus();
+        }
+      },
+      preventDefault: true,
+    },
+    // CRUD actions.
+    { key: ['c', 'n', 'plus'], command: () => this.startAddTransaction() },
+    { key: 'e', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startEditTransaction(this.selection.selected[0]) },
+    { key: 's', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startSplitTransaction(this.selection.selected[0]) },
+    { key: 'd', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startCopyTransaction(this.selection.selected[0]) },
+    { key: 'g', command: () => !this.canGroup(this.selection.selected) && !this.canUngroup(this.selection.selected) || this.groupOrUngroupTransactions(this.selection.selected) },
+    { key: 'del', command: () => this.selection.selected.length === 0 || this.deleteTransactions(this.selection.selected) },
+  ];
 
-  readonly filterState = new FilterState(TransactionsComponent.lastFilterValue);
+  readonly filterState = new FilterState();
   readonly transactionsDataSource = new MatTableDataSource<Transaction>();
   transactionsSubject = of<Transaction[]>([]);
   selection = new SelectionModel<Transaction>(true);
 
-  @ViewChild(MatPaginator)
+  @ViewChild(MatPaginator, { static: true })
   private paginator: MatPaginator;
   private txSubscription: Subscription;
+  private forceShowTransactions = new Set<Transaction>();
 
   constructor(
     private readonly dataService: DataService,
@@ -43,6 +83,7 @@ export class TransactionsComponent implements AfterViewInit {
     private readonly loggerService: LoggerService,
     private readonly dialogService: DialogService,
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
     private readonly changeDetector: ChangeDetectorRef) {
   }
 
@@ -50,28 +91,26 @@ export class TransactionsComponent implements AfterViewInit {
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsSubject = this.transactionsDataSource.connect();
 
-    // TODO Add full support for query param by also updating it when the filter changes.
-    this.route.queryParamMap.subscribe(queryParams => {
-      const queryFilter = queryParams.get('q');
-      if (queryFilter) {
-        this.filterState.setValueNow(queryFilter);
-      }
+    this.filterState.followFragment(this.route, this.router);
+
+    // Reset to first page whenever filter changes.
+    // We do NOT want this to happen when transaction list changes, otherwise
+    // grouping transactions while on a different page is annoying.
+    this.filterState.value$.subscribe(() => {
+      this.transactionsDataSource.paginator!.firstPage();
+      // No longer force any transactions to remain visible.
+      this.forceShowTransactions.clear();
     });
 
-    const filterValue$ = this.filterState.value$.pipe(
-      // Remember last received value.
-      tap(value => TransactionsComponent.lastFilterValue = value),
-      // Reset to first page whenever filter is changed.
-      tap(() => this.transactionsDataSource.paginator!.firstPage())
-    );
-
     // Listen to updates of both the data source and the filter.
-    this.txSubscription = combineLatest(this.dataService.transactions$, filterValue$)
+    this.txSubscription = combineLatest(this.dataService.transactions$, this.filterState.value$)
       .pipe(
-        map(([transactions, filterValue]) =>
-          this.filterService.applyFilter(transactions, filterValue)),
-        map(transactions => transactions.sort(
-          (a, b) => this.compareTransactions(a, b)))
+        map(([transactions, filterValue]) => {
+          const filterPredicate = this.filterService.makeFilterPredicate(filterValue);
+          const results = transactions.filter(t => filterPredicate(t) || this.forceShowTransactions.has(t));
+          results.sort((a, b) => this.compareTransactions(a, b));
+          return results;
+        })
       )
       .subscribe(value => {
         this.transactionsDataSource.data = value;
@@ -102,36 +141,12 @@ export class TransactionsComponent implements AfterViewInit {
     this.filterState.setValueNow(newFilter);
   }
 
-  startImportCsv() {
-    const dialogRef = this.dialogService.openFormImport();
-    dialogRef.afterConfirmed().subscribe(() => {
-      this.selection.clear();
-
-      const entries = dialogRef.componentInstance.entriesToImport;
-      // Store rows, which generates their ids.
-      this.dataService.addImportedRows(entries.map(e => e.row));
-      // Link transactions to their rows and store them.
-      for (let entry of entries) {
-        console.assert(entry.transaction.single != null,
-          "import should only generate single transactions");
-        entry.transaction.single!.importedRowId = entry.row.id;
-        this.dataService.addTransactions(entry.transaction);
-
-        this.selection.select(entry.transaction);
-      }
-      this.ruleService.notifyImported(entries.map(e => e.transaction));
-
-      this.loggerService.log(`Imported ${dialogRef.componentInstance.entriesToImport.length} transactions.`);
-    });
-  }
-
   /** Opens dialog to create a new transaction. */
   startAddTransaction() {
     // Adding is equivalent to copying from an empty transaction.
     this.startCopyTransaction(new Transaction({
       single: new TransactionData({
         date: timestampNow(),
-        isCash: true,
         accountId: this.dataService.getUserSettings().defaultAccountIdOnAdd,
       }),
     }));
@@ -149,6 +164,7 @@ export class TransactionsComponent implements AfterViewInit {
     this.dialogService.openTransactionEdit(transaction, MODE_ADD)
       .afterConfirmed().subscribe(() => {
         transaction.single!.created = timestampNow();
+        this.forceShowTransactions.add(transaction);
         this.dataService.addTransactions(transaction);
         this.ruleService.notifyAdded(transaction);
       });
@@ -183,6 +199,8 @@ export class TransactionsComponent implements AfterViewInit {
       newTransaction.single!.modified = now;
       data.modified = now;
 
+      this.forceShowTransactions.add(transaction);
+      this.forceShowTransactions.add(newTransaction);
       this.dataService.addTransactions(newTransaction);
       this.ruleService.notifyModified([transaction, newTransaction]);
 
@@ -236,12 +254,18 @@ export class TransactionsComponent implements AfterViewInit {
    * of all labels of its children.
    */
   groupTransactions(transactions: Transaction[]) {
-    // TODO Remove this temporary check for grouping mixed currency transactions.
-    const currencies =
-      new Set<string>(mapTransactionData(transactions, this.dataService.currencyFromTxDataFn));
-    if (currencies.size > 1) {
-      alert('Cannot group transactions with mixed currencies yet!\nComing soon ...');
-      //return;
+    let isCrossCurrencyTransfer = false;
+    if (transactions.length === 2 && isSingle(transactions[0]) && isSingle(transactions[1])
+      && getTransactionUniqueCurrency(transactions, this.dataService) === null
+      && Math.sign(moneyToNumber(transactions[0].single!.amount)) !== Math.sign(moneyToNumber(transactions[1].single!.amount))
+    ) {
+      const summedAmount = getTransactionAmount(transactions[0], this.dataService, this.currencyService)
+        + getTransactionAmount(transactions[1], this.dataService, this.currencyService);
+      isCrossCurrencyTransfer = confirm('It seems like this group could be a transfer across multiple currencies.\n'
+        + 'Do you want to treat this as a transfer?\n'
+        + 'If yes (press OK), the total amount of the group will be treated as 0.\n'
+        + 'If no (press Cancel), the total amount of the group will be '
+        + this.currencyService.format(summedAmount, this.dataService.getMainCurrency(), true) + '.');
     }
 
     const newChildren = extractTransactionData(transactions);
@@ -256,8 +280,12 @@ export class TransactionsComponent implements AfterViewInit {
         children: newChildren,
       }),
     });
+    if (isCrossCurrencyTransfer) {
+      newTransaction.group!.isCrossCurrencyTransfer = true;
+    }
 
     this.selection.clear();
+    this.forceShowTransactions.add(newTransaction);
     this.dataService.removeTransactions(transactions);
     this.dataService.addTransactions(newTransaction);
     this.ruleService.notifyModified([newTransaction]);
@@ -275,6 +303,7 @@ export class TransactionsComponent implements AfterViewInit {
       }));
 
     this.selection.deselect(transaction);
+    newTransactions.forEach(this.forceShowTransactions.add, this.forceShowTransactions);
     this.dataService.removeTransactions(transaction);
     this.dataService.addTransactions(newTransactions);
     this.ruleService.notifyModified(newTransactions);
@@ -412,9 +441,14 @@ export class TransactionsComponent implements AfterViewInit {
     return getTransactionAmount(transaction, this.dataService, this.currencyService) < -MONEY_EPSILON;
   }
 
-  getTransactionDate(transaction: Transaction): Date {
+  getTransactionDate(transaction: Transaction & TransactionViewCache): Date {
     // TODO properly create aggregate date of groups.
-    return timestampToDate(extractTransactionData(transaction)[0].date);
+    const millis = timestampToMilliseconds(extractTransactionData(transaction)[0].date);
+
+    // Fix object identity to play nice with Angular change tracking.
+    if (!transaction.__date) transaction.__date = new Date();
+    transaction.__date.setTime(millis);
+    return transaction.__date;
   }
 
   getTransactionIcon(transaction: Transaction): string {
@@ -432,7 +466,10 @@ export class TransactionsComponent implements AfterViewInit {
     return uniqueIcon || 'list';
   }
 
-  getTransferInfo(transaction: Transaction): object | null {
+  getTransferInfo(transaction: Transaction & TransactionViewCache): object | null {
+    // (Need to copy due to a bug in TypeScript intersection types.)
+    const tx = transaction;
+
     // Only allow groups with exactly 2 children ...
     if (!isGroup(transaction) || transaction.group.children.length !== 2
       // ... with different accounts
@@ -453,18 +490,23 @@ export class TransactionsComponent implements AfterViewInit {
     // Since the summed amount is ~0, we can assume that fromAmount and toAmount have the same
     // monetary value. If currencies are the same, they should also be the same number.
 
-    return {
+    const ret = {
       fromAccount: accounts[fromIndex],
       toAccount: accounts[1 - fromIndex],
       isMultiCurrency: accounts[0].currency !== accounts[1].currency,
       fromAmountFormatted: this.currencyService.format(-amounts[fromIndex], accounts[fromIndex].currency),
       toAmountFormatted: this.currencyService.format(amounts[1 - fromIndex], accounts[1 - fromIndex].currency),
     }
+
+    // Fix object identity to play nice with Angular change tracking.
+    // NOTE: DO NOT USE patchObject BECAUSE WE DO NOT WANT DEEP UPDATES OF ACCOUNT OBJECTS!
+    if (!tx.__transferInfo) tx.__transferInfo = {};
+    return Object.assign(tx.__transferInfo, ret);
   }
 
   /** Returns array of lines. */
-  formatTransactionNotes(transaction: Transaction): [string, string][] {
-    return extractTransactionData(transaction)
+  formatTransactionNotes(transaction: Transaction & TransactionViewCache): [string, string][] {
+    const ret = extractTransactionData(transaction)
       .sort((a, b) => -compareTimestamps(a.date, b.date))
       .map<[string, string]>(data => [
         (isGroup(transaction)
@@ -472,6 +514,11 @@ export class TransactionsComponent implements AfterViewInit {
           : '') + [data.who, data.reason].filter(value => !!value).join(", "),
         data.comment
       ]);
+
+    // Fix object identity to play nice with Angular change tracking.
+    if (!transaction.__formattedNotes) transaction.__formattedNotes = [];
+    patchObject(transaction.__formattedNotes, ret);
+    return transaction.__formattedNotes;
   }
 
   private getSignString(num: number): string {
@@ -489,9 +536,9 @@ export class TransactionsComponent implements AfterViewInit {
   }
 
   getGroupTooltip(selected: Transaction[]): string {
-    if (this.canGroup(selected)) return "Group selected";
-    if (this.canUngroup(selected)) return "Ungroup selected";
-    return "Group/ungroup selected";
+    if (this.canGroup(selected)) return "Group";
+    if (this.canUngroup(selected)) return "Ungroup";
+    return "Group/ungroup";
   }
 
   getSelectionSummary = makeSharedObject<object>(() => {

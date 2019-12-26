@@ -16,4 +16,28 @@ message UserSettings {
   // Main currency used throughout the app. Should automatically fall back to a sensible default
   // value if unset.
   string main_currency = 4;
+
+  // Parameters for automatic bank import.
+  BankSyncSettings bank_sync = 5;
+}
+
+message BankSyncSettings {
+  // Type of the bank exporter script.
+  string bank_type = 1;
+
+  // Base URL of the bank endpoint, including http/https.
+  string bank_url = 2;
+
+  // Credentials for bank login.
+  string login_name = 3;
+
+  // Credentials for bank login.
+  string login_password = 4;
+
+  // Number of days in the past to include in the sync.
+  int32 max_transaction_age_days = 5;
+
+  // Mapping from bank accounts to Finance Tracker account ids.
+  // Order is important, to skip a bank account, an account id of 0 can be specified.
+  repeated uint32 target_account_ids = 6;
 }

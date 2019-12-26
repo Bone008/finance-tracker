@@ -1,13 +1,13 @@
 # Finance Tracker
 
-A simple but powerful tool to keep track of your spendings. Made for power users.
+A simple but powerful tool to keep track of your spendings. All data is end-to-end encrypted and requires no registration. Made for power users.
 It is built as a Web application using Angular and the Material design library.
 
 ## User guide
 
-Users can reach the tool under [money.bonauer.me](https://money.bonauer.me/), but it is currently invite-only until it has matured further. If you are interested in testing it out early, write me a message.
+Users can reach the tool at [money.bonauer.me](https://money.bonauer.me/).
 
-Beware that there does not exist any proper user documentation yet.
+Beware that there does not exist any proper user documentation yet, but if you are interested in using the tool and need help getting started, feel free to contact me.
 
 ## Developer setup
 

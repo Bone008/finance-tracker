@@ -1,0 +1,28 @@
+.preset-dropdown-origin-wrapper {
+  position: absolute;
+  left: 0;
+  right: 66px;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  place-content: flex-end;
+  align-items: flex-end;
+}
+
+.preset-dropdown-origin {
+  flex: 0 1 400px;
+}
+
+.upsidedown {
+  transform: rotate(180deg);
+}
+
+.mat-option .mat-icon {
+  margin-right: 0;
+}
+
+.create-option {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.66) !important;
+  text-align: center;
+}

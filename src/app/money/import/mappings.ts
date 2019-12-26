@@ -1,10 +1,16 @@
-import { dateToTimestamp, numberToMoney } from "../../../core/proto-util";
+import { escapeRegex } from "src/app/core/util";
+import { dateToTimestamp, numberToMoney } from "../../core/proto-util";
 import { FormatMapping, FormatMappingBuilder } from "./format-mapping";
 
+// TODO Once we upgrade to TypeScript 3.4+, this can be rewritten to:
+// const ALL_FILE_FORMATS = ['foobar', ...] as const;
+// type FileFormat = typeof ALL_FILE_FORMATS;
+export const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs', 'deutsche_bank'];
+export type ImportFileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs' | 'deutsche_bank';
+
 /** Dictionary that contains configurations for each supported import format. */
-export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
+export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
   'ksk_camt': new FormatMappingBuilder<KskCamtRow>()
-    .addConstantMapping("isCash", false)
     .addMapping("date", "Valutadatum", parseDate)
     .addMapping("amount", "Betrag", parseAmount)
     .addMapping("reason", "Verwendungszweck")
@@ -13,7 +19,6 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     .addMapping("bookingText", "Buchungstext")
     .build(),
   'ksk_creditcard': new FormatMappingBuilder<KskCreditcardRow>()
-    .addConstantMapping("isCash", false)
     .addMapping("date", "Belegdatum", parseDate)
     .addMapping("amount", "Buchungsbetrag", parseAmount)
     .addMapping("who", "Transaktionsbeschreibung Zusatz")
@@ -35,7 +40,7 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     })
     .build(),
   'mlp': new FormatMappingBuilder<MlpRow>()
-    .addConstantMapping("isCash", false)
+    .skipUntilPattern(/^"Buchungstag";"Valuta";"Auftraggeber/m)
     .addMapping("date", "Valuta", parseDate)
     .addMapping("reason", "Vorgang/Verwendungszweck", input => input.replace('\n', ''))
     .addMapping("who", "Empfänger/Zahlungspflichtiger")
@@ -53,12 +58,49 @@ export const MAPPINGS_BY_FORMAT: { [format: string]: FormatMapping } = {
     })
     .build(),
   'dkb': new FormatMappingBuilder<DkbRow>()
-    .addConstantMapping("isCash", false)
+    .skipUntilPattern(/^"Buchungstag";"Wertstellung";/m)
     .addMapping("date", "Wertstellung", parseDate)
-    .addMapping("reason", "Verwendungszweck", input => input.replace('\n', ''))
+    .addMapping("reason", "Verwendungszweck")
     .addMapping("who", "Auftraggeber / Begünstigter")
     .addMapping("whoIdentifier", "Kontonummer")
-    .addRawMapping("amount", "Betrag (EUR)", parseAmount)
+    .addMapping("amount", "Betrag (EUR)", parseAmount)
+    .addMapping("bookingText", "Buchungstext")
+    .build(),
+  'ubs': new FormatMappingBuilder<UbsRow>()
+    .addMapping("date", "Abschluss", parseDate)
+    .addMapping("reason", "Beschreibung 3")
+    .addMapping("who", "Beschreibung 2")
+    .addMapping("bookingText", "Beschreibung 1")
+    .addRawMapping("amount", ['Belastung', 'Gutschrift'], row => {
+      const expense = row['Belastung'];
+      const income = row['Gutschrift'];
+      if (!expense && !income) {
+        throw new Error('found neither "Belastung" nor "Gutschrift"');
+      }
+      const amount = parseAmount(expense || income, "'", ".");
+      if (expense) {
+        amount.units *= -1;
+        amount.subunits *= -1;
+      }
+      return amount;
+    })
+    .build(),
+  'deutsche_bank': new FormatMappingBuilder<DeutscheBankRow>()
+    .skipUntilPattern(/^Buchungstag;Wert;Umsatzart;/m)
+    .setRowFilter(row => row['Buchungstag'] !== 'Kontostand')
+    .addMapping("date", "Wert", parseDate)
+    .addMapping("reason", "Verwendungszweck")
+    .addMapping("who", "Begünstigter / Auftraggeber")
+    .addMapping("whoIdentifier", "IBAN")
+    .addMapping("bookingText", "Umsatzart")
+    .addRawMapping("amount", ["Soll", "Haben"], row => {
+      const expense = row["Soll"];
+      const income = row["Haben"];
+      if (!expense && !income) {
+        throw new Error('found neither "Soll" nor "Haben"');
+      }
+      return parseAmount(expense || income);
+    })
     .build(),
 };
 
@@ -75,10 +117,16 @@ function parseDate(rawValue: string) {
   return dateToTimestamp(new Date(year, month - 1, day));
 }
 
-function parseAmount(rawValue: string) {
-  // Assume German nubmer formatting.
-  const num = Number(rawValue.replace(/\./g, "").replace(/,/g, "."));
-  if (isNaN(num)) throw new Error("could not parse amount: " + rawValue);
+function parseAmount(rawValue: string, groupingSep = ".", decimalSep = ",") {
+  let cleanedValue = rawValue;
+  if (groupingSep) {
+    cleanedValue = cleanedValue.replace(new RegExp(escapeRegex(groupingSep), "g"), "");
+  }
+  if (decimalSep) {
+    cleanedValue = cleanedValue.replace(new RegExp(escapeRegex(decimalSep), "g"), ".");
+  }
+  const num = Number(cleanedValue);
+  if (isNaN(num)) throw new Error("could not parse amount: " + rawValue + " / " + cleanedValue);
   return numberToMoney(num);
 }
 
@@ -149,4 +197,54 @@ interface DkbRow {
   "Gläubiger-ID": string;
   "Mandatsreferenz": string;
   "Kundenreferenz": string;
+}
+
+interface UbsRow {
+  // The first fields are only about the account that was exported from.
+  // They are joined with the actual transactions and the same in every row.
+  "Bewertungsdatum": string;
+  "Bankbeziehung": string;
+  "Portfolio": string;
+  "Produkt": string;
+  "IBAN": string;
+  "Whrg.": string;
+  "Datum von": string;
+  "Datum bis": string;
+  "Beschreibung": string;
+
+  // The following fields relate to the actual transaction.
+  "Abschluss": string;
+  "Buchungsdatum": string;
+  "Valuta": string;
+  "Beschreibung 1": string;
+  "Beschreibung 2": string;
+  "Beschreibung 3": string;
+  "Transaktions-Nr.": string;
+  "Devisenkurs zum Originalbetrag in Abrechnungswährung": string;
+  "Einzelbetrag": string;
+  "Belastung": string;
+  "Gutschrift": string;
+  "Saldo": string;
+}
+
+interface DeutscheBankRow {
+  "Buchungstag": string;
+  "Wert": string;
+  "Umsatzart": string;
+  "Begünstigter / Auftraggeber": string;
+  "Verwendungszweck": string;
+  "IBAN": string;
+  "BIC": string;
+  "Kundenreferenz": string;
+  "Mandatsreferenz ": string;
+  "Gläubiger ID": string;
+  "Fremde Gebühren": string;
+  "Betrag": string;
+  "Abweichender Empfänger": string;
+  "Anzahl der Aufträge": string;
+  "Anzahl der Schecks": string;
+  "Soll": string;
+  "Haben": string;
+  "Währung": string;
+
 }

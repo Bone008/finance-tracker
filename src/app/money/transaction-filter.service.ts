@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import * as moment from 'moment';
 import { BillingType, ITransactionData, Transaction, TransactionData } from "../../proto/model";
 import { protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
-import { filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
+import { escapeQuotedString, filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
 import { CurrencyService } from "./currency.service";
 import { DataService } from "./data.service";
 import { extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, MONEY_EPSILON, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
@@ -18,10 +18,10 @@ const TOKEN_REGEX = /^(\w+)(:|=|<=?|>=?)(.*)$/;
 // List of valid filter keywords used for autocomplete.
 // Note: Alphabetically sorted by calling sort() immediately after initializer.
 const TOKEN_KEYWORDS = [
-  'is', 'billing', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'iban', 'bookingtext', 'comment', 'label', 'account'
+  'is', 'billing', 'date', 'created', 'modified', 'amount', 'reason', 'who', 'iban', 'bookingtext', 'comment', 'label', 'account', 'currency'
 ].sort();
 const TOKEN_IS_KEYWORDS = [
-  'cash', 'bank', 'mixed', 'single', 'group', 'expense', 'income'
+  'single', 'group', 'expense', 'income', 'imported'
 ].sort();
 const TOKEN_BILLING_KEYWORDS = [
   'default', 'none', 'day', 'month', 'year', 'relative', 'absolute', 'individual', 'multiple'
@@ -43,6 +43,7 @@ const TOKEN_OPERATORS_BY_KEYWORD: { [keyword: string]: MatcherOperator[] } = {
   'comment': [':', '='],
   'label': [':', '='],
   'account': [':', '='],
+  'currency': [':', '='],
 };
 
 const MOMENT_YEAR_REGEX = /^\d{4}$/;
@@ -92,30 +93,59 @@ export class TransactionFilterService {
       continuationPrefix += '-';
     }
 
+    // TODO Minor issues:
+    // - Reduce code duplication by mapping from prefix to keyword handlers.
+    // - Standardize escaping of spaces for tokens, e.g. labels with spaces.
+    // - Respect start quotes entered on lastToken.
+
     // Suggest special "is:" filters.
     if (lastToken.startsWith('is:')) {
       continuationPrefix += 'is:';
       return filterFuzzyOptions(TOKEN_IS_KEYWORDS, lastToken.substr(3), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
+
     // Suggest special "billing:" filters.
     else if (lastToken.startsWith('billing:')) {
       continuationPrefix += 'billing:';
       return filterFuzzyOptions(TOKEN_BILLING_KEYWORDS, lastToken.substr(8), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
+
     // Suggest special "date:" filters.
-    else if (lastToken.startsWith('date:')) {
-      continuationPrefix += 'date:';
-      return filterFuzzyOptions(TOKEN_DATE_KEYWORDS, lastToken.substr(5), true)
+    else if (lastToken.startsWith('date:') || lastToken.startsWith('created:') || lastToken.startsWith('modified:')) {
+      const c = lastToken.indexOf(':') + 1;
+      continuationPrefix += lastToken.substr(0, c);
+      return filterFuzzyOptions(TOKEN_DATE_KEYWORDS, lastToken.substr(c), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
+
     // Suggest labels.
     else if (lastToken.startsWith('label:') || lastToken.startsWith('label=')) {
       continuationPrefix += lastToken.substr(0, 6);
       return filterFuzzyOptions(this.dataService.getAllLabels().sort(), lastToken.substr(6), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
+
+    // Suggest account names.
+    else if (lastToken.startsWith('account:') || lastToken.startsWith('account=')) {
+      continuationPrefix += lastToken.substr(0, 8);
+      const accountNames = this.dataService.getCurrentAccountList()
+        .map(account => escapeQuotedString(account.name));
+      return filterFuzzyOptions(accountNames.sort(), lastToken.substr(8), true)
+        .map(keyword => continuationPrefix + keyword + ' ');
+    }
+
+    // Suggest used currencies.
+    else if (lastToken.startsWith('currency:') || lastToken.startsWith('currency=')) {
+      continuationPrefix += lastToken.substr(0, 9);
+      const usedCurrencies = new Set<string>(
+        this.dataService.getCurrentAccountList().map(a => a.currency.toLowerCase()));
+      usedCurrencies.add('mixed');
+      return filterFuzzyOptions(Array.from(usedCurrencies).sort(), lastToken.substr(9), true)
+        .map(keyword => continuationPrefix + keyword + ' ');
+    }
+
     else {
       const keywordMatches = filterFuzzyOptions(TOKEN_KEYWORDS, lastToken);
       if (keywordMatches.length === 1) {
@@ -132,22 +162,29 @@ export class TransactionFilterService {
 
   /** Returns list of invalid tokens in the raw filter. */
   validateFilter(filter: string): string[] {
-    const rawTokens = splitQuotedString(filter);
+    const rawTokens = splitQuotedString(filter, true);
+    if (rawTokens === null) {
+      return ['Unterminated quote!'];
+    }
     const [_, errorIndices] = this.parseTokens(rawTokens);
     return errorIndices.map(i => rawTokens[i]);
   }
 
-  /** Applies a raw filter to a collection of transactions. */
-  applyFilter(transactions: Transaction[], filter: string): Transaction[] {
-    // TODO handle partially quoted tokens, such as: ="foobar" who:"Hans Wurst"
+  /** Parses a raw filter and returns a predicate that can filter transactions. */
+  makeFilterPredicate(filter: string): (transaction: Transaction) => boolean {
     const rawTokens = splitQuotedString(filter);
     const [parsedFilter, errorIndices] = this.parseTokens(rawTokens);
     if (errorIndices.length > 0) {
       // Empty results on error
-      return [];
+      return transaction => false;
     } else {
-      return transactions.filter(t => this.matchesParsedFilter(t, parsedFilter));
+      return transaction => this.matchesParsedFilter(transaction, parsedFilter);
     }
+  }
+
+  /** Applies a raw filter to a collection of transactions. */
+  applyFilter(transactions: Transaction[], filter: string): Transaction[] {
+    return transactions.filter(this.makeFilterPredicate(filter));
   }
 
   /** Tests if a single transaction matches a raw filter. */
@@ -219,15 +256,14 @@ export class TransactionFilterService {
       case 'is':
         if (operator !== ':') return null;
         switch (value.toLowerCase()) {
-          case 'cash': return (_, dataList) => dataList.some(data => data.isCash);
-          case 'bank': return (_, dataList) => dataList.some(data => !data.isCash);
-          case 'mixed': return (_, dataList) => dataList.some(data => data.isCash) && dataList.some(data => !data.isCash);
           case 'single': return isSingle;
           case 'group': return isGroup;
           case 'expense': return transaction =>
             getTransactionAmount(transaction, this.dataService, this.currencyService) < -MONEY_EPSILON;
           case 'income': return transaction =>
             getTransactionAmount(transaction, this.dataService, this.currencyService) > MONEY_EPSILON;
+          case 'imported':
+            return (_, dataList) => dataList.some(data => data.importedRowId > 0);
           default:
             // invalid 'is' keyword
             return null;
@@ -284,6 +320,9 @@ export class TransactionFilterService {
           dataList.some(data => test(this.dataService.getAccountById(data.accountId).name))
         );
 
+      case 'currency':
+        return this.makeCurrencyMatcher(value, operator);
+
       case null:
         // Generic matcher that searches all relevant fields.
         return this.makeRegexMatcher(value, operator, (test, transaction, dataList) =>
@@ -331,6 +370,30 @@ export class TransactionFilterService {
     }
   }
 
+  /** Tries to create a matcher for currencies. */
+  private makeCurrencyMatcher(value: string, operator: MatcherOperator): FilterMatcher | null {
+    if (operator !== ':' && operator !== '=') {
+      // Invalid operator.
+      return null;
+    }
+
+    if (value.toLowerCase() === 'mixed') {
+      return (_, dataList) => {
+        if (dataList.length < 2) return false; // Fast path.
+        const currencies =
+          new Set<string>(dataList.map(this.dataService.currencyFromTxDataFn));
+        return currencies.size > 1;
+      };
+    }
+    // Match currency codes and symbols by regex.
+    return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
+      dataList.some(data => {
+        const account = this.dataService.getAccountById(data.accountId);
+        return test(account.currency) || test(this.currencyService.getSymbol(account.currency));
+      })
+    );
+  }
+
   /** Tries to create a matcher for the billing field. */
   private makeBillingMatcher(value: string, operator: MatcherOperator): FilterMatcher | null {
     const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
@@ -354,10 +417,9 @@ export class TransactionFilterService {
           return billing.periodType !== BillingType.UNKNOWN && billing.periodType !== BillingType.NONE && !billing.isRelative;
         };
         case 'individual': return transaction => !!transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
-        case 'multiple': return transaction => transaction.labels.filter(label => {
-          const cfg = this.dataService.getLabelConfig(label);
-          return cfg && cfg.billing && cfg.billing.periodType !== BillingType.UNKNOWN;
-        }).length > 1;
+        case 'multiple': return transaction => transaction.labels.filter(label =>
+          this.dataService.getLabelBilling(label).periodType !== BillingType.UNKNOWN
+        ).length > 1;
         default: // ignore, handled by more generic date range matcher
       }
     }

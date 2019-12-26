@@ -1,9 +1,10 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
-import { ChartData } from 'chart.js';
+import { ChartData, ChartTooltipCallback, ChartTooltipItem } from 'chart.js';
+import { getPaletteColor } from 'src/app/core/color-util';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
-import { getRandomInt } from '../../core/util';
+import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
-import { extractAllLabels, getTransactionDominantLabels } from '../model-util';
+import { extractAllLabels, getDominantLabels, MONEY_EPSILON } from '../model-util';
 import { BilledTransaction, LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
 import { ChartElementClickEvent } from './chart.component';
 
@@ -31,15 +32,26 @@ export class LabelBreakdownComponent implements OnChanges {
   @Output()
   groupAltClick = new EventEmitter<string[]>();
 
-  /** Data for pie charts showing expenses/income by label. */
+  /** Whether there exists any data in chartData below. */
+  hasData: [boolean, boolean] = [false, false];
+  /** Data for pie charts passed to the AppChart component. */
   chartData: [ChartData, ChartData] = [{}, {}];
+  /** Tooltip config for pie charts passed to the AppChart component. */
+  chartTooltipCallbacks: [ChartTooltipCallback, ChartTooltipCallback] = [
+    this.makeChartTooltipCallbacks(0),
+    this.makeChartTooltipCallbacks(1),
+  ];
   /** List of labels that are shared by all matching transactions. */
   labelsSharedByAll: string[] = [];
 
   /** Maximum number of groups to display in charts. */
   private labelChartGroupLimits: [number, number] = [6, 6];
+  /** Remembers palette colors that were assigned for each displayed label. */
+  private labelColorsCache: { [label: string]: string } = {};
 
-  constructor(private readonly dataService: DataService) { }
+  constructor(
+    private readonly currencyService: CurrencyService,
+    private readonly dataService: DataService) { }
 
   ngOnChanges(changes: SimpleChanges) {
     this.analyzeLabelBreakdown();
@@ -110,19 +122,21 @@ export class LabelBreakdownComponent implements OnChanges {
     const expensesGroups = new KeyedNumberAggregate();
     const incomeGroups = new KeyedNumberAggregate();
     for (const billedTx of this.billedTransactionBuckets.getValuesFlat()) {
-      const dominantLabels = getTransactionDominantLabels(billedTx.source, dominanceOrder, this.labelsSharedByAll);
+      const dominantLabels = getDominantLabels(billedTx.source.labels, dominanceOrder, this.labelsSharedByAll);
       const label = dominantLabels.length === 0 ? NONE_GROUP_NAME : dominantLabels
         // TODO This may potentially lead to duplicates, but I don't care right now because it is quite unlikely.
         .map(label => collapsedNames[label] || label)
         .join(',');
 
-      if (billedTx.amount > 0) {
+      if (billedTx.amount > MONEY_EPSILON) {
         incomeGroups.add(label, billedTx.amount);
-      } else {
+      } else if (billedTx.amount < -MONEY_EPSILON) {
         expensesGroups.add(label, billedTx.amount);
       }
+      // Transactions with amount exactly 0 are ignored.
     }
 
+    this.hasData = [expensesGroups.length > 0, incomeGroups.length > 0];
     this.chartData = [
       this.generateLabelBreakdownChart(expensesGroups, this.labelChartGroupLimits[0]),
       this.generateLabelBreakdownChart(incomeGroups, this.labelChartGroupLimits[1]),
@@ -148,20 +162,45 @@ export class LabelBreakdownComponent implements OnChanges {
       // Sort descending by amount.
       || Math.abs(b[1]) - Math.abs(a[1]));
 
+    const entryBackgrounds = descendingEntries.map(([label, _]) => {
+      if (!this.labelColorsCache.hasOwnProperty(label)) {
+        const nextIndex = Object.keys(this.labelColorsCache).length;
+        this.labelColorsCache[label] = getPaletteColor(nextIndex);
+      }
+      return this.labelColorsCache[label];
+    });
+
     return {
       datasets: [{
         data: descendingEntries.map(entry => entry[1]),
-        backgroundColor: descendingEntries.map(generateColor),
+        backgroundColor: entryBackgrounds,
       }],
       labels: descendingEntries.map(entry => entry[0]),
     };
   }
 
-}
+  private makeChartTooltipCallbacks(chartIndex: 0 | 1): ChartTooltipCallback {
+    return {
+      title: (items: ChartTooltipItem[], data: ChartData) => {
+        return data.labels![items[0].index!];
+      },
+      label: (item: ChartTooltipItem, data: ChartData) => {
+        const allValues = <number[]>data.datasets![item.datasetIndex!].data;
 
-function generateColor(): string {
-  return 'rgb('
-    + getRandomInt(0, 256) + ','
-    + getRandomInt(0, 256) + ','
-    + getRandomInt(0, 256) + ')';
+        const value = allValues[item.index!];
+        const percentage = value / allValues.reduce((a, b) => a + b, 0);
+        const numMonths = this.billedTransactionBuckets.getKeys().length;
+        const perMonth = value / numMonths;
+        return [
+          this.currencyService.format(value, this.dataService.getMainCurrency()) + ' total',
+          numMonths > 1
+            ? (this.currencyService.format(perMonth, this.dataService.getMainCurrency())
+              + ` monthly mean (over ${numMonths} months)`)
+            : '',
+          (percentage * 100).toLocaleString('en-US',
+            { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' %',
+        ].filter(line => !!line);
+      },
+    }
+  }
 }

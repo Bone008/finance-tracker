@@ -16,12 +16,20 @@ type CurrencyInfoMap = { [currencyCode: string]: CurrencyInfo };
 const SUPPORTED_CURRENCIES: CurrencyInfoMap = {
   'EUR': { symbol: '€', exchangeRateToEUR: 1 },
   'USD': { symbol: '$', exchangeRateToEUR: 0.8924 },
-  'CHF': { symbol: 'Fr', exchangeRateToEUR: 0.8935 },
+  'CHF': { symbol: 'Fr', exchangeRateToEUR: 0.91 }, // Compromise with Sep 2019.
   'ILS': { symbol: '₪', exchangeRateToEUR: 0.2478 },
   'BGN': { symbol: 'лв', exchangeRateToEUR: 0.5113 },
   'RON': { symbol: 'lei', exchangeRateToEUR: 0.2121 },
   'HUF': { symbol: 'Ft', exchangeRateToEUR: 0.0031 },
   'CZK': { symbol: 'Kč', exchangeRateToEUR: 0.0392 },
+  // below: exchange rates are Jul19 - Sep19 average.
+  'GBP': { symbol: '£', exchangeRateToEUR: 1.10752 },
+  'CAD': { symbol: 'C$', exchangeRateToEUR: 0.68022 },
+  'SEK': { symbol: 'kr', exchangeRateToEUR: 0.09383 },
+  'DKK': { symbol: 'kr.', exchangeRateToEUR: 0.13393 },
+  'ISK': { symbol: 'kr', exchangeRateToEUR: 0.00721 },
+  'NOK': { symbol: 'kr', exchangeRateToEUR: 0.10156 },
+  'TRY': { symbol: '₺', exchangeRateToEUR: 0.15801 },
 };
 
 @Injectable({

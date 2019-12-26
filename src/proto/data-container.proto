@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 import "imported-row.proto";
 import "transaction.proto";
+import "transaction-preset.proto";
 import "global-comment.proto";
 import "user-settings.proto";
 import "label-config.proto";
@@ -25,4 +26,6 @@ message DataContainer {
   repeated ProcessingRule processing_rules = 7;
 
   repeated Account accounts = 8;
+
+  repeated TransactionPreset transactionPresets = 9;
 }

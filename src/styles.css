@@ -31,6 +31,10 @@ body {
   color: rgba(0,0,0,.54);
 }
 
+.error {
+  color: red;
+}
+
 .negative {
   color: #e74c3c;
 }
@@ -43,6 +47,11 @@ body {
 .amount-field input::-webkit-outer-spin-button,
 .amount-field input::-webkit-inner-spin-button {
     -webkit-appearance: none;
+}
+
+.help-icon {
+  cursor: help;
+  color: rgba(0, 0, 0, 0.5);
 }
 
 /* Middle align icons by default. */
@@ -62,7 +71,7 @@ body {
   }
   
   /* On xs screens, force dialogs to full width. */
-  .cdk-overlay-pane {
+  .money-dialog {
     max-width: none !important;
     width: 100%;
     margin: 0 10px;

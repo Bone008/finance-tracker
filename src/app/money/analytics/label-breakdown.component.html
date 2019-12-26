@@ -1,5 +1,5 @@
-<div fxLayout="row" fxLayout.xs="column" fxLayoutGap.xs="10px">
-  <div fxFlex="50" fxLayout="column">
+<div fxLayout="row" fxLayout.lt-md="column" fxLayoutGap.lt-md="10px">
+  <div fxFlex="50" fxLayout="column" [hidden]="hasData[1] && !hasData[0]">
     <h3 fxFlexAlign="center">Expenses</h3>
     <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="5px">
       <button
@@ -15,9 +15,14 @@
         Show more
       </button>
     </div>
-    <app-chart type="pie" [data]="chartData[0]" (elementClick)="onElementClick(0, $event)"></app-chart>
+    <app-chart
+        type="pie"
+        [data]="chartData[0]"
+        [tooltipCallbacks]="chartTooltipCallbacks[0]"
+        (elementClick)="onElementClick(0, $event)">
+    </app-chart>
   </div>
-  <div fxFlex="50" fxLayout="column">
+  <div fxFlex="50" fxLayout="column" [hidden]="hasData[0] && !hasData[1]">
     <h3 fxFlexAlign="center">Income</h3>
     <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="5px">
       <button
@@ -33,7 +38,12 @@
         Show more
       </button>
     </div>
-    <app-chart type="pie" [data]="chartData[1]" (elementClick)="onElementClick(1, $event)"></app-chart>
+    <app-chart
+        type="pie"
+        [data]="chartData[1]"
+        [tooltipCallbacks]="chartTooltipCallbacks[1]"
+        (elementClick)="onElementClick(1, $event)">
+    </app-chart>
   </div>
 </div>
 

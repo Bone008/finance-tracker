@@ -3,12 +3,12 @@ import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 import { cloneMessage, moneyToNumber, protoDateToMoment, timestampToMilliseconds, timestampToMoment } from 'src/app/core/proto-util';
-import { maxBy } from 'src/app/core/util';
+import { escapeQuotedString, maxBy } from 'src/app/core/util';
 import { Account, KnownBalance, TransactionData } from 'src/proto/model';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
-import { extractTransactionData } from '../model-util';
+import { extractTransactionData, MONEY_EPSILON } from '../model-util';
 
 export interface AccountInfo {
   balance: number;
@@ -23,13 +23,16 @@ export interface AccountInfo {
   styleUrls: ['./accounts.component.css']
 })
 export class AccountsComponent implements OnInit {
-  // Observable of all accounts in the db.
-  readonly accounts$: Observable<Account[]>;
-  // Observable of all unique used currencies of the accounts.
+  // Observable of all open accounts in the db.
+  readonly openAccounts$: Observable<Account[]>;
+  // Observable of all closed accounts in the db.
+  readonly closedAccounts$: Observable<Account[]>;
+  // Observable of all unique used currencies of all accounts.
   readonly usedCurrencies$: Observable<string[]>;
 
   private totalBalance: number | null = null;
   private accountInfosById: AccountInfo[] = [];
+  /** Empty subject that is updated whenever an individual account is changed. */
   private accountEditSubject = new BehaviorSubject<void>(void (0));
 
   constructor(
@@ -41,8 +44,12 @@ export class AccountsComponent implements OnInit {
     const accountsObservable = combineLatest(this.dataService.accounts$, this.accountEditSubject)
       .pipe(map(([accounts, _]) => accounts));
 
-    this.accounts$ = accountsObservable.pipe(
-      tap(accounts => this.computeAccountInfos(accounts))
+    this.openAccounts$ = accountsObservable.pipe(
+      tap(accounts => this.computeAccountInfos(accounts)),
+      map(accounts => accounts.filter(acc => !acc.closed))
+    );
+    this.closedAccounts$ = accountsObservable.pipe(
+      map(accounts => accounts.filter(acc => acc.closed))
     );
     this.usedCurrencies$ = accountsObservable.pipe(
       map(accounts => Array.from(new Set<string>(accounts.map(a => a.currency))).sort())
@@ -84,6 +91,14 @@ export class AccountsComponent implements OnInit {
       });
   }
 
+  /** Opens dialog to import transactions into an account. */
+  startImport(account: Account) {
+    this.dialogService.openAccountImport(account)
+      .afterConfirmed().subscribe(() => {
+        this.accountEditSubject.next();
+      });
+  }
+
   delete(account: Account) {
     const numReferring = this.getTxDataForAccount(account).length;
     if (numReferring > 0) {
@@ -105,12 +120,15 @@ export class AccountsComponent implements OnInit {
     return this.currencyService.getSymbol(currencyCode);
   }
 
-  isTotalBalanceNegative(): boolean { return !!this.totalBalance && this.totalBalance < 0; }
+  isTotalBalanceNegative(): boolean {
+    return !!this.totalBalance && this.totalBalance < -MONEY_EPSILON;
+  }
   formatTotalBalance(): string | null {
-    if (this.totalBalance === null || !this.getMainCurrency()) {
+    if (this.totalBalance === null) {
       return null;
     }
-    return this.currencyService.format(this.totalBalance, this.getMainCurrency());
+    // Note: Use EUR-defaulting main currency here, not the explicitly set one.
+    return this.currencyService.format(this.totalBalance, this.dataService.getMainCurrency());
   }
 
   formatBalance(account: Account): string {
@@ -121,16 +139,19 @@ export class AccountsComponent implements OnInit {
     return this.accountInfosById[account.id];
   }
 
+  getAccountFilterString(account: Account): string {
+    return 'account=' + escapeQuotedString(account.name);
+  }
+
   /** Updates the accountInfosById and totalBalance field with new calculations. */
   private computeAccountInfos(accounts: Account[]) {
     this.totalBalance = 0;
     this.accountInfosById = [];
     for (const account of accounts) {
       const info = this.computeInfo(account);
-
-      // TODO: Convert non-main currencies when calculating total balance.
-      if (account.currency === this.getMainCurrency()) {
-        this.totalBalance += info.balance;
+      if (!account.closed) {
+        this.totalBalance += this.currencyService.convertAmount(
+          info.balance, account.currency, this.dataService.getMainCurrency()) || 0;
       }
 
       this.accountInfosById[account.id] = info;

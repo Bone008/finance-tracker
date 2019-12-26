@@ -1,26 +1,12 @@
 <h2 mat-dialog-title>Import CSV</h2>
 
 <mat-dialog-content fxLayout="column">
-  <div class="mat-form-field-wrapper">
-    <label>
-      <span class="custom-field-label">Select file to import</span>
-      <input type="file" (change)="file = $event.target.files[0]">
-    </label>
-  </div>
-  <mat-form-field>
-    <mat-select [(ngModel)]="fileFormat" placeholder="File format">
-      <mat-option value="ksk_camt">Kreissparkasse CAMT</mat-option>
-      <mat-option value="ksk_creditcard">Kreissparkasse Kreditkarte</mat-option>
-      <mat-option value="mlp">MLP</mat-option>
-    </mat-select>
-  </mat-form-field>
-  <mat-form-field>
-    <mat-select [(ngModel)]="fileEncoding" placeholder="File encoding">
-      <mat-option value="utf-8">UTF-8</mat-option>
-      <mat-option value="windows-1252">Windows-1252</mat-option>
-    </mat-select>
-  </mat-form-field>
-  
+  <p style="margin-top: 0;">
+    Every bank has their own CSV format. For now, support for a new bank has to be manually added.<br>
+    If your bank is not listed under "File format", please
+    <a href="https://github.com/Bone008/finance-tracker/issues/new" target="_blank">open an issue on GitHub</a>.
+  </p>
+
   <mat-form-field floatLabel="always">
     <mat-select
         name="account"
@@ -34,6 +20,30 @@
           [value]="account">
         <mat-icon>{{account.icon}}</mat-icon>&nbsp;{{account.name}}
       </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <div class="mat-form-field-wrapper">
+    <label>
+      <span class="custom-field-label">Select file to import</span>
+      <input *ngIf="!forcedFileName" type="file" (change)="file = $event.target.files[0]">
+      <span *ngIf="forcedFileName" class="forced-file-name">{{forcedFileName}}</span>
+    </label>
+  </div>
+  <mat-form-field>
+    <mat-select [(ngModel)]="fileFormat" placeholder="File format">
+      <mat-option value="deutsche_bank">Deutsche Bank</mat-option>
+      <mat-option value="dkb">Deutsche Kreditbank AG</mat-option>
+      <mat-option value="ksk_camt">Kreissparkasse CAMT</mat-option>
+      <mat-option value="ksk_creditcard">Kreissparkasse Kreditkarte</mat-option>
+      <mat-option value="mlp">MLP</mat-option>
+      <mat-option value="ubs">UBS Group AG</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-select [(ngModel)]="fileEncoding" [disabled]="isEncodingForced" placeholder="File encoding">
+      <mat-option value="utf-8">UTF-8</mat-option>
+      <mat-option value="windows-1252">Windows-1252</mat-option>
     </mat-select>
   </mat-form-field>
 
@@ -55,7 +65,9 @@
   <button mat-button mat-dialog-close>Cancel</button>
   <button
       mat-button
-      [mat-dialog-close]="true"
+      color="primary"
       [disabled]="entriesToImport.length === 0"
-      color="primary">Import</button>
+      (click)="onSubmit()">
+    Import
+  </button>
 </mat-dialog-actions>

@@ -11,21 +11,22 @@ require_once 'lib/flight/Flight.php';
 // Exception handling, does not include parse errors.
 Flight::set('flight.log_errors', true);
 Flight::map('error', function(Exception $e) {
-	if(DEBUG_MODE) {
-		$errorData = [
-			"error" => $e->getMessage(),
-			"code" => $e->getCode(),
-			"stackTrace" => $e->getTraceAsString(),
-		];
-	} else {
-		$errorData = ["error" => "Internal server error"];
-	}
-	
-	Flight::json($errorData, 500);
-	exit(1);
+  if(DEBUG_MODE) {
+    $errorData = [
+      "error" => $e->getMessage(),
+      "code" => $e->getCode(),
+      "stackTrace" => $e->getTraceAsString(),
+    ];
+  } else {
+    $errorData = ["error" => "Internal server error"];
+  }
+
+  Flight::json($errorData, 500);
+  exit(1);
 });
 
 // Set up routes.
+require_once 'banksync.php';
 require_once 'storage.php';
 
 Flight::start();

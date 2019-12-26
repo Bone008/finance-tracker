@@ -1,0 +1,14 @@
+.transaction-age-field input {
+  text-align: right;
+}
+
+.log-container {
+  overflow: hidden;
+}
+.log-container pre {
+  overflow-x: auto;
+}
+
+::ng-deep .mat-button-toggle-label-content {
+  line-height: 36px !important;
+}

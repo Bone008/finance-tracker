@@ -1,0 +1,16 @@
+.mat-card-title {
+  height: 56px;
+}
+
+::ng-deep .password-form-field .mat-form-field-suffix {
+  position: static;
+}
+
+.password-form-field .mat-icon {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  color: green;
+}

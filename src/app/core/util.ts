@@ -62,6 +62,14 @@ export function makeSharedObject<TObject>(fn: () => TObject | null): () => TObje
 
 /** Makes sure obj contains the same values as newObj without changing its identity. */
 export function patchObject(obj: any, newObj: any) {
+  // Special case for dates.
+  if (obj instanceof Date) {
+    if (!(newObj instanceof Date)) {
+      throw new Error('tried to patch Date with non-Date object');
+    }
+    obj.setTime(newObj.getTime());
+  }
+
   // Special case for arrays: also patch length
   if (Array.isArray(obj) && Array.isArray(newObj)) {
     obj.length = newObj.length;
@@ -91,20 +99,40 @@ export function escapeRegex(input: string): string {
   return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
-export function splitQuotedString(input: string): string[] {
-  // TODO detect unterminated quotes
+/** Escapes a string so it is interpreted as a single literal token by splitQuotedString. */
+export function escapeQuotedString(input: string) {
+  return input.replace(/([ "])/g, '\\$1');
+}
 
-  // Adapted from: https://stackoverflow.com/a/18647776
-  // The g flag turns on the mode where each call to exec
-  // will search starting from the last result.
-  const regex = /[^\s"]+|"([^"]*)"/g;
-  const tokens: string[] = [];
-
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(input)) !== null) {
-    tokens.push(match[1] !== undefined ? match[1] : match[0]);
+/**
+ * Splits a string on spaces, respecting quotes and escape codes.
+ * If detectUnterminatedQuote is true, will return null for invalid input.
+ */
+export function splitQuotedString(input: string, detectUnterminatedQuote: true): string[] | null;
+export function splitQuotedString(input: string, detectUnterminatedQuote?: false): string[];
+export function splitQuotedString(input: string, detectUnterminatedQuote = false): string[] | null {
+  // Adapted from: https://stackoverflow.com/a/46946420
+  let openQuote = false;
+  let tokens = [''];
+  const matches = input.match(/\\?.|^$/g)!;
+  for (const char of matches) {
+    if (char === '"') {
+      openQuote = !openQuote;
+    } else if (!openQuote && char === ' ') {
+      // Start new token.
+      tokens.push('');
+    } else if (char === '\\"' || char === '\\ ') {
+      // Turn escaped control character into character literal.
+      tokens[tokens.length - 1] += char.substr(1);
+    } else {
+      // Append all other characters unchanged, to preserve non-escaping \.
+      tokens[tokens.length - 1] += char;
+    }
   }
-  return tokens;
+  if (detectUnterminatedQuote && openQuote) {
+    return null;
+  }
+  return tokens.filter(t => t !== '');
 }
 
 /**

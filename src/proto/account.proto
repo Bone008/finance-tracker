@@ -24,6 +24,15 @@ message Account {
 
   // Optional.
   string iban = 7;
+
+  // If the account should be considered closed.
+  bool closed = 8;
+
+  // If known, the file format to use for CSV imports of transactions.
+  string preferred_file_format = 10;
+
+  // If known, the file encoding to use for CSV imports of transactions.
+  string preferred_file_encoding = 11;
 }
 
 // Represents a recorded balance at the *end* of some day. The currency is inferred to be the same

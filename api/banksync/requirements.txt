@@ -1,0 +1,4 @@
+# Required Python libraries to be installed using pip.
+requests
+lxml
+cssselect

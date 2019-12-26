@@ -1,5 +1,5 @@
 import * as moment from 'moment';
-import { BillingInfo, BillingType, Date as ProtoDate, GroupData, Transaction, TransactionData } from "../../proto/model";
+import { Account, BillingInfo, BillingType, DataContainer, Date as ProtoDate, GroupData, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { momentToProtoDate, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from "../core/proto-util";
 import { maxBy, pushDeduplicate, removeByValue } from '../core/util';
 import { CurrencyService } from './currency.service';
@@ -7,6 +7,18 @@ import { DataService } from './data.service';
 
 /** Monetary values closer to zero than this threshold should be considered 0. */
 export const MONEY_EPSILON = 0.005;
+
+/** Creates a DataContainer filled with default values upon first visit. */
+export function createDefaultDataContainer(): DataContainer {
+  return new DataContainer({
+    accounts: [
+      new Account({ id: 1, name: 'Cash', icon: 'money', currency: 'EUR' }),
+      new Account({ id: 2, name: 'Bank account', icon: 'assignment', currency: 'EUR' }),
+    ],
+    userSettings: new UserSettings({ defaultAccountIdOnAdd: 1 }),
+  });
+}
+
 
 /** Type guard to check if a transaction has dataType 'single'. */
 export function isSingle(transaction: Transaction)
@@ -98,6 +110,11 @@ export function getTransactionAmount(transaction: Transaction,
   currencyService: CurrencyService,
   optTargetCurrency?: string
 ): number {
+  // Short-circuit: Treat as zero sum transaction if explicitly marked as such.
+  if (isGroup(transaction) && transaction.group.isCrossCurrencyTransfer) {
+    return 0;
+  }
+
   const targetCurrency = optTargetCurrency || dataService.getMainCurrency();
   return mapTransactionData(transaction, data => {
     const currency = getTransactionDataCurrency(data, dataService);
@@ -168,21 +185,21 @@ export function removeLabelFromTransaction(transaction: Transaction, label: stri
 }
 
 /**
- * Returns an ordered list of labels of a transaction that are dominant with
- * respect to a given partial order. The list may be empty.
+ * Returns an ordered subset of labels that are dominant with respect to a given
+ * partial order. The given labels and the returned subset may be empty.
  */
-export function getTransactionDominantLabels(
-  transaction: Transaction,
+export function getDominantLabels(
+  labels: string[],
   labelDominanceOrder: { [label: string]: number },
   excludedLabels: string[] = []
 ): string[] {
   // Fast path for simple cases.
-  if (transaction.labels.length <= 1 && excludedLabels.length === 0) {
-    return transaction.labels;
+  if (labels.length <= 1 && excludedLabels.length === 0) {
+    return labels;
   }
   // Get applicable labels ranked by their dominance in descending order.
   // Equally dominant labels are sorted in alphabetical order.
-  const labelInfos = transaction.labels
+  const labelInfos = labels
     .filter(label => excludedLabels.indexOf(label) === -1)
     .map(label => ({ label, dominance: labelDominanceOrder[label] || 0 }))
     .sort((a, b) => (b.dominance - a.dominance) || a.label.localeCompare(b.label));
@@ -228,20 +245,22 @@ export function resolveTransactionRawBilling(
   // Initially assume unknown (default) billing.
   let resolvedBilling = new BillingInfo({ periodType: BillingType.UNKNOWN });
 
-  // Check for individual billing config (overrides that inherited from labels).
+  // Check for individual billing config on transaction.
   if (transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN) {
     resolvedBilling = transaction.billing;
   } else {
     // Check for billing config inherited from labels.
-    // Of the dominant labels, the first present billing config will be applied
-    // and the rest ignored.
-    const dominantLabels = getTransactionDominantLabels(transaction, labelDominanceOrder);
-    for (const label of dominantLabels) {
-      const labelConfig = dataService.getLabelConfig(label);
-      if (labelConfig && labelConfig.billing && labelConfig.billing.periodType !== BillingType.UNKNOWN) {
-        resolvedBilling = labelConfig.billing;
-        break;
+    // Of the labels with present billing config, the first dominant label will
+    // be applied and the rest ignored.
+    const relevantLabels: string[] = [];
+    for (const label of transaction.labels) {
+      if (dataService.getLabelBilling(label).periodType !== BillingType.UNKNOWN) {
+        relevantLabels.push(label);
       }
+    }
+    const dominantLabels = getDominantLabels(relevantLabels, labelDominanceOrder);
+    if (dominantLabels.length > 0) {
+      resolvedBilling = dataService.getLabelBilling(dominantLabels[0]);
     }
   }
 

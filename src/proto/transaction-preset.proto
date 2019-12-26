@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+import "transaction.proto";
+
+message TransactionPreset {
+  // User-defined name of the preset. Required.
+  string name = 1;
+
+  // If true, transactions created from this preset are first presented to the
+  // user for further modification. Otherwise, they are immediately created from
+  // the preset's values only.
+  bool allow_modification = 2;
+
+  // The partially filled in transaction data. Needs to be a single transaction.
+  Transaction transaction = 3;
+
+  // If true, the preset denotes an income, even if the amount field is not set.
+  bool amount_is_positive = 4;
+
+  // Automatic, readonly value that keeps track of when this preset was first created.
+  Timestamp created = 10;
+
+  // Automatic, mutable, optional value that is updated whenever this preset is changed.
+  // Initially unset when the preset is first created.
+  Timestamp modified = 11;
+
+  // Automatic, mutable, optional value that is updated whenever this preset is used
+  // to create a transaction.
+  Timestamp last_used = 12;
+
+  // Automatic value that counts how often this preset has been used to create a transaction.
+  uint32 used_count = 13;
+}

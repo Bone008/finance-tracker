@@ -1,0 +1,102 @@
+<h2>Automatic bank import</h2>
+
+<p>
+  For supported banks, you can have Finance Tracker automatically check for new transactions and
+  import them by logging into your bank account and exporting them for you.
+  To use this feature, your bank login details have to be transmitted to the Finance Tracker server.
+  However, they are never stored outside of your locally encrypted database.
+</p>
+
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <div fxLayout="row" fxLayoutGap="25px" fxLayout.lt-md="column">
+    <div fxLayout="column">
+      <h4>Bank details</h4>
+      <mat-form-field>
+        <mat-select formControlName="bankType" value="sparkasse" placeholder="Bank type" required>
+          <mat-option value="sparkasse">Sparkasse</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <input
+            matInput
+            type="text"
+            name="bankUrl"
+            formControlName="bankUrl"
+            placeholder="Bank base URL"
+            required>
+        <mat-icon matSuffix class="help-icon" matTooltip="Specify where to find Online-Banking of your bank, for example: https://www.my-bank.com/">help</mat-icon>
+      </mat-form-field>
+      <mat-form-field>
+        <input
+            matInput
+            type="text"
+            name="loginName"
+            formControlName="loginName"
+            placeholder="Login name"
+            required>
+      </mat-form-field>
+      <mat-form-field>
+        <input
+            matInput
+            type="password"
+            name="loginPassword"
+            formControlName="loginPassword"
+            placeholder="Login PIN"
+            required>
+      </mat-form-field>
+      <mat-form-field class="transaction-age-field">
+        <input
+            matInput
+            type="number"
+            name="maxTransactionAgeDays"
+            formControlName="maxTransactionAgeDays"
+            placeholder="Transaction age"
+            min="1"
+            required>
+        <span matSuffix>&nbsp;days</span>
+      </mat-form-field>
+    </div>
+    <div fxLayout="column">
+      <h4>
+        Account mapping
+        <mat-icon class="help-icon" matTooltip="Specify which bank accounts should be imported into which Finance Tracker account, in the order they appear in the bank.">help</mat-icon>
+      </h4>
+      <fieldset formArrayName="targetAccountIds" fxLayout="column">
+        <mat-form-field *ngFor="let control of targetAccountsForm.controls; let i=index">
+          <span matPrefix>#{{i+1}}:&nbsp;&nbsp;</span>
+          <mat-select [formControlName]="i">
+              <mat-select-trigger>
+                {{control.value ? '' : 'Ignore'}}
+                <mat-icon>{{control.value ? getAccount(control.value).icon : ''}}</mat-icon>
+                {{control.value ? getAccount(control.value).name : ''}}
+              </mat-select-trigger>
+              <mat-option [value]="0">Ignore</mat-option>
+              <mat-option
+                  *ngFor="let account of allAccounts$ | async"
+                  [value]="account.id">
+                <mat-icon>{{account.icon}}</mat-icon>{{account.name}}
+              </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </fieldset>
+    </div>
+    <div class="log-container">
+      <h4>Output</h4>
+      <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
+        <button
+            mat-raised-button
+            type="submit"
+            color="primary"
+            fxFlexAlign="start"
+            [disabled]="!form.valid">
+          Start
+        </button>
+        <mat-button-toggle #viewDetailsBtn [hidden]="!syncLog">View details</mat-button-toggle>
+        <mat-spinner *ngIf="form.disabled" diameter="24"></mat-spinner>
+      </div>
+      <p class="error" [hidden]="!lastSyncError">{{lastSyncError}}</p>
+      <p [hidden]="!lastSyncSuccess">The selected accounts were successfully loaded from the bank!</p>
+      <pre *ngIf="viewDetailsBtn.checked">{{syncLog}}</pre>
+    </div>
+  </div>
+</form>
