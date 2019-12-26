@@ -102,13 +102,13 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
       return parseAmount(expense || income);
     })
     .build(),
-    
   'ing': new FormatMappingBuilder<IngRow>()
     .skipUntilPattern(/^Buchung;Valuta;/m)
     .addMapping("date", "Valuta", parseDate)
     .addMapping("reason", "Verwendungszweck")
     .addMapping("who", "Auftraggeber/Empfänger")
     .addMapping("amount", "Betrag", parseAmount)
+    .addMapping("bookingText", "Buchungstext")
     .build(),
   'n26': new FormatMappingBuilder<N26Row>()
     .addMapping("date", "Datum", row => {
@@ -119,6 +119,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("who", "Empfänger")
     .addMapping("whoIdentifier", "Kontonummer")
     .addMapping("amount", "Betrag (EUR)", row => parseAmount(row, ",","."))
+    .addMapping("bookingText", "Kategorie")
     .build(),
 };
 
