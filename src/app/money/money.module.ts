@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { NgStackFormsModule } from '@ng-stack/forms';
 import { KeyboardShortcutsModule } from 'ng-keyboard-shortcuts';
-import { PapaParseModule } from 'ngx-papaparse';
 import { MaterialModule } from '../material.module';
 import { AccountEditComponent } from './accounts/account-edit/account-edit.component';
 import { AccountsComponent } from './accounts/accounts.component';
@@ -57,7 +56,6 @@ const appRoutes: Routes = [
     NgStackFormsModule,
     HttpClientModule,
     MaterialModule,
-    PapaParseModule,
   ],
   declarations: [
     MoneyComponent,

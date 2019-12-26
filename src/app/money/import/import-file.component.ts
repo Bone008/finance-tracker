@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { PapaParseResult, PapaParseService } from 'ngx-papaparse';
+import { Papa, ParseResult } from 'ngx-papaparse';
 import { Observable } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { Account, ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../proto/model';
@@ -65,7 +65,7 @@ export class ImportFileComponent implements OnInit {
     private readonly dataService: DataService,
     private readonly ruleService: RuleService,
     private readonly loggerService: LoggerService,
-    private readonly papaService: PapaParseService,
+    private readonly papaService: Papa,
     private readonly matDialogRef: MatDialogRef<ImportFileComponent>,
   ) {
     this.allAccounts$ = this.dataService.accounts$;
@@ -180,7 +180,7 @@ export class ImportFileComponent implements OnInit {
     });
   }
 
-  private processFileContents(fileName: string, mapping: FormatMapping, csvData: PapaParseResult) {
+  private processFileContents(fileName: string, mapping: FormatMapping, csvData: ParseResult) {
     this.loggerService.debug('csvData', csvData);
 
     if (!this.validateRequiredColumns(csvData.meta.fields, mapping)) {

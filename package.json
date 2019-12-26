@@ -31,7 +31,7 @@
     "long": "^4.0.0",
     "moment": "^2.24.0",
     "ng-keyboard-shortcuts": "^8.2.0",
-    "ngx-papaparse": "^2.1.4",
+    "ngx-papaparse": "^4.0.4",
     "pako": "^1.0.10",
     "protobufjs": "^6.8.8",
     "readable-stream": "^2.3.6",
