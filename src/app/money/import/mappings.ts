@@ -5,8 +5,8 @@ import { FormatMapping, FormatMappingBuilder } from "./format-mapping";
 // TODO Once we upgrade to TypeScript 3.4+, this can be rewritten to:
 // const ALL_FILE_FORMATS = ['foobar', ...] as const;
 // type FileFormat = typeof ALL_FILE_FORMATS;
-export const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs', 'deutsche_bank'];
-export type ImportFileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs' | 'deutsche_bank';
+export const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs', 'deutsche_bank', 'ing', 'n26'];
+export type ImportFileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs' | 'deutsche_bank' | 'ing' | 'n26';
 
 /** Dictionary that contains configurations for each supported import format. */
 export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
@@ -101,6 +101,25 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
       }
       return parseAmount(expense || income);
     })
+    .build(),
+  'ing': new FormatMappingBuilder<IngRow>()
+    .skipUntilPattern(/^Buchung;Valuta;/m)
+    .addMapping("date", "Valuta", parseDate)
+    .addMapping("reason", "Verwendungszweck")
+    .addMapping("who", "Auftraggeber/Empfänger")
+    .addMapping("amount", "Betrag", parseAmount)
+    .addMapping("bookingText", "Buchungstext")
+    .build(),
+  'n26': new FormatMappingBuilder<N26Row>()
+    .addMapping("date", "Datum", row => {
+      let parts = row.split("-");
+      return dateToTimestamp(new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])))
+    })
+    .addMapping("reason", "Verwendungszweck")
+    .addMapping("who", "Empfänger")
+    .addMapping("whoIdentifier", "Kontonummer")
+    .addMapping("amount", "Betrag (EUR)", row => parseAmount(row, ",","."))
+    .addMapping("bookingText", "Kategorie")
     .build(),
 };
 
@@ -247,4 +266,28 @@ interface DeutscheBankRow {
   "Haben": string;
   "Währung": string;
 
+}
+
+interface IngRow {
+  "Buchung": string;
+  "Valuta": string;
+  "Auftraggeber/Empfänger": string;
+  "Buchungstext": string;
+  "Verwendungszweck": string;
+  "Saldo": string;
+  "Währung": string;
+  "Betrag": string;
+}
+
+interface N26Row {
+  Datum: string;
+  "Empfänger": string;
+  "Kontonummer": string;
+  "Transaktionstyp": string;
+  "Verwendungszweck": string;
+  "Kategorie": string;
+  "Betrag (EUR)": string;
+  "Betrag (Fremdwährung)": string;
+  "Fremdwährung": string;
+  "Wechselkurs": string;
 }
