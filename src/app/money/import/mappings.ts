@@ -1,5 +1,7 @@
+import * as moment from "moment";
 import { escapeRegex } from "src/app/core/util";
-import { dateToTimestamp, numberToMoney } from "../../core/proto-util";
+import { google } from "src/proto/model";
+import { momentToTimestamp, numberToMoney } from "../../core/proto-util";
 import { FormatMapping, FormatMappingBuilder } from "./format-mapping";
 
 // TODO Once we upgrade to TypeScript 3.4+, this can be rewritten to:
@@ -7,6 +9,9 @@ import { FormatMapping, FormatMappingBuilder } from "./format-mapping";
 // type FileFormat = typeof ALL_FILE_FORMATS;
 export const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs', 'deutsche_bank', 'ing', 'n26'];
 export type ImportFileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs' | 'deutsche_bank' | 'ing' | 'n26';
+
+/** Date formats accepted by parseDate. See: https://momentjs.com/docs/#/parsing/string-format/ */
+const ACCEPTED_DATE_FORMATS = ['YYYY-MM-DD', 'DD.MM.YYYY', 'DD.MM.YY'];
 
 /** Dictionary that contains configurations for each supported import format. */
 export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
@@ -111,29 +116,24 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("bookingText", "Buchungstext")
     .build(),
   'n26': new FormatMappingBuilder<N26Row>()
-    .addMapping("date", "Datum", row => {
-      let parts = row.split("-");
-      return dateToTimestamp(new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])))
-    })
+    .addMapping("date", "Datum", parseDate)
     .addMapping("reason", "Verwendungszweck")
     .addMapping("who", "Empfänger")
     .addMapping("whoIdentifier", "Kontonummer")
-    .addMapping("amount", "Betrag (EUR)", row => parseAmount(row, ",","."))
+    .addMapping("amount", "Betrag (EUR)", row => parseAmount(row, ",", "."))
     .addMapping("bookingText", "Kategorie")
     .build(),
 };
 
-const dateRegex = /^(\d\d)\.(\d\d)\.(\d\d(?:\d\d)?)$/;
-function parseDate(rawValue: string) {
-  const match = dateRegex.exec(rawValue);
-  if (match === null) throw new Error("could not parse date: " + rawValue);
-  const day = Number(match[1]);
-  const month = Number(match[2]);
-  let year = Number(match[3]);
-  if (year < 1000) {
-    year += 2000;
+function parseDate(rawValue: string): google.protobuf.Timestamp {
+  if (rawValue === '') {
+    throw new Error('Could not parse empty date!');
   }
-  return dateToTimestamp(new Date(year, month - 1, day));
+  const parsed = moment(rawValue, ACCEPTED_DATE_FORMATS, true);
+  if (!parsed.isValid()) {
+    throw new Error("Could not parse date: " + rawValue);
+  }
+  return momentToTimestamp(parsed);
 }
 
 function parseAmount(rawValue: string, groupingSep = ".", decimalSep = ",") {
