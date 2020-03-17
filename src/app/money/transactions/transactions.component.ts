@@ -4,9 +4,9 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { ActivatedRoute, Router } from '@angular/router';
 import * as moment from 'moment';
-import { ShortcutInput } from 'ng-keyboard-shortcuts';
 import { combineLatest, of, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { patchShortcuts } from 'src/app/core/keyboard-shortcuts-patch';
 import { makeSharedObject, patchObject } from 'src/app/core/util';
 import { google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
@@ -33,7 +33,7 @@ interface TransactionViewCache {
   styleUrls: ['./transactions.component.css'],
 })
 export class TransactionsComponent implements AfterViewInit {
-  readonly shortcuts: ShortcutInput[] = [
+  readonly shortcuts = patchShortcuts([
     // Selection
     { key: 'ctrl + a', command: () => this.isAllSelected() || this.masterToggle(), preventDefault: true },
     {
@@ -63,7 +63,7 @@ export class TransactionsComponent implements AfterViewInit {
     { key: 'd', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startCopyTransaction(this.selection.selected[0]) },
     { key: 'g', command: () => !this.canGroup(this.selection.selected) && !this.canUngroup(this.selection.selected) || this.groupOrUngroupTransactions(this.selection.selected) },
     { key: 'del', command: () => this.selection.selected.length === 0 || this.deleteTransactions(this.selection.selected) },
-  ];
+  ]);
 
   readonly filterState = new FilterState();
   readonly transactionsDataSource = new MatTableDataSource<Transaction>();

@@ -3,11 +3,11 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import * as moment from 'moment';
-import { ShortcutInput } from 'ng-keyboard-shortcuts';
 import { from, fromEvent, merge, of, Subject, timer } from 'rxjs';
 import { catchError, filter, map, mergeMap, switchMap, takeWhile, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { DataContainer } from 'src/proto/model';
+import { patchShortcuts } from '../core/keyboard-shortcuts-patch';
 import { LoggerService } from '../core/logger.service';
 import { timestampToDate } from '../core/proto-util';
 import { DataService } from './data.service';
@@ -22,9 +22,9 @@ import { StorageService } from './storage.service';
   styleUrls: ['./money.component.css']
 })
 export class MoneyComponent implements OnInit, OnDestroy {
-  readonly shortcuts: ShortcutInput[] = [
+  readonly shortcuts = patchShortcuts([
     { key: 'ctrl + s', command: () => this.syncData(), preventDefault: true }
-  ];
+  ]);
 
   hasData = false;
   status: string | null = null;
