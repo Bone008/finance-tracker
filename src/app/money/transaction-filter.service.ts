@@ -520,12 +520,15 @@ export class TransactionFilterService {
       return null;
     }
 
-    const subPrecision = (value.indexOf('.') !== -1 || (operator !== ':' && operator !== '='));
+    const subPrecision = (searchAmount === 0 || value.indexOf('.') !== -1 || (operator !== ':' && operator !== '='));
     // If the value is negative or 0, do a strict match considering the sign.
+    // I believe the value of exactly 0 should work in either branch, so where
+    // to put it is arbitrary.
     if (searchAmount <= 0 || operator === '=') {
       return (transaction, dataList) => {
         let amount = accessor(transaction, dataList);
-        if (!subPrecision) amount = Math.floor(amount);
+        // Round towards 0.
+        if (!subPrecision) amount = Math.trunc(amount);
         switch (operator) {
           case '<': return amount < (searchAmount - MONEY_EPSILON);
           case '<=': return amount < (searchAmount + MONEY_EPSILON);
@@ -541,7 +544,7 @@ export class TransactionFilterService {
       // Sign-agnostic matching.
       return (transaction, dataList) => {
         let absAmount = Math.abs(accessor(transaction, dataList));
-        if (!subPrecision) absAmount = Math.floor(absAmount);
+        if (!subPrecision) absAmount = Math.trunc(absAmount);
         switch (operator) {
           case '<': return absAmount < (searchAmount - MONEY_EPSILON);
           case '<=': return absAmount < (searchAmount + MONEY_EPSILON);
