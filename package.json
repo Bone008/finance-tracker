@@ -30,7 +30,7 @@
     "core-js": "^2.6.11",
     "long": "^4.0.0",
     "moment": "^2.24.0",
-    "ng-keyboard-shortcuts": "^8.2.0",
+    "ng-keyboard-shortcuts": "^8.2.5",
     "ngx-papaparse": "^4.0.4",
     "pako": "^1.0.10",
     "protobufjs": "^6.8.8",
