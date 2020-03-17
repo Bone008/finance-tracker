@@ -18,11 +18,20 @@ export function patchShortcut(shortcut: ShortcutInput): ShortcutInput {
 
   shortcut.allowIn = shortcut.allowIn || [];
   shortcut.allowIn.push(AllowIn.Input);
-  // Monkey-patch command function to filter for input targets manually, but more specifically.
+  const shouldPreventDefault = shortcut.preventDefault;
   const realCommand = shortcut.command;
+
+  // Monkey-patch command function to filter for input targets manually, but more specifically.
+  // We also need to handle preventDefault ourselves since the library applies it
+  // before the command is invoked and there is no way to undo it.
+  shortcut.preventDefault = false;
   shortcut.command = event => {
     const target = event.event.target as HTMLInputElement;
     if (!(target instanceof HTMLInputElement) || WHITELISTED_HTML_INPUT_TYPES.includes(target.type)) {
+      if (shouldPreventDefault) {
+        event.event.preventDefault();
+        event.event.stopPropagation();
+      }
       return realCommand(event);
     }
   };
