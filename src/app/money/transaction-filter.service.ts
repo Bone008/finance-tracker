@@ -524,7 +524,7 @@ export class TransactionFilterService {
     // If the value is negative or 0, do a strict match considering the sign.
     // I believe the value of exactly 0 should work in either branch, so where
     // to put it is arbitrary.
-    if (searchAmount <= 0 || operator === '=') {
+    if (searchAmount <= 0 || operator === '=' || value.startsWith('+')) {
       return (transaction, dataList) => {
         let amount = accessor(transaction, dataList);
         // Round towards 0.
