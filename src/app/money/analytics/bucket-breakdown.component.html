@@ -1,5 +1,10 @@
 <div>
-  <app-chart type="bar" [data]="monthlyChartData" (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)"></app-chart>
+  <app-chart
+      type="bar"
+      [showLegend]="false"
+      [data]="monthlyChartData"
+      (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)">
+  </app-chart>
   
   <hr>
 
@@ -11,7 +16,7 @@
       <th align="right">Expenses</th>
       <th align="right">Income</th>
     </tr>
-    <tr *ngFor="let bucket of aggregateBuckets">
+    <tr *ngFor="let bucket of aggregateBucketRows">
       <th align="left">{{bucket.name}}</th>
       <td align="right">{{bucket.numTransactions | number:'1.0-1'}}</td>
       <td align="right" class="negative">{{bucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>
@@ -28,7 +33,7 @@
       <th align="right">Income</th>
       <th align="right">Balance</th>
     </tr>
-    <tr *ngFor="let bucket of buckets">
+    <tr *ngFor="let bucket of bucketRows">
         <td align="left">{{bucket.name}}</td>
         <td align="right">{{bucket.numTransactions}}</td>
         <td align="right" class="negative">{{bucket.totalNegative | number:'1.2-2'}}&nbsp;€</td>

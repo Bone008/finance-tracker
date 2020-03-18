@@ -39,10 +39,20 @@
       Their contributions to other months are not shown.
     </p>
     <hr>
+    
+    <div *ngIf="labelsSharedByAll.length > 0">
+      <p>
+        <span>The label{{labelsSharedByAll.length === 1 ? '' : 's'}} </span>
+        <app-label *ngFor="let label of labelsSharedByAll" inline>{{label}}</app-label>
+        <span>{{labelsSharedByAll.length === 1 ? 'is' : 'are'}} not shown in the charts below, because
+          all analyzed transactions include {{labelsSharedByAll.length === 1 ? 'it' : 'them'}}.
+        </span>
+      </p>
+      <hr>
+    </div>
 
     <app-label-breakdown
-        [labelGroups]="labelGroups"
-        [billedTransactionBuckets]="billedTransactionBuckets"
+        [analysisResult]="analysisResult"
         (groupClick)="onLabelGroupClick($event, false)"
         (groupAltClick)="onLabelGroupClick($event, true)">
     </app-label-breakdown>
@@ -50,7 +60,7 @@
     <hr>
 
     <app-bucket-breakdown
-        [billedTransactionBuckets]="billedTransactionBuckets"
+        [analysisResult]="analysisResult"
         (bucketClick)="onChartBucketClick($event, false)"
         (bucketAltClick)="onChartBucketClick($event, true)">
     </app-bucket-breakdown>

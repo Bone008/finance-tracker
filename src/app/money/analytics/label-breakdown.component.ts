@@ -1,15 +1,11 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { ChartData, ChartTooltipCallback, ChartTooltipItem } from 'chart.js';
-import { getPaletteColor } from 'src/app/core/color-util';
-import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
+import { sortByAll } from 'src/app/core/util';
+import { KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
-import { extractAllLabels, getDominantLabels, MONEY_EPSILON } from '../model-util';
-import { BilledTransaction, LabelGroup, LABEL_HIERARCHY_SEPARATOR } from './analytics.component';
 import { ChartElementClickEvent } from './chart.component';
-
-const NONE_GROUP_NAME = '<none>';
-const OTHER_GROUP_NAME = '<other>';
+import { AnalysisResult, NONE_GROUP_NAME, OTHER_GROUP_NAME } from './types';
 
 @Component({
   selector: 'app-label-breakdown',
@@ -18,9 +14,7 @@ const OTHER_GROUP_NAME = '<other>';
 })
 export class LabelBreakdownComponent implements OnChanges {
   @Input()
-  labelGroups: LabelGroup[] = [];
-  @Input()
-  billedTransactionBuckets: KeyedArrayAggregate<BilledTransaction>;
+  analysisResult: AnalysisResult;
 
   /**
    * When the user clicks on any of the groups in the pie chart, emits the list
@@ -42,12 +36,12 @@ export class LabelBreakdownComponent implements OnChanges {
     this.makeChartTooltipCallbacks(1),
   ];
   /** List of labels that are shared by all matching transactions. */
-  labelsSharedByAll: string[] = [];
+  __labelsSharedByAll: string[] = [];
 
   /** Maximum number of groups to display in charts. */
   private labelChartGroupLimits: [number, number] = [6, 6];
   /** Remembers palette colors that were assigned for each displayed label. */
-  private labelColorsCache: { [label: string]: string } = {};
+  private __labelColorsCache: { [label: string]: string } = {};
 
   constructor(
     private readonly currencyService: CurrencyService,
@@ -57,6 +51,7 @@ export class LabelBreakdownComponent implements OnChanges {
     this.analyzeLabelBreakdown();
   }
 
+  // TODO move this logic to parent analytics component
   canIncreaseGroupLimit(chartIndex: number): boolean {
     return this.chartData[chartIndex].labels !== undefined
       && this.chartData[chartIndex].labels!.includes(OTHER_GROUP_NAME);
@@ -90,7 +85,7 @@ export class LabelBreakdownComponent implements OnChanges {
     } else {
       clickedLabels = clickedGroup.split(',');
     }
-    clickedLabels.unshift(...this.labelsSharedByAll);
+    clickedLabels.unshift(...this.analysisResult.excludedLabels);
 
     if (event.mouseEvent.altKey) {
       this.groupAltClick.emit(clickedLabels);
@@ -100,82 +95,30 @@ export class LabelBreakdownComponent implements OnChanges {
   }
 
   private analyzeLabelBreakdown() {
-    // Exclude labels from breakdown which every matched transaction is tagged with.
-    const flatTransactionsView = Array.from(this.billedTransactionBuckets.getValuesFlat()).map(bt => bt.source);
-    this.labelsSharedByAll = extractAllLabels(flatTransactionsView)
-      .filter(label => flatTransactionsView.every(transaction => transaction.labels.includes(label)));
-
-    // Build index of label collapse for better complexity while grouping.
-    const collapsedNames: { [fullLabel: string]: string } = {};
-    for (const group of this.labelGroups) {
-      if (group.shouldCollapse) {
-        collapsedNames[group.parentName] = group.parentName + '+';
-        for (const child of group.children) {
-          collapsedNames[group.parentName + LABEL_HIERARCHY_SEPARATOR + child] = group.parentName + '+';
-        }
-      }
-    }
-
-    const dominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
-
-    // Group by labels.
-    const expensesGroups = new KeyedNumberAggregate();
-    const incomeGroups = new KeyedNumberAggregate();
-    for (const billedTx of this.billedTransactionBuckets.getValuesFlat()) {
-      const dominantLabels = getDominantLabels(billedTx.source.labels, dominanceOrder, this.labelsSharedByAll);
-      const label = dominantLabels.length === 0 ? NONE_GROUP_NAME : dominantLabels
-        // TODO This may potentially lead to duplicates, but I don't care right now because it is quite unlikely.
-        .map(label => collapsedNames[label] || label)
-        .join(',');
-
-      if (billedTx.amount > MONEY_EPSILON) {
-        incomeGroups.add(label, billedTx.amount);
-      } else if (billedTx.amount < -MONEY_EPSILON) {
-        expensesGroups.add(label, billedTx.amount);
-      }
-      // Transactions with amount exactly 0 are ignored.
-    }
+    const expensesGroups = this.analysisResult.summedTotalExpensesByLabel;
+    const incomeGroups = this.analysisResult.summedTotalIncomeByLabel;
 
     this.hasData = [expensesGroups.length > 0, incomeGroups.length > 0];
     this.chartData = [
-      this.generateLabelBreakdownChart(expensesGroups, this.labelChartGroupLimits[0]),
-      this.generateLabelBreakdownChart(incomeGroups, this.labelChartGroupLimits[1]),
+      this.generateLabelBreakdownChart(expensesGroups),
+      this.generateLabelBreakdownChart(incomeGroups),
     ];
   }
 
-  private generateLabelBreakdownChart(groups: KeyedNumberAggregate, groupLimit: number): ChartData {
-    // Collapse smallest groups into "other".
-    if (groups.length > groupLimit) {
-      const sortedEntries = groups.getEntries().sort((a, b) => Math.abs(a[1]) - Math.abs(b[1]));
-      const otherCount = groups.length - groupLimit + 1;
-      let otherAmount = 0;
-      for (let i = 0; i < otherCount; i++) {
-        groups.delete(sortedEntries[i][0]);
-        otherAmount += sortedEntries[i][1];
-      }
-      groups.add(OTHER_GROUP_NAME, otherAmount);
-    }
-
-    const descendingEntries = groups.getEntries().sort((a, b) =>
+  private generateLabelBreakdownChart(groups: KeyedNumberAggregate): ChartData {
+    const sortedEntries = sortByAll(groups.getEntries(), [
       // Always sort other as last entry.
-      (Number(a[0] === OTHER_GROUP_NAME) - Number(b[0] === OTHER_GROUP_NAME))
-      // Sort descending by amount.
-      || Math.abs(b[1]) - Math.abs(a[1]));
-
-    const entryBackgrounds = descendingEntries.map(([label, _]) => {
-      if (!this.labelColorsCache.hasOwnProperty(label)) {
-        const nextIndex = Object.keys(this.labelColorsCache).length;
-        this.labelColorsCache[label] = getPaletteColor(nextIndex);
-      }
-      return this.labelColorsCache[label];
-    });
+      ([name, _]) => name === OTHER_GROUP_NAME,
+      ([_, amount]) => Math.abs(amount),
+    ], ['asc', 'desc']);
+    const groupBackgrounds = sortedEntries.map(([name, _]) => this.analysisResult.labelGroupColorsByName[name]);
 
     return {
       datasets: [{
-        data: descendingEntries.map(entry => entry[1]),
-        backgroundColor: entryBackgrounds,
+        data: sortedEntries.map(entry => entry[1]),
+        backgroundColor: groupBackgrounds,
       }],
-      labels: descendingEntries.map(entry => entry[0]),
+      labels: sortedEntries.map(entry => entry[0]),
     };
   }
 
@@ -189,7 +132,8 @@ export class LabelBreakdownComponent implements OnChanges {
 
         const value = allValues[item.index!];
         const percentage = value / allValues.reduce((a, b) => a + b, 0);
-        const numMonths = this.billedTransactionBuckets.getKeys().length;
+        // TODO make chart tooltip string not specific to "months"
+        const numMonths = this.analysisResult.buckets.length;
         const perMonth = value / numMonths;
         return [
           this.currencyService.format(value, this.dataService.getMainCurrency()) + ' total',

@@ -3,8 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { getPaletteColor } from 'src/app/core/color-util';
 import { LoggerService } from 'src/app/core/logger.service';
-import { escapeRegex, splitQuotedString } from 'src/app/core/util';
+import { escapeRegex, nested3ToSet, sortBy, splitQuotedString } from 'src/app/core/util';
 import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
@@ -12,12 +13,10 @@ import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { CanonicalBillingInfo, extractAllLabels, getTransactionAmount, resolveTransactionCanonicalBilling } from '../model-util';
+import { CanonicalBillingInfo, extractAllLabels, getDominantLabels, getTransactionAmount, MONEY_EPSILON, resolveTransactionCanonicalBilling } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
-
-/** The character that is used in label names to define a hierarchy. */
-export const LABEL_HIERARCHY_SEPARATOR = '/';
+import { AnalysisResult, BilledTransaction, BucketInfo, LabelGroup, LABEL_HIERARCHY_SEPARATOR, NONE_GROUP_NAME, OTHER_GROUP_NAME } from './types';
 
 @Component({
   selector: 'app-analytics',
@@ -37,17 +36,28 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   matchingTransactionCount = 0;
   hasFilteredPartiallyBilledTransactions = false;
 
+  /** List of labels that are shared by all matching transactions. */
+  labelsSharedByAll: string[] = [];
+
   /**
    * Main output of the transaction preprocessing. Contains filtered transactions
-   * billed to and split across their respective date buckets.
+   * billed to and split across their respective date buckets as well as grouped
+   * and truncated label groups.
    * Subcomponents can further process this dataset.
    */
-  billedTransactionBuckets = new KeyedArrayAggregate<BilledTransaction>();
+  analysisResult: AnalysisResult = { buckets: [], labelGroupNames: [], labelGroupColorsByName: {}, excludedLabels: [], summedTotalIncomeByLabel: new KeyedNumberAggregate(), summedTotalExpensesByLabel: new KeyedNumberAggregate() };
 
+  private txSubscription: Subscription;
   private matchingTransactions: Transaction[] = [];
   /** The part of the current filter string that performs date filtering. */
   private dateRestrictingFilter: string | null = null;
-  private txSubscription: Subscription;
+
+  // Cache built from labelGroups mapping from "foo/bar" to "foo+".
+  private collapsedLabelGroupNamesLookup: { [fullLabel: string]: string } = {};
+  /** Preprocessed buckets. */
+  private billedTransactionBuckets: BucketInfo[] = [];
+  /** Label group colors, NOT cleared across recalculations for consistency. */
+  private labelGroupColorsCache: { [label: string]: string } = {};
 
   constructor(
     private readonly dataService: DataService,
@@ -173,7 +183,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     this.matchingTransactionCount = this.matchingTransactions.length;
 
     this.analyzeLabelGroups();
-    this.analyzeMonthlyBreakdown(ignoreBilling);
+    this.analyzeLabelsSharedByAll();
+    this.analyzeBuckets(ignoreBilling);
+    this.analyzeLabelGroupTruncation();
+    this.collectAnalysisResult();
 
     let tEnd = performance.now();
     this.loggerService.debug(`analyzeTransactions: ${tEnd - tStart} ms for ${this.matchingTransactionCount} transactions`);
@@ -227,20 +240,42 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
 
     this.labelGroups = parentLabels.getEntriesSorted()
-      .filter(entry => entry[1].length > 1)
-      .map(entry => <LabelGroup>{
-        parentName: entry[0],
-        children: entry[1],
-        shouldCollapse: !AnalyticsComponent.uncollapsedLabels.has(entry[0]),
+      .filter(([_, children]) => children.length > 1)
+      .map(([parentName, children]) => <LabelGroup>{
+        parentName,
+        children,
+        shouldCollapse: !AnalyticsComponent.uncollapsedLabels.has(parentName),
       });
+
+    // Build cache.
+    this.collapsedLabelGroupNamesLookup = {};
+    const lookup = this.collapsedLabelGroupNamesLookup;
+    for (const group of this.labelGroups) {
+      if (group.shouldCollapse) {
+        lookup[group.parentName] = group.parentName + '+';
+        for (const child of group.children) {
+          lookup[group.parentName + LABEL_HIERARCHY_SEPARATOR + child] = group.parentName + '+';
+        }
+      }
+    }
   }
 
-  private analyzeMonthlyBreakdown(ignoreBilling: boolean) {
+  /** Find labels which every matched transaction is tagged with and store it in this.labelsSharedByAll. */
+  private analyzeLabelsSharedByAll() {
+    // Note that this includes transactions with billing=None. But billing is only
+    // applied afterwards when assigning buckets, which is also where the excluded
+    // labels are needed. So for simplicity we accept this inaccuracy.
+    this.labelsSharedByAll = extractAllLabels(this.matchingTransactions)
+      .filter(label => this.matchingTransactions.every(transaction => transaction.labels.includes(label)));
+  }
+
+  /** Splits transactions into date buckets according to billing settings and stores them in this.billedTransactionBuckets. */
+  private analyzeBuckets(ignoreBilling: boolean) {
     const displayUnit = 'month';
     const keyFormat = 'YYYY-MM';
 
     const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
-    const billedBuckets = new KeyedArrayAggregate<BilledTransaction>();
+    const billedTxsByBucket = new KeyedArrayAggregate<BilledTransaction>();
 
     const debugContribHistogram = new KeyedNumberAggregate();
     for (const transaction of this.matchingTransactions) {
@@ -267,9 +302,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
       const fromMoment = protoDateToMoment(billing.date);
       const toMoment = protoDateToMoment(billing.endDate);
-
-      // TODO: Handle "billing.isPeriodic" (currently completely unused).
-
       const contributingKeys: string[] = [];
       // Iterate over date units and collect their keys.
       // Start with the normalized version of fromMoment (e.g. for months,
@@ -279,38 +311,63 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         contributingKeys.push(it.format(keyFormat));
         it.add(1, displayUnit);
       }
-
       debugContribHistogram.add(contributingKeys.length + "", 1);
 
       const txAmount = getTransactionAmount(transaction, this.dataService, this.currencyService);
       // TODO: For DAY billing granularity, we may want to consider proportional contributions to the months.
       const amountPerBucket = txAmount / contributingKeys.length;
+
+      // Resolve dominant label(s) and label grouping for this transaction.
+      // Group number truncation to <other> happens in a *separate* step, because
+      // we need to sort by how much money each label group accounts for (+ and -).
+      const dominantLabels = getDominantLabels(transaction.labels, labelDominanceOrder, this.labelsSharedByAll);
+      const label = dominantLabels.length === 0 ? NONE_GROUP_NAME : dominantLabels
+        // TODO A label actually named "foo+" collides with grouped "foo/bar", but it is a quite unlikely naming convention.
+        .map(label => this.collapsedLabelGroupNamesLookup[label] || label)
+        .join(',');
+
       for (const key of contributingKeys) {
-        billedBuckets.add(key, {
+        billedTxsByBucket.add(key, {
           source: transaction,
           amount: amountPerBucket,
+          labelGroupName: label,
         });
       }
     }
 
     this.loggerService.debug("stats of # of billed months", debugContribHistogram.getEntries());
 
-    // Fill holes in billedBuckets with empty buckets.
+    // Fill holes in buckets with empty buckets.
     // Sort the keys alphanumerically as the keyFormat is big-endian.
-    const sortedKeys = billedBuckets.getKeys().sort();
+    const sortedKeys = billedTxsByBucket.getKeys().sort();
     if (sortedKeys.length > 1) {
       const last = sortedKeys[sortedKeys.length - 1];
       const it = moment(sortedKeys[0]);
       while (it.isBefore(last)) {
         it.add(1, displayUnit);
         // Make sure each date unit (e.g. month) is represented as a bucket.
-        billedBuckets.addMany(it.format(keyFormat), []);
+        billedTxsByBucket.addMany(it.format(keyFormat), []);
       }
     }
+    this.cleanBucketsByDateFilter(billedTxsByBucket);
 
-    this.cleanBucketsByDateFilter(billedBuckets);
-
-    this.billedTransactionBuckets = billedBuckets;
+    this.billedTransactionBuckets = billedTxsByBucket.getEntriesSorted().map(([name, billedTransactions]) => {
+      const positive = billedTransactions.filter(t => t.amount > MONEY_EPSILON);
+      const negative = billedTransactions.filter(t => t.amount < -MONEY_EPSILON);
+      const totalsByLabelPositive = new KeyedNumberAggregate();
+      const totalsByLabelNegative = new KeyedNumberAggregate();
+      positive.forEach(t => { totalsByLabelPositive.add(t.labelGroupName, t.amount); });
+      negative.forEach(t => { totalsByLabelNegative.add(t.labelGroupName, t.amount); });
+      const bucket: BucketInfo = {
+        name,
+        billedTransactions,
+        totalIncome: positive.map(t => t.amount).reduce((a, b) => a + b, 0),
+        totalExpenses: negative.map(t => t.amount).reduce((a, b) => a + b, 0),
+        totalIncomeByLabel: totalsByLabelPositive,
+        totalExpensesByLabel: totalsByLabelNegative,
+      };
+      return bucket;
+    });
   }
 
   // TODO: This is specialized to MONTH view, make sure to change once other granularities are supported.
@@ -335,18 +392,88 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
   }
 
-}
+  /**
+   * Checks group limits and reduces excess label groups to the "other" group.
+   * Modifies this.billedTransactionBuckets directly.
+   * Also fills in totalsByLabel per bucket.
+   */
+  private analyzeLabelGroupTruncation() {
+    const truncationLimits = [6, 6];
 
-/** Provides data about a label with sublabels (induced label hierarchy). */
-export interface LabelGroup {
-  parentName: string;
-  children: string[];
-  shouldCollapse: boolean;
-}
+    for (const aggregateProp of ['totalIncomeByLabel', 'totalExpensesByLabel'] as const) {
+      // Reduce all buckets to one total sum for each label group.
+      // We need this to sort by a label group's total "weight".
+      // This is equivalent to the final value of analysisResult.summedTotal(Expenses|Income)ByLabel,
+      // but before applying truncation.
+      const summedTotalByLabel = new KeyedNumberAggregate();
+      for (const bucket of this.billedTransactionBuckets) {
+        summedTotalByLabel.merge(bucket[aggregateProp]);
+      }
 
-/** Contains data about a transcation billed to a specific date bucket. */
-export interface BilledTransaction {
-  source: Transaction;
-  /** Contribution amount of transaction in main currency. */
-  amount: number;
+      const groupLimit = truncationLimits[0];
+      if (summedTotalByLabel.length > groupLimit) {
+        // Sort descending by absolute value.
+        const sortedEntries = sortBy(summedTotalByLabel.getEntries(), ([_, amount]) => Math.abs(amount), 'desc');
+        // If groupLimit is n, retain the first n-1 groups and make the last group <other>.
+        const groupsToTruncate = sortedEntries.slice(groupLimit - 1).map(([name, _]) => name);
+        this.loggerService.debug(groupsToTruncate);
+
+        // Replace the aggregate value of each truncated group in each bucket with <other>.
+        for (const bucket of this.billedTransactionBuckets) {
+          const aggregate = bucket[aggregateProp];
+
+          let otherAmount = 0;
+          for (const name of groupsToTruncate) {
+            const amount = aggregate.get(name);
+            if (amount !== null) {
+              aggregate.delete(name);
+              otherAmount += amount;
+            }
+          }
+          if (otherAmount !== 0) {
+            aggregate.add(OTHER_GROUP_NAME, otherAmount);
+          }
+        }
+      }
+    }
+  }
+
+  /** Gathers results of all previous steps into this.analysisResult. */
+  private collectAnalysisResult() {
+    // Extract all unique label groups appearing in any bucket and assign colors.
+    const labelGroupNamesSet = nested3ToSet(this.billedTransactionBuckets.map(
+      b => [b.totalIncomeByLabel.getKeys(), b.totalExpensesByLabel.getKeys()]));
+    const labelGroupColorsByName: { [name: string]: string } = {};
+    for (const name of labelGroupNamesSet) {
+      labelGroupColorsByName[name] = this.assignLabelGroupColor(name);
+    }
+
+    // Recompute the total sums across buckets.
+    const summedTotalIncomeByLabel = new KeyedNumberAggregate();
+    const summedTotalExpensesByLabel = new KeyedNumberAggregate();
+    for (const bucket of this.billedTransactionBuckets) {
+      summedTotalIncomeByLabel.merge(bucket.totalIncomeByLabel);
+      summedTotalExpensesByLabel.merge(bucket.totalExpensesByLabel);
+    }
+
+    this.analysisResult = {
+      labelGroupNames: Array.from(labelGroupNamesSet),
+      labelGroupColorsByName,
+      buckets: this.billedTransactionBuckets,
+      excludedLabels: this.labelsSharedByAll,
+      summedTotalIncomeByLabel,
+      summedTotalExpensesByLabel,
+    };
+  }
+
+  private assignLabelGroupColor(name: string): string {
+    if (!this.labelGroupColorsCache.hasOwnProperty(name)) {
+      const nextIndex = Object.keys(this.labelGroupColorsCache).length;
+      this.labelGroupColorsCache[name] = name === OTHER_GROUP_NAME
+        ? '#666666'
+        : getPaletteColor(nextIndex);
+    }
+    return this.labelGroupColorsCache[name];
+  }
+
 }

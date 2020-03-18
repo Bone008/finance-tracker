@@ -32,6 +32,8 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   data: ChartData;
   @Input()
   tooltipCallbacks?: ChartTooltipCallback;
+  @Input()
+  showLegend = true;
   @Output()
   readonly elementClick = new EventEmitter<ChartElementClickEvent>();
 
@@ -79,7 +81,7 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
       data: this.internalChartData,
       options: {
         maintainAspectRatio: false,
-        legend: { position: 'top' },
+        legend: { position: 'top', display: this.showLegend },
         tooltips: {
           mode: 'index',
           callbacks: Object.assign({}, defaultTooltipCallbacks, this.tooltipCallbacks),
@@ -95,6 +97,10 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
             }
           }
         },
+        scales: this.type === 'bar' || this.type === 'horizontalBar' ? {
+          xAxes: [{ stacked: true }],
+          yAxes: [{ stacked: true }],
+        } : {},
       },
     });
   }

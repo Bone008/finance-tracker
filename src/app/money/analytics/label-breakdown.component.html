@@ -46,11 +46,3 @@
     </app-chart>
   </div>
 </div>
-
-<div *ngIf="labelsSharedByAll.length > 0" class="shared-by-all-notice">
-  <span>The label{{labelsSharedByAll.length === 1 ? '' : 's'}} </span>
-  <app-label *ngFor="let label of labelsSharedByAll" inline>{{label}}</app-label>
-  <span>{{labelsSharedByAll.length === 1 ? 'is' : 'are'}} not shown in the chart above, because
-    all analyzed transactions include {{labelsSharedByAll.length === 1 ? 'it' : 'them'}}.
-  </span>
-</div>

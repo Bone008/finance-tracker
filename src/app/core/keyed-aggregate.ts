@@ -7,7 +7,8 @@ class KeyedGenericAggregate<TAggregate, TValue = TAggregate> {
 
   constructor(
     private readonly seeder: () => TAggregate,
-    private readonly aggregator: (current: TAggregate, next: TValue) => TAggregate) { }
+    private readonly aggregator: (current: TAggregate, next: TValue) => TAggregate,
+    private readonly merger: (current: TAggregate, other: TAggregate) => TAggregate) { }
 
   reset() {
     this.data = {};
@@ -31,6 +32,15 @@ class KeyedGenericAggregate<TAggregate, TValue = TAggregate> {
       intermediate = this.aggregator(intermediate, value);
     }
     this.data[key] = intermediate;
+  }
+
+  merge(otherAggregate: KeyedGenericAggregate<TAggregate, TValue>) {
+    for (const [key, value] of otherAggregate.getEntries()) {
+      if (!this.data.hasOwnProperty(key)) {
+        this.data[key] = this.seeder();
+      }
+      this.data[key] = this.merger(this.data[key], value);
+    }
   }
 
   delete(key: string) {
@@ -74,7 +84,11 @@ class KeyedGenericAggregate<TAggregate, TValue = TAggregate> {
 
 export class KeyedNumberAggregate extends KeyedGenericAggregate<number> {
   constructor() {
-    super(() => 0, (current, next) => current + next);
+    super(
+      () => 0,
+      (current, next) => current + next,
+      (current, other) => current + other
+    );
   }
 
   /** Returns a new KeyedNumberAggregate that contains only entries accepted by the given filter. */
@@ -91,7 +105,11 @@ export class KeyedNumberAggregate extends KeyedGenericAggregate<number> {
 
 export class KeyedArrayAggregate<T> extends KeyedGenericAggregate<T[], T> {
   constructor() {
-    super(() => [], (current, next) => { current.push(next); return current; });
+    super(
+      () => [],
+      (current, next) => { current.push(next); return current; },
+      (current, other) => { current.concat(other); return current; },
+    );
   }
 
   *getValuesFlat(): Iterable<T> {
@@ -105,6 +123,10 @@ export class KeyedArrayAggregate<T> extends KeyedGenericAggregate<T[], T> {
 
 export class KeyedSetAggregate<T> extends KeyedGenericAggregate<Set<T>, T> {
   constructor() {
-    super(() => new Set<T>(), (current, next) => { current.add(next); return current; });
+    super(
+      () => new Set<T>(),
+      (current, next) => { current.add(next); return current; },
+      (current, other) => { other.forEach(next => current.add(next)); return current; }
+    );
   }
 }

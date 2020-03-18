@@ -1,8 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { ChartData, ChartDataSets } from 'chart.js';
-import { KeyedArrayAggregate } from 'src/app/core/keyed-aggregate';
-import { MONEY_EPSILON } from '../model-util';
-import { BilledTransaction } from './analytics.component';
+import { sortByAll } from 'src/app/core/util';
+import { AnalysisResult, OTHER_GROUP_NAME } from './types';
 
 @Component({
   selector: 'app-bucket-breakdown',
@@ -11,7 +10,7 @@ import { BilledTransaction } from './analytics.component';
 })
 export class BucketBreakdownComponent implements OnChanges {
   @Input()
-  billedTransactionBuckets: KeyedArrayAggregate<BilledTransaction>;
+  analysisResult: AnalysisResult;
 
   /** Emits the name of a bucket when the user clicks on it. */
   @Output()
@@ -20,9 +19,11 @@ export class BucketBreakdownComponent implements OnChanges {
   @Output()
   bucketAltClick = new EventEmitter<string>();
 
-  buckets: BucketInfo[] = [];
-  aggregateBuckets: BucketInfo[] = [];
+  // For chart view.
   monthlyChartData: ChartData = {};
+  // For table view.
+  bucketRows: BucketTableRow[] = [];
+  aggregateBucketRows: BucketTableRow[] = [];
 
   ngOnChanges(changes: SimpleChanges) {
     this.analyzeMonthlyBreakdown();
@@ -39,42 +40,53 @@ export class BucketBreakdownComponent implements OnChanges {
   }
 
   private analyzeMonthlyBreakdown() {
-    this.buckets = [];
-    for (const [key, billedTransactions] of this.billedTransactionBuckets.getEntriesSorted()) {
-      const positive = billedTransactions.filter(t => t.amount > MONEY_EPSILON);
-      const negative = billedTransactions.filter(t => t.amount < -MONEY_EPSILON);
+    const datasets: ChartDataSets[] = [];
 
-      this.buckets.push({
-        name: key,
-        numTransactions: billedTransactions.length,
-        totalPositive: positive.map(t => t.amount).reduce((a, b) => a + b, 0),
-        totalNegative: negative.map(t => t.amount).reduce((a, b) => a + b, 0),
-      });
+    const props = [
+      { type: 'Expenses', summedProp: 'summedTotalExpensesByLabel', bucketProp: 'totalExpensesByLabel', multiplier: -1 },
+      { type: 'Income', summedProp: 'summedTotalIncomeByLabel', bucketProp: 'totalIncomeByLabel', multiplier: 1 },
+    ] as const;
+    for (const { type, summedProp, bucketProp, multiplier } of props) {
+      const sortedLabels = sortByAll(this.analysisResult.labelGroupNames.slice(), [
+        label => label === OTHER_GROUP_NAME,
+        label => Math.abs(this.analysisResult[summedProp].get(label) || 0),
+      ], ['asc', 'desc']);
+      for (const label of sortedLabels) {
+        const data = this.analysisResult.buckets.map(b => multiplier * (b[bucketProp].get(label) || 0));
+        if (data.some(v => v !== 0)) {
+          datasets.push({
+            data,
+            label: type + ' ' + label,
+            backgroundColor: this.analysisResult.labelGroupColorsByName[label],
+            stack: type,
+          });
+        }
+      }
     }
 
-    const datasets: ChartDataSets[] = [];
-    if (this.buckets.some(b => b.totalNegative !== 0))
-      datasets.push({ data: this.buckets.map(b => -b.totalNegative), label: 'Expenses', backgroundColor: 'red' });
-    if (this.buckets.some(b => b.totalPositive !== 0))
-      datasets.push({ data: this.buckets.map(b => b.totalPositive), label: 'Income', backgroundColor: 'blue' });
-
     this.monthlyChartData = {
-      labels: this.buckets.map(b => b.name),
+      labels: this.analysisResult.buckets.map(b => b.name),
       datasets,
     };
 
     // Calculate mean and median.
     const aggNames = ['Total', 'Mean', 'Median'];
-    const aggPos = this.calculateTotalMeanMedian(this.buckets.map(b => b.totalPositive));
-    const aggNeg = this.calculateTotalMeanMedian(this.buckets.map(b => b.totalNegative));
-    const aggNum = this.calculateTotalMeanMedian(this.buckets.map(b => b.numTransactions));
+    const aggPos = this.calculateTotalMeanMedian(this.analysisResult.buckets.map(b => b.totalIncome));
+    const aggNeg = this.calculateTotalMeanMedian(this.analysisResult.buckets.map(b => b.totalExpenses));
+    const aggNum = this.calculateTotalMeanMedian(this.analysisResult.buckets.map(b => b.billedTransactions.length));
 
-    this.aggregateBuckets = aggNames.map((name, i) => ({
+    this.bucketRows = this.analysisResult.buckets.map(b => ({
+      name: b.name,
+      totalPositive: b.totalIncome,
+      totalNegative: b.totalExpenses,
+      numTransactions: b.billedTransactions.length,
+    } as BucketTableRow));
+    this.aggregateBucketRows = aggNames.map((name, i) => ({
       name,
       totalPositive: aggPos[i],
       totalNegative: aggNeg[i],
       numTransactions: aggNum[i],
-    }));
+    } as BucketTableRow));
   }
 
   private calculateTotalMeanMedian(numbers: number[]): [number, number, number] {
@@ -95,9 +107,9 @@ export class BucketBreakdownComponent implements OnChanges {
 }
 
 /** Contains aggregate data about a date bucket. */
-export interface BucketInfo {
+export interface BucketTableRow {
   name: string;
-  numTransactions: number;
   totalPositive: number;
   totalNegative: number;
+  numTransactions: number;
 }

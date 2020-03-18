@@ -28,6 +28,51 @@ export function removeByValue<T>(array: T[], element: T): boolean {
   return false;
 }
 
+/** Create a Set from a 3-deep array of values. */
+export function nested3ToSet<T>(elements: T[][][]): Set<T> {
+  const set = new Set<T>();
+  for (const outer1 of elements) {
+    for (const outer0 of outer1) {
+      for (const value of outer0) {
+        set.add(value);
+      }
+    }
+  }
+  return set;
+}
+
+/** Inplace sort by a numeric key extracted by a selector. */
+export function sortBy<T>(arr: T[], selector: (item: T) => number | boolean, order: 'asc' | 'desc' = 'asc'): T[] {
+  arr.sort((a, b) => {
+    const ka = +selector(a);
+    const kb = +selector(b);
+    return (order === 'desc' ? kb - ka : ka - kb);
+  });
+  return arr;
+}
+
+/** Inplace sort by multiple numeric keys extracted by selectors. */
+export function sortByAll<T>(arr: T[], selectors: Array<(item: T) => number | boolean>, orders?: Array<'asc' | 'desc'>): T[] {
+  if (orders && selectors.length !== orders.length) {
+    throw new Error("must provide same number of sorting orders as selectors");
+  }
+  if (!orders) {
+    orders = Array(selectors.length).map(_ => 'asc' as 'asc' | 'desc');
+  }
+
+  arr.sort((a, b) => {
+    for (let i = 0; i < selectors.length; i++) {
+      const ka = +selectors[i](a);
+      const kb = +selectors[i](b);
+      const d = ka - kb;
+      if (d === 0) continue; // next selector
+      return (orders![i] === 'desc' ? -d : d);
+    }
+    return 0;
+  });
+  return arr;
+}
+
 /** Wraps a function so its return value is always a single instance to comply with Angular's change detection. */
 export function makeShared<TReturn, TShared = TReturn>(
   shared: TShared,
