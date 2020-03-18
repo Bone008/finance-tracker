@@ -9,3 +9,9 @@
 .collapse-button {
   min-width: 0;
 }
+
+@media screen and (max-width: 959px) {
+  .filter-container {
+    top: 0px;
+  }
+}
