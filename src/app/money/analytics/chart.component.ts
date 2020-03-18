@@ -45,10 +45,6 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
 
   private readonly decimalPipe = new DecimalPipe('en-US');
 
-  constructor() {
-
-  }
-
   ngOnInit() { }
 
   ngOnDestroy() {
@@ -58,6 +54,14 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   }
 
   ngAfterViewInit() {
+    this.initChart();
+  }
+
+  private initChart() {
+    if (this.chart) {
+      this.chart.destroy();
+    }
+
     const defaultTooltipCallbacks: ChartTooltipCallback = {
       label: (item, data) => {
         // Some tailored default callback otherwise.
@@ -111,6 +115,9 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
       if (this.chart) {
         this.chart.update();
       }
+    }
+    if (changes.hasOwnProperty('showLegend') || changes.hasOwnProperty('type')) {
+      this.initChart();
     }
   }
 }

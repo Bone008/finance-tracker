@@ -1,7 +1,15 @@
-<div>
+<div style="position: relative;">
+  <div fxLayout="row" fxLayoutAlign="end center" [class.absolute-dood]="!showLabels">
+    <mat-checkbox
+        (change)="showLabels = $event.checked"
+        [checked]="showLabels">
+      Show label colors
+    </mat-checkbox>
+  </div>
+
   <app-chart
       type="bar"
-      [showLegend]="false"
+      [showLegend]="!showLabels"
       [data]="monthlyChartData"
       (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)">
   </app-chart>

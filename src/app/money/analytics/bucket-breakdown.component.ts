@@ -19,6 +19,10 @@ export class BucketBreakdownComponent implements OnChanges {
   @Output()
   bucketAltClick = new EventEmitter<string>();
 
+  private _showLabels = true;
+  get showLabels() { return this._showLabels; }
+  set showLabels(value: boolean) { this._showLabels = value; this.analyzeMonthlyBreakdown(); }
+
   // For chart view.
   monthlyChartData: ChartData = {};
   // For table view.
@@ -42,26 +46,44 @@ export class BucketBreakdownComponent implements OnChanges {
   private analyzeMonthlyBreakdown() {
     const datasets: ChartDataSets[] = [];
 
-    const props = [
-      { type: 'Expenses', summedProp: 'summedTotalExpensesByLabel', bucketProp: 'totalExpensesByLabel', multiplier: -1 },
-      { type: 'Income', summedProp: 'summedTotalIncomeByLabel', bucketProp: 'totalIncomeByLabel', multiplier: 1 },
-    ] as const;
-    for (const { type, summedProp, bucketProp, multiplier } of props) {
-      const sortedLabels = sortByAll(this.analysisResult.labelGroupNames.slice(), [
-        label => label === OTHER_GROUP_NAME,
-        label => Math.abs(this.analysisResult[summedProp].get(label) || 0),
-      ], ['asc', 'desc']);
-      for (const label of sortedLabels) {
-        const data = this.analysisResult.buckets.map(b => multiplier * (b[bucketProp].get(label) || 0));
-        if (data.some(v => v !== 0)) {
-          datasets.push({
-            data,
-            label: type + ' ' + label,
-            backgroundColor: this.analysisResult.labelGroupColorsByName[label],
-            stack: type,
-          });
+    if (this.showLabels) {
+      const props = [
+        { type: 'Expenses', summedProp: 'summedTotalExpensesByLabel', bucketProp: 'totalExpensesByLabel', multiplier: -1 },
+        { type: 'Income', summedProp: 'summedTotalIncomeByLabel', bucketProp: 'totalIncomeByLabel', multiplier: 1 },
+      ] as const;
+      for (const { type, summedProp, bucketProp, multiplier } of props) {
+        const sortedLabels = sortByAll(this.analysisResult.labelGroupNames.slice(), [
+          label => label === OTHER_GROUP_NAME,
+          label => Math.abs(this.analysisResult[summedProp].get(label) || 0),
+        ], ['asc', 'desc']);
+        for (const label of sortedLabels) {
+          const data = this.analysisResult.buckets.map(b => multiplier * (b[bucketProp].get(label) || 0));
+          if (data.some(v => v !== 0)) {
+            datasets.push({
+              data,
+              label: type + ' ' + label,
+              backgroundColor: this.analysisResult.labelGroupColorsByName[label],
+              stack: type,
+            });
+          }
         }
       }
+    }
+    else {
+      if (this.analysisResult.buckets.some(b => b.totalExpenses !== 0))
+        datasets.push({
+          data: this.analysisResult.buckets.map(b => -b.totalExpenses),
+          label: 'Expenses',
+          backgroundColor: 'red',
+          stack: 'Expenses',
+        });
+      if (this.analysisResult.buckets.some(b => b.totalIncome !== 0))
+        datasets.push({
+          data: this.analysisResult.buckets.map(b => b.totalIncome),
+          label: 'Income',
+          backgroundColor: 'blue',
+          stack: 'Income',
+        });
     }
 
     this.monthlyChartData = {

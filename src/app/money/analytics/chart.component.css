@@ -1,5 +1,9 @@
 .chart-container {
   position: relative;
   width: 100%;
+  height: 286px;
+}
+
+.chart-container.legend {
   height: 300px;
 }
