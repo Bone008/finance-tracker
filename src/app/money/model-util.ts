@@ -311,7 +311,6 @@ export function getCanonicalBilling(billing: BillingInfo, referenceMoment: momen
     isRelative: false,
     date: momentToProtoDate(startMoment),
     endDate: momentToProtoDate(endMoment),
-    isPeriodic: billing.isPeriodic,
   });
 }
 

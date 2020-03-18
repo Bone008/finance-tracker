@@ -29,7 +29,6 @@ message BillingInfo {
   // represented by "date" is the only part of the billing period.
   Date end_date = 4;
 
-  // If true, the annotated transaction should be should be displayed as
-  // recurring at regular intervals.
-  bool is_periodic = 5;
+  // Removed fields: is_periodic
+  reserved 5;
 }
