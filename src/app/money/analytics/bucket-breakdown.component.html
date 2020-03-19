@@ -3,7 +3,7 @@
     <mat-checkbox
         (change)="showCombined = $event.checked"
         [checked]="showCombined"
-        [disabled]="(chartDataExpenses.datasets.length === 0) !== (chartDataIncome.datasets.length === 0)">
+        [disabled]="(chartDataExpenses.datasets!.length === 0) !== (chartDataIncome.datasets!.length === 0)">
       Combine expenses &amp; income
     </mat-checkbox>
     
@@ -14,7 +14,7 @@
     </mat-checkbox>
   </div>
 
-  <div *ngIf="showCombined || (chartDataExpenses.datasets.length === 0) !== (chartDataIncome.datasets.length === 0); else separate">
+  <div *ngIf="showCombined || (chartDataExpenses.datasets!.length === 0) !== (chartDataIncome.datasets!.length === 0); else separate">
     <!--
       Note that a bug-free update is depending on showLegend switching with showLabels, which reinits
       the underlying chart. Otherwise there are bugs where income/expense do not show up in separate stacks.
@@ -29,7 +29,7 @@
   </div>
   <ng-template #separate>
     <div fxLayout="row" fxLayout.lt-md="column" fxLayoutGap.lt-md="10px">
-      <div fxFlex="50" fxLayout="column" [hidden]="chartDataExpenses.datasets.length === 0 && chartDataIncome.datasets.length > 0">
+      <div fxFlex="50" fxLayout="column" [hidden]="chartDataExpenses.datasets!.length === 0 && chartDataIncome.datasets!.length > 0">
         <h3 fxFlexAlign="center" fxHide fxShow.lt-md>Expenses</h3>
         <app-chart
             type="bar"
@@ -39,7 +39,7 @@
             (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)">
         </app-chart>
       </div>
-      <div fxFlex="50" fxLayout="column" [hidden]="chartDataIncome.datasets.length === 0 && chartDataExpenses.datasets.length > 0">
+      <div fxFlex="50" fxLayout="column" [hidden]="chartDataIncome.datasets!.length === 0 && chartDataExpenses.datasets!.length > 0">
         <h3 fxFlexAlign="center" fxHide fxShow.lt-md>Income</h3>
         <app-chart
             type="bar"
