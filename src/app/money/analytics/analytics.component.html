@@ -51,6 +51,43 @@
       <hr>
     </div>
 
+    <div fxLayout="row">
+      <div fxFlex="50" fxLayout="column">
+        <h3 fxFlexAlign="center" fxHide fxShow.lt-md>Expenses</h3>
+        <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="5px">
+          <button
+              mat-stroked-button
+              [disabled]="!canDecreaseGroupLimit(0)"
+              (click)="decreaseGroupLimit(0)">
+            Show less
+          </button>
+          <button
+              mat-stroked-button
+              [disabled]="!canIncreaseGroupLimit(0)"
+              (click)="increaseGroupLimit(0)">
+            Show more
+          </button>
+        </div>
+      </div>
+      <div fxFlex="50" fxLayout="column">
+        <h3 fxFlexAlign="center" fxHide fxShow.lt-md>Income</h3>
+        <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="5px">
+          <button
+              mat-stroked-button
+              [disabled]="!canDecreaseGroupLimit(1)"
+              (click)="decreaseGroupLimit(1)">
+            Show less
+          </button>
+          <button
+              mat-stroked-button
+              [disabled]="!canIncreaseGroupLimit(1)"
+              (click)="increaseGroupLimit(1)">
+            Show more
+          </button>
+        </div>
+      </div>
+    </div>
+
     <app-label-breakdown
         [analysisResult]="analysisResult"
         (groupClick)="onLabelGroupClick($event, false)"

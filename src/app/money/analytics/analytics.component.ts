@@ -5,7 +5,7 @@ import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { getPaletteColor } from 'src/app/core/color-util';
 import { LoggerService } from 'src/app/core/logger.service';
-import { escapeRegex, nested3ToSet, sortBy, splitQuotedString } from 'src/app/core/util';
+import { escapeRegex, nested2ToSet, nested3ToSet, sortBy, splitQuotedString } from 'src/app/core/util';
 import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
@@ -24,10 +24,13 @@ import { AnalysisResult, BilledTransaction, BucketInfo, LabelGroup, LABEL_HIERAR
   styleUrls: ['./analytics.component.css']
 })
 export class AnalyticsComponent implements OnInit, OnDestroy {
+  private readonly bucketTotalByLabelProps = ['totalExpensesByLabel', 'totalIncomeByLabel'] as const;
+
   readonly filterState = new FilterState();
   readonly ignoreBillingPeriodSubject = new BehaviorSubject<boolean>(false);
   readonly labelCollapseSubject = new BehaviorSubject<void>(void (0));
   private readonly labelDominanceSubject = new BehaviorSubject<LabelDominanceOrder>({});
+  private readonly labelGroupLimitsSubject = new BehaviorSubject<void>(void (0));
 
   private static readonly uncollapsedLabels = new Set<string>();
   // TODO: Refactor this into a "LabelGroupService" that abstracts & persists the storage of this.
@@ -59,6 +62,9 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   /** Label group colors, NOT cleared across recalculations for consistency. */
   private labelGroupColorsCache: { [label: string]: string } = {};
 
+  /** Maximum number of label groups to use before truncating. */
+  private labelGroupLimits: [number, number] = [6, 6];
+
   constructor(
     private readonly dataService: DataService,
     private readonly filterService: TransactionFilterService,
@@ -84,8 +90,9 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         this.filterState.value$,
         this.ignoreBillingPeriodSubject,
         this.labelCollapseSubject,
-        this.labelDominanceSubject)
-        .subscribe(([_, filterValue, ignoreBilling, __, ___]) => this.analyzeTransactions(filterValue, ignoreBilling));
+        this.labelDominanceSubject,
+        this.labelGroupLimitsSubject)
+        .subscribe(([_, filterValue, ignoreBilling]) => this.analyzeTransactions(filterValue, ignoreBilling));
   }
 
   ngOnDestroy() {
@@ -172,6 +179,27 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       }
     }
   }
+
+  //#region Group Limit controls
+  canIncreaseGroupLimit(index: number): boolean {
+    return this.billedTransactionBuckets.some(b => b[this.bucketTotalByLabelProps[index]].get(OTHER_GROUP_NAME));
+  }
+
+  canDecreaseGroupLimit(index: number): boolean {
+    return this.labelGroupLimits[index] > 3
+      && nested2ToSet(this.billedTransactionBuckets.map(b => b[this.bucketTotalByLabelProps[index]].getKeys())).size > 3;
+  }
+
+  increaseGroupLimit(index: number) {
+    this.labelGroupLimits[index] += 3;
+    this.labelGroupLimitsSubject.next();
+  }
+
+  decreaseGroupLimit(index: number) {
+    this.labelGroupLimits[index] = Math.max(3, this.labelGroupLimits[index] - 3);
+    this.labelGroupLimitsSubject.next();
+  }
+  //#endregion
 
   private analyzeTransactions(filterValue: string, ignoreBilling: boolean) {
     let tStart = performance.now();
@@ -398,9 +426,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
    * Also fills in totalsByLabel per bucket.
    */
   private analyzeLabelGroupTruncation() {
-    const truncationLimits = [6, 6];
-
-    for (const aggregateProp of ['totalIncomeByLabel', 'totalExpensesByLabel'] as const) {
+    let i = 0;
+    for (const aggregateProp of this.bucketTotalByLabelProps) {
       // Reduce all buckets to one total sum for each label group.
       // We need this to sort by a label group's total "weight".
       // This is equivalent to the final value of analysisResult.summedTotal(Expenses|Income)ByLabel,
@@ -410,13 +437,12 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         summedTotalByLabel.merge(bucket[aggregateProp]);
       }
 
-      const groupLimit = truncationLimits[0];
+      const groupLimit = this.labelGroupLimits[i++];
       if (summedTotalByLabel.length > groupLimit) {
         // Sort descending by absolute value.
         const sortedEntries = sortBy(summedTotalByLabel.getEntries(), ([_, amount]) => Math.abs(amount), 'desc');
         // If groupLimit is n, retain the first n-1 groups and make the last group <other>.
         const groupsToTruncate = sortedEntries.slice(groupLimit - 1).map(([name, _]) => name);
-        this.loggerService.debug(groupsToTruncate);
 
         // Replace the aggregate value of each truncated group in each bucket with <other>.
         for (const bucket of this.billedTransactionBuckets) {

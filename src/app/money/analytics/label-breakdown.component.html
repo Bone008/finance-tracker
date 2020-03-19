@@ -1,20 +1,6 @@
 <div fxLayout="row" fxLayout.lt-md="column" fxLayoutGap.lt-md="10px">
   <div fxFlex="50" fxLayout="column" [hidden]="hasData[1] && !hasData[0]">
     <h3 fxFlexAlign="center">Expenses</h3>
-    <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="5px">
-      <button
-          mat-stroked-button
-          [disabled]="!canDecreaseGroupLimit(0)"
-          (click)="decreaseGroupLimit(0)">
-        Show less
-      </button>
-      <button
-          mat-stroked-button
-          [disabled]="!canIncreaseGroupLimit(0)"
-          (click)="increaseGroupLimit(0)">
-        Show more
-      </button>
-    </div>
     <app-chart
         type="pie"
         [data]="chartData[0]"
@@ -24,20 +10,6 @@
   </div>
   <div fxFlex="50" fxLayout="column" [hidden]="hasData[0] && !hasData[1]">
     <h3 fxFlexAlign="center">Income</h3>
-    <div fxLayout="row" fxLayoutAlign="center" fxLayoutGap="5px">
-      <button
-          mat-stroked-button
-          [disabled]="!canDecreaseGroupLimit(1)"
-          (click)="decreaseGroupLimit(1)">
-        Show less
-      </button>
-      <button
-          mat-stroked-button
-          [disabled]="!canIncreaseGroupLimit(1)"
-          (click)="increaseGroupLimit(1)">
-        Show more
-      </button>
-    </div>
     <app-chart
         type="pie"
         [data]="chartData[1]"

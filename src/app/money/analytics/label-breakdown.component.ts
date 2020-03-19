@@ -35,41 +35,12 @@ export class LabelBreakdownComponent implements OnChanges {
     this.makeChartTooltipCallbacks(0),
     this.makeChartTooltipCallbacks(1),
   ];
-  /** List of labels that are shared by all matching transactions. */
-  __labelsSharedByAll: string[] = [];
-
-  /** Maximum number of groups to display in charts. */
-  private labelChartGroupLimits: [number, number] = [6, 6];
-  /** Remembers palette colors that were assigned for each displayed label. */
-  private __labelColorsCache: { [label: string]: string } = {};
 
   constructor(
     private readonly currencyService: CurrencyService,
     private readonly dataService: DataService) { }
 
   ngOnChanges(changes: SimpleChanges) {
-    this.analyzeLabelBreakdown();
-  }
-
-  // TODO move this logic to parent analytics component
-  canIncreaseGroupLimit(chartIndex: number): boolean {
-    return this.chartData[chartIndex].labels !== undefined
-      && this.chartData[chartIndex].labels!.includes(OTHER_GROUP_NAME);
-  }
-
-  canDecreaseGroupLimit(chartIndex: number): boolean {
-    return this.labelChartGroupLimits[chartIndex] > 3
-      && this.chartData[chartIndex].labels !== undefined
-      && this.chartData[chartIndex].labels!.length > 3;
-  }
-
-  increaseGroupLimit(chartIndex: number) {
-    this.labelChartGroupLimits[chartIndex] += 3;
-    this.analyzeLabelBreakdown();
-  }
-
-  decreaseGroupLimit(chartIndex: number) {
-    this.labelChartGroupLimits[chartIndex] = Math.max(3, this.labelChartGroupLimits[chartIndex] - 3);
     this.analyzeLabelBreakdown();
   }
 

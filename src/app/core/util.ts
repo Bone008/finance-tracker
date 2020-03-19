@@ -28,6 +28,17 @@ export function removeByValue<T>(array: T[], element: T): boolean {
   return false;
 }
 
+/** Create a Set from a 2-deep array of values. */
+export function nested2ToSet<T>(elements: T[][]): Set<T> {
+  const set = new Set<T>();
+  for (const outer0 of elements) {
+    for (const value of outer0) {
+      set.add(value);
+    }
+  }
+  return set;
+}
+
 /** Create a Set from a 3-deep array of values. */
 export function nested3ToSet<T>(elements: T[][][]): Set<T> {
   const set = new Set<T>();
