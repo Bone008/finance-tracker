@@ -176,6 +176,8 @@ export class TransactionsComponent implements AfterViewInit {
       .afterConfirmed().subscribe(() => {
         Object.assign(transaction, tempTransaction);
         transaction.single!.modified = timestampNow();
+        this.forceShowTransactions.add(transaction);
+        this.dataService.addTransactions([]); // Trigger list refresh to reorder in case date was changed.
         this.ruleService.notifyModified([transaction]);
       });
   }
@@ -446,8 +448,8 @@ export class TransactionsComponent implements AfterViewInit {
     const millis = timestampToMilliseconds(extractTransactionData(transaction)[0].date);
 
     // Fix object identity to play nice with Angular change tracking.
-    if (!transaction.__date) transaction.__date = new Date();
-    transaction.__date.setTime(millis);
+    if (!transaction.__date || transaction.__date.getTime() !== millis)
+      transaction.__date = new Date(millis);
     return transaction.__date;
   }
 
