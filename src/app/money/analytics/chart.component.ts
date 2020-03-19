@@ -40,7 +40,7 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   @ViewChild('chartCanvas', { static: true })
   private chartCanvas: ElementRef;
 
-  private chart: Chart;
+  private chart: Chart | null = null;
   private internalChartData: ChartData = {};
 
   private readonly decimalPipe = new DecimalPipe('en-US');
@@ -50,6 +50,7 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   ngOnDestroy() {
     if (this.chart) {
       this.chart.destroy();
+      this.chart = null;
     }
   }
 
@@ -103,7 +104,7 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
         },
         scales: this.type === 'bar' || this.type === 'horizontalBar' ? {
           xAxes: [{ stacked: true }],
-          yAxes: [{ stacked: true }],
+          yAxes: [{ stacked: true /*, ticks: { suggestedMax: 20000 } */ }],
         } : {},
       },
     });

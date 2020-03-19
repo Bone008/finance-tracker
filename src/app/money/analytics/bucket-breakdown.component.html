@@ -1,5 +1,11 @@
-<div style="position: relative;">
-  <div fxLayout="row" fxLayoutAlign="end center" [class.absolute-dood]="!showLabels">
+<div>
+  <div fxLayout="row" fxLayoutAlign="end center" fxLayoutGap="20px">
+    <mat-checkbox
+        (change)="showCombined = $event.checked"
+        [checked]="showCombined">
+      Combine expenses &amp; income
+    </mat-checkbox>
+    
     <mat-checkbox
         (change)="showLabels = $event.checked"
         [checked]="showLabels">
@@ -7,12 +13,40 @@
     </mat-checkbox>
   </div>
 
-  <app-chart
-      type="bar"
-      [showLegend]="!showLabels"
-      [data]="monthlyChartData"
-      (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)">
-  </app-chart>
+  <div *ngIf="showCombined; else separate">
+    <!--
+      Note that a bug-free update is depending on showLegend switching with showLabels, which reinits
+      the underlying chart. Otherwise there are bugs where income/expense do not show up in separate stacks.
+    -->
+    <app-chart
+        type="bar"
+        [showLegend]="!showLabels"
+        [data]="chartDataCombined"
+        (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)">
+    </app-chart>
+  </div>
+  <ng-template #separate>
+    <div fxLayout="row" fxLayout.lt-md="column" fxLayoutGap.lt-md="10px">
+      <div fxFlex="50" fxLayout="column" [hidden]="chartDataExpenses.datasets.length === 0 && chartDataIncome.datasets.length > 0">
+        <h3 fxFlexAlign="center" fxHide fxShow.lt-md>Expenses</h3>
+        <app-chart
+            type="bar"
+            [showLegend]="false"
+            [data]="chartDataExpenses"
+            (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)">
+        </app-chart>
+      </div>
+      <div fxFlex="50" fxLayout="column" [hidden]="chartDataIncome.datasets.length === 0 && chartDataExpenses.datasets.length > 0">
+        <h3 fxFlexAlign="center" fxHide fxShow.lt-md>Income</h3>
+        <app-chart
+            type="bar"
+            [showLegend]="false"
+            [data]="chartDataIncome"
+            (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)">
+        </app-chart>
+      </div>
+    </div>
+  </ng-template>
   
   <hr>
 

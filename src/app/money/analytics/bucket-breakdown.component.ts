@@ -19,12 +19,15 @@ export class BucketBreakdownComponent implements OnChanges {
   @Output()
   bucketAltClick = new EventEmitter<string>();
 
+  showCombined = false;
   private _showLabels = true;
   get showLabels() { return this._showLabels; }
   set showLabels(value: boolean) { this._showLabels = value; this.analyzeMonthlyBreakdown(); }
 
   // For chart view.
-  monthlyChartData: ChartData = {};
+  chartDataCombined: ChartData = {};
+  chartDataExpenses: ChartData = {};
+  chartDataIncome: ChartData = {};
   // For table view.
   bucketRows: BucketTableRow[] = [];
   aggregateBucketRows: BucketTableRow[] = [];
@@ -35,7 +38,7 @@ export class BucketBreakdownComponent implements OnChanges {
 
   onBucketClick(bucketIndex: number, isAlt: boolean) {
     // e.g. '2018-01'
-    const bucketName = String(this.monthlyChartData.labels![bucketIndex]);
+    const bucketName = String(this.chartDataCombined.labels![bucketIndex]);
     if (isAlt) {
       this.bucketAltClick.emit(bucketName);
     } else {
@@ -44,14 +47,15 @@ export class BucketBreakdownComponent implements OnChanges {
   }
 
   private analyzeMonthlyBreakdown() {
-    const datasets: ChartDataSets[] = [];
+    const datasetsExpenses: ChartDataSets[] = [];
+    const datasetsIncome: ChartDataSets[] = [];
 
     if (this.showLabels) {
       const props = [
-        { type: 'Expenses', summedProp: 'summedTotalExpensesByLabel', bucketProp: 'totalExpensesByLabel', multiplier: -1 },
-        { type: 'Income', summedProp: 'summedTotalIncomeByLabel', bucketProp: 'totalIncomeByLabel', multiplier: 1 },
+        { type: 'Expenses', summedProp: 'summedTotalExpensesByLabel', bucketProp: 'totalExpensesByLabel', multiplier: -1, datasets: datasetsExpenses },
+        { type: 'Income', summedProp: 'summedTotalIncomeByLabel', bucketProp: 'totalIncomeByLabel', multiplier: 1, datasets: datasetsIncome },
       ] as const;
-      for (const { type, summedProp, bucketProp, multiplier } of props) {
+      for (const { type, summedProp, bucketProp, multiplier, datasets } of props) {
         const sortedLabels = sortByAll(this.analysisResult.labelGroupNames.slice(), [
           label => label === OTHER_GROUP_NAME,
           label => Math.abs(this.analysisResult[summedProp].get(label) || 0),
@@ -71,14 +75,14 @@ export class BucketBreakdownComponent implements OnChanges {
     }
     else {
       if (this.analysisResult.buckets.some(b => b.totalExpenses !== 0))
-        datasets.push({
+        datasetsExpenses.push({
           data: this.analysisResult.buckets.map(b => -b.totalExpenses),
           label: 'Expenses',
           backgroundColor: 'red',
           stack: 'Expenses',
         });
       if (this.analysisResult.buckets.some(b => b.totalIncome !== 0))
-        datasets.push({
+        datasetsIncome.push({
           data: this.analysisResult.buckets.map(b => b.totalIncome),
           label: 'Income',
           backgroundColor: 'blue',
@@ -86,10 +90,10 @@ export class BucketBreakdownComponent implements OnChanges {
         });
     }
 
-    this.monthlyChartData = {
-      labels: this.analysisResult.buckets.map(b => b.name),
-      datasets,
-    };
+    const bucketNames = this.analysisResult.buckets.map(b => b.name);
+    this.chartDataCombined = { labels: bucketNames, datasets: datasetsExpenses.concat(datasetsIncome) };
+    this.chartDataExpenses = { labels: bucketNames, datasets: datasetsExpenses };
+    this.chartDataIncome = { labels: bucketNames, datasets: datasetsIncome };
 
     // Calculate mean and median.
     const aggNames = ['Total', 'Mean', 'Median'];
