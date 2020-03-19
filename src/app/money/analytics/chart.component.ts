@@ -1,7 +1,8 @@
-import { DecimalPipe } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { Chart, ChartData, ChartTooltipCallback, ChartType } from 'chart.js';
 import { patchObject } from 'src/app/core/util';
+import { CurrencyService } from '../currency.service';
+import { DataService } from '../data.service';
 
 export interface ChartElementClickEvent {
   datasetIndex: number;
@@ -43,7 +44,9 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
   private chart: Chart | null = null;
   private internalChartData: ChartData = {};
 
-  private readonly decimalPipe = new DecimalPipe('en-US');
+  constructor(
+    private readonly currencySerivce: CurrencyService,
+    private readonly dataService: DataService) { }
 
   ngOnInit() { }
 
@@ -67,7 +70,7 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
       label: (item, data) => {
         // Some tailored default callback otherwise.
         const rawValue = item.yLabel || (data.datasets && data.datasets[item.datasetIndex!].data![item.index!]);
-        let label = this.decimalPipe.transform(rawValue, '1.2-2') + ' €';
+        let label = this.currencySerivce.format(Number(rawValue), this.dataService.getMainCurrency());
         const datasetName = data.datasets && data.datasets[item.datasetIndex!].label;
         if (datasetName) {
           label += ` (${datasetName})`;
@@ -88,8 +91,13 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
         maintainAspectRatio: false,
         legend: { position: 'top', display: this.showLegend },
         tooltips: {
-          mode: 'index',
+          mode: this.type === 'bar' ? 'x' : 'index',
           callbacks: Object.assign({}, defaultTooltipCallbacks, this.tooltipCallbacks),
+          filter: (item, data) => {
+            // Hide rows with values of 0.
+            const n = Number(data.datasets && data.datasets[item.datasetIndex!].data![item.index!]);
+            return isNaN(n) || n !== 0;
+          },
         },
         onClick: (event: MouseEvent, elements: any[]) => {
           if (elements.length > 0) {

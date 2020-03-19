@@ -2,7 +2,8 @@
   <div fxLayout="row" fxLayoutAlign="end center" fxLayoutGap="20px">
     <mat-checkbox
         (change)="showCombined = $event.checked"
-        [checked]="showCombined">
+        [checked]="showCombined"
+        [disabled]="(chartDataExpenses.datasets.length === 0) !== (chartDataIncome.datasets.length === 0)">
       Combine expenses &amp; income
     </mat-checkbox>
     
@@ -13,7 +14,7 @@
     </mat-checkbox>
   </div>
 
-  <div *ngIf="showCombined; else separate">
+  <div *ngIf="showCombined || (chartDataExpenses.datasets.length === 0) !== (chartDataIncome.datasets.length === 0); else separate">
     <!--
       Note that a bug-free update is depending on showLegend switching with showLabels, which reinits
       the underlying chart. Otherwise there are bugs where income/expense do not show up in separate stacks.
@@ -22,6 +23,7 @@
         type="bar"
         [showLegend]="!showLabels"
         [data]="chartDataCombined"
+        [tooltipCallbacks]="chartTooltipCallback"
         (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)">
     </app-chart>
   </div>
@@ -33,6 +35,7 @@
             type="bar"
             [showLegend]="false"
             [data]="chartDataExpenses"
+            [tooltipCallbacks]="chartTooltipCallback"
             (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)">
         </app-chart>
       </div>
@@ -42,6 +45,7 @@
             type="bar"
             [showLegend]="false"
             [data]="chartDataIncome"
+            [tooltipCallbacks]="chartTooltipCallback"
             (elementClick)="onBucketClick($event.index, $event.mouseEvent.altKey)">
         </app-chart>
       </div>

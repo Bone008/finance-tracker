@@ -125,7 +125,7 @@ export class LabelBreakdownComponent implements OnChanges {
   private makeChartTooltipCallbacks(chartIndex: 0 | 1): ChartTooltipCallback {
     return {
       title: (items: ChartTooltipItem[], data: ChartData) => {
-        return data.labels![items[0].index!];
+        return items[0] && data.labels![items[0].index!];
       },
       label: (item: ChartTooltipItem, data: ChartData) => {
         const allValues = <number[]>data.datasets![item.datasetIndex!].data;

@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
-import { ChartData, ChartDataSets } from 'chart.js';
+import { ChartData, ChartDataSets, ChartTooltipCallback } from 'chart.js';
 import { sortByAll } from 'src/app/core/util';
+import { CurrencyService } from '../currency.service';
+import { DataService } from '../data.service';
 import { AnalysisResult, OTHER_GROUP_NAME } from './types';
 
 @Component({
@@ -28,9 +30,14 @@ export class BucketBreakdownComponent implements OnChanges {
   chartDataCombined: ChartData = {};
   chartDataExpenses: ChartData = {};
   chartDataIncome: ChartData = {};
+  chartTooltipCallback = this.makeTooltipCallback();
   // For table view.
   bucketRows: BucketTableRow[] = [];
   aggregateBucketRows: BucketTableRow[] = [];
+
+  constructor(
+    private readonly currencySerivce: CurrencyService,
+    private readonly dataService: DataService) { }
 
   ngOnChanges(changes: SimpleChanges) {
     this.analyzeMonthlyBreakdown();
@@ -128,6 +135,19 @@ export class BucketBreakdownComponent implements OnChanges {
       median = sorted[sorted.length >> 1];
     }
     return [total, mean, median];
+  }
+
+  private makeTooltipCallback(): ChartTooltipCallback {
+    return {
+      beforeBody: (items, data) => {
+        if (!this.showLabels) return [];
+        const sum = items.map(item => Number(item.value)).reduce((a, x) => a + x);
+        return [
+          data.datasets![items[0].datasetIndex!].stack + ' total: ' + this.currencySerivce.format(sum, this.dataService.getMainCurrency()),
+          '',
+        ];
+      },
+    };
   }
 
 }
