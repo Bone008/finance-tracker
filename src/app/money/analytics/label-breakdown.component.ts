@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { ChartData, ChartTooltipCallback, ChartTooltipItem } from 'chart.js';
-import { sortByAll } from 'src/app/core/util';
+import { pluralize, sortByAll } from 'src/app/core/util';
 import { KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
@@ -103,14 +103,13 @@ export class LabelBreakdownComponent implements OnChanges {
 
         const value = allValues[item.index!];
         const percentage = value / allValues.reduce((a, b) => a + b, 0);
-        // TODO make chart tooltip string not specific to "months"
-        const numMonths = this.analysisResult.buckets.length;
-        const perMonth = value / numMonths;
+        const numBuckets = this.analysisResult.buckets.length;
+        const perBucket = value / numBuckets;
         return [
           this.currencyService.format(value, this.dataService.getMainCurrency()) + ' total',
-          numMonths > 1
-            ? (this.currencyService.format(perMonth, this.dataService.getMainCurrency())
-              + ` monthly mean (over ${numMonths} months)`)
+          numBuckets > 1
+            ? (this.currencyService.format(perBucket, this.dataService.getMainCurrency())
+              + ` mean (over ${pluralize(numBuckets, this.analysisResult.bucketUnit)})`)
             : '',
           (percentage * 100).toLocaleString('en-US',
             { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' %',

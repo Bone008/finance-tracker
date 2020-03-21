@@ -24,7 +24,7 @@ export class BucketBreakdownComponent implements OnChanges {
   showCombined = false;
   private _showLabels = true;
   get showLabels() { return this._showLabels; }
-  set showLabels(value: boolean) { this._showLabels = value; this.analyzeMonthlyBreakdown(); }
+  set showLabels(value: boolean) { this._showLabels = value; this.analyzeBreakdown(); }
 
   // For chart view.
   chartDataCombined: ChartData = {};
@@ -40,7 +40,7 @@ export class BucketBreakdownComponent implements OnChanges {
     private readonly dataService: DataService) { }
 
   ngOnChanges(changes: SimpleChanges) {
-    this.analyzeMonthlyBreakdown();
+    this.analyzeBreakdown();
   }
 
   onBucketClick(bucketIndex: number, isAlt: boolean) {
@@ -53,7 +53,7 @@ export class BucketBreakdownComponent implements OnChanges {
     }
   }
 
-  private analyzeMonthlyBreakdown() {
+  private analyzeBreakdown() {
     const datasetsExpenses: ChartDataSets[] = [];
     const datasetsIncome: ChartDataSets[] = [];
 

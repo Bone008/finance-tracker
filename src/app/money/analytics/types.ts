@@ -6,6 +6,7 @@ export const LABEL_HIERARCHY_SEPARATOR = '/';
 export const NONE_GROUP_NAME = '<none>';
 export const OTHER_GROUP_NAME = '<other>';
 
+export type BucketUnit = 'day' | 'week' | 'month' | 'year';
 
 /** Provides data about a label with sublabels (induced label hierarchy). */
 export interface LabelGroup {
@@ -39,6 +40,7 @@ export interface BucketInfo {
 
 /** Contains all relevant data and metadata about the analysis result. */
 export interface AnalysisResult {
+  bucketUnit: BucketUnit;
   /** All appearing label groups in arbitrary order. */
   labelGroupNames: string[];
   /** Mapping from label groups to their assigned colors. */

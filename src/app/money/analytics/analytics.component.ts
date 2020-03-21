@@ -16,7 +16,7 @@ import { FilterState } from '../filter-input/filter-state';
 import { CanonicalBillingInfo, extractAllLabels, getDominantLabels, getTransactionAmount, MONEY_EPSILON, resolveTransactionCanonicalBilling } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
-import { AnalysisResult, BilledTransaction, BucketInfo, LabelGroup, LABEL_HIERARCHY_SEPARATOR, NONE_GROUP_NAME, OTHER_GROUP_NAME } from './types';
+import { AnalysisResult, BilledTransaction, BucketInfo, BucketUnit, LabelGroup, LABEL_HIERARCHY_SEPARATOR, NONE_GROUP_NAME, OTHER_GROUP_NAME } from './types';
 
 @Component({
   selector: 'app-analytics',
@@ -27,6 +27,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   private readonly bucketTotalByLabelProps = ['totalExpensesByLabel', 'totalIncomeByLabel'] as const;
 
   readonly filterState = new FilterState();
+  readonly bucketUnitSubject = new BehaviorSubject<BucketUnit>('month');
   readonly ignoreBillingPeriodSubject = new BehaviorSubject<boolean>(false);
   readonly labelCollapseSubject = new BehaviorSubject<void>(void (0));
   private readonly labelDominanceSubject = new BehaviorSubject<LabelDominanceOrder>({});
@@ -48,7 +49,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
    * and truncated label groups.
    * Subcomponents can further process this dataset.
    */
-  analysisResult: AnalysisResult = { buckets: [], labelGroupNames: [], labelGroupColorsByName: {}, excludedLabels: [], summedTotalIncomeByLabel: new KeyedNumberAggregate(), summedTotalExpensesByLabel: new KeyedNumberAggregate() };
+  analysisResult: AnalysisResult = { bucketUnit: 'month', buckets: [], labelGroupNames: [], labelGroupColorsByName: {}, excludedLabels: [], summedTotalIncomeByLabel: new KeyedNumberAggregate(), summedTotalExpensesByLabel: new KeyedNumberAggregate() };
 
   private txSubscription: Subscription;
   private matchingTransactions: Transaction[] = [];
@@ -88,11 +89,12 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       combineLatest(
         this.dataService.transactions$,
         this.filterState.value$,
+        this.bucketUnitSubject,
         this.ignoreBillingPeriodSubject,
         this.labelCollapseSubject,
         this.labelDominanceSubject,
         this.labelGroupLimitsSubject)
-        .subscribe(([_, filterValue, ignoreBilling]) => this.analyzeTransactions(filterValue, ignoreBilling));
+        .subscribe(_ => this.analyzeTransactions());
   }
 
   ngOnDestroy() {
@@ -126,7 +128,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Add month to filter or navigate to transactions when clicking on it. */
+  /** Add date bucket to filter or navigate to transactions list when clicking on it. */
   onChartBucketClick(bucketName: string, isAltClick: boolean) {
     // TODO Refactor token operations into some utility method.
     const addedToken = 'date:' + bucketName;
@@ -201,8 +203,12 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
   //#endregion
 
-  private analyzeTransactions(filterValue: string, ignoreBilling: boolean) {
+  private analyzeTransactions() {
     let tStart = performance.now();
+
+    const filterValue = this.filterState.getCurrentValue();
+    const bucketUnit = this.bucketUnitSubject.value;
+    const ignoreBilling = this.ignoreBillingPeriodSubject.value;
 
     const allTransactions = this.dataService.getCurrentTransactionList();
     const processedFilter = this.preprocessFilter(filterValue, ignoreBilling);
@@ -212,9 +218,9 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
     this.analyzeLabelGroups();
     this.analyzeLabelsSharedByAll();
-    this.analyzeBuckets(ignoreBilling);
+    this.analyzeBuckets(bucketUnit, ignoreBilling);
     this.analyzeLabelGroupTruncation();
-    this.collectAnalysisResult();
+    this.collectAnalysisResult(bucketUnit);
 
     let tEnd = performance.now();
     this.loggerService.debug(`analyzeTransactions: ${tEnd - tStart} ms for ${this.matchingTransactionCount} transactions`);
@@ -298,9 +304,15 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   /** Splits transactions into date buckets according to billing settings and stores them in this.billedTransactionBuckets. */
-  private analyzeBuckets(ignoreBilling: boolean) {
-    const displayUnit = 'month';
-    const keyFormat = 'YYYY-MM';
+  private analyzeBuckets(bucketUnit: BucketUnit, ignoreBilling: boolean) {
+    let keyFormat: string;
+    switch (bucketUnit) {
+      case 'day': keyFormat = 'YYYY-MM-DD'; break;
+      case 'week': keyFormat = 'GGGG-[W]WW'; break;
+      case 'month': keyFormat = 'YYYY-MM'; break;
+      case 'year': keyFormat = 'YYYY'; break;
+      default: throw new Error('unknown bucket unit: ' + bucketUnit);
+    }
 
     const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
     const billedTxsByBucket = new KeyedArrayAggregate<BilledTransaction>();
@@ -337,7 +349,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       const it = moment(fromMoment.format(keyFormat), keyFormat);
       while (it.isSameOrBefore(toMoment)) {
         contributingKeys.push(it.format(keyFormat));
-        it.add(1, displayUnit);
+        it.add(1, bucketUnit);
       }
       debugContribHistogram.add(contributingKeys.length + "", 1);
 
@@ -350,7 +362,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       // we need to sort by how much money each label group accounts for (+ and -).
       const dominantLabels = getDominantLabels(transaction.labels, labelDominanceOrder, this.labelsSharedByAll);
       const label = dominantLabels.length === 0 ? NONE_GROUP_NAME : dominantLabels
-        // TODO A label actually named "foo+" collides with grouped "foo/bar", but it is a quite unlikely naming convention.
+        // Note that a label actually named "foo+" collides with grouped "foo/bar", but it is a quite unlikely naming convention,
+        // so this risk is accepted here.
         .map(label => this.collapsedLabelGroupNamesLookup[label] || label)
         .join(',');
 
@@ -372,12 +385,12 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       const last = sortedKeys[sortedKeys.length - 1];
       const it = moment(sortedKeys[0]);
       while (it.isBefore(last)) {
-        it.add(1, displayUnit);
+        it.add(1, bucketUnit);
         // Make sure each date unit (e.g. month) is represented as a bucket.
         billedTxsByBucket.addMany(it.format(keyFormat), []);
       }
     }
-    this.cleanBucketsByDateFilter(billedTxsByBucket);
+    this.cleanBucketsByDateFilter(billedTxsByBucket, bucketUnit, keyFormat);
 
     this.billedTransactionBuckets = billedTxsByBucket.getEntriesSorted().map(([name, billedTransactions]) => {
       const positive = billedTransactions.filter(t => t.amount > MONEY_EPSILON);
@@ -398,19 +411,31 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     });
   }
 
-  // TODO: This is specialized to MONTH view, make sure to change once other granularities are supported.
-  private cleanBucketsByDateFilter(billedBuckets: KeyedArrayAggregate<BilledTransaction>) {
+  /**
+   * Removes buckets which transactions were billed into, but which fall outside
+   * the user's date filter.
+   */
+  private cleanBucketsByDateFilter(billedBuckets: KeyedArrayAggregate<BilledTransaction>, bucketUnit: BucketUnit, keyFormat: string) {
     this.hasFilteredPartiallyBilledTransactions = false;
-
     if (!this.dateRestrictingFilter) {
       return;
     }
+
+    let periodType: BillingType;
+    switch (bucketUnit) {
+      case 'day': periodType = BillingType.DAY; break;
+      case 'week': periodType = BillingType.DAY; break;
+      case 'month': periodType = BillingType.MONTH; break;
+      case 'year': periodType = BillingType.YEAR; break;
+      default: throw new Error('unknown bucket unit: ' + bucketUnit);
+    }
+
     // Create a fake transaction that is billed during the bucket's month
     // and check if it would pass the date filter.
-    const dummyBilling = new BillingInfo({ periodType: BillingType.MONTH });
+    const dummyBilling = new BillingInfo({ periodType });
     const dummyTransaction = new Transaction({ billing: dummyBilling, single: new TransactionData() });
     for (const [key, billedTransactions] of billedBuckets.getEntries()) {
-      const keyMoment = moment(key);
+      const keyMoment = moment(key, keyFormat);
       dummyBilling.date = momentToProtoDate(keyMoment);
       if (!this.filterService.matchesFilter(dummyTransaction, this.dateRestrictingFilter)) {
         // This bucket does not pass the filter.
@@ -465,7 +490,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   /** Gathers results of all previous steps into this.analysisResult. */
-  private collectAnalysisResult() {
+  private collectAnalysisResult(bucketUnit: BucketUnit) {
     // Extract all unique label groups appearing in any bucket and assign colors.
     const labelGroupNamesSet = nested3ToSet(this.billedTransactionBuckets.map(
       b => [b.totalIncomeByLabel.getKeys(), b.totalExpensesByLabel.getKeys()]));
@@ -483,6 +508,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
 
     this.analysisResult = {
+      bucketUnit,
       labelGroupNames: Array.from(labelGroupNamesSet),
       labelGroupColorsByName,
       buckets: this.billedTransactionBuckets,

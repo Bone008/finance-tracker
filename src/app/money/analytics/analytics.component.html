@@ -20,11 +20,18 @@
       </mat-checkbox>
     </p>
 
-    <p fxLayout="row" fxLayoutAlign="start center">
-      <span>Label dominance order:&nbsp;&nbsp;</span>
+    <p fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
+      <span>Label dominance order:</span>
       <button mat-mini-fab color="accent" (click)="openLabelDominanceDialog()"><mat-icon>edit</mat-icon></button>
       <span fxFlex></span>
     
+      <span>Date unit:</span>
+      <mat-button-toggle-group aria-label="Date unit" [value]="bucketUnitSubject | async" (change)="bucketUnitSubject.next($event.value)">
+        <mat-button-toggle value="day">day</mat-button-toggle>
+        <mat-button-toggle value="week">week</mat-button-toggle>
+        <mat-button-toggle value="month">month</mat-button-toggle>
+        <mat-button-toggle value="year">year</mat-button-toggle>
+      </mat-button-toggle-group>      
       <mat-checkbox
           (change)="ignoreBillingPeriodSubject.next($event.checked)"
           [checked]="ignoreBillingPeriodSubject | async">
@@ -33,10 +40,12 @@
     </p>
 
     <hr>
-    <p>Analyzed {{matchingTransactionCount}} out of {{totalTransactionCount}} transactions.</p>
-    <p *ngIf="hasFilteredPartiallyBilledTransactions">
-      Note: Some transactions are partially billed for the selected date range.
-      Their contributions to other months are not shown.
+    <p fxLayout="row" fxLayout.lt-md="column" fxLayoutGap="0.5em">
+      <span fxFlex="noshrink">Analyzed {{matchingTransactionCount}} out of {{totalTransactionCount}} transactions.</span>
+      <span *ngIf="hasFilteredPartiallyBilledTransactions">
+        Note: Some transactions are partially billed for the selected date range.
+        Their contributions to other dates are not shown.
+      </span>
     </p>
     <hr>
     
