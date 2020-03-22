@@ -27,7 +27,10 @@ const TOKEN_BILLING_KEYWORDS = [
   'default', 'none', 'day', 'month', 'year', 'relative', 'absolute', 'individual', 'multiple'
 ].sort();
 const TOKEN_DATE_KEYWORDS = [
-  'never', 'today', 'yesterday', 'tomorrow', 'thismonth', 'lastmonth', 'nextmonth', 'thisyear', 'lastyear', 'nextyear'
+  'never', 'today', 'yesterday', 'tomorrow',
+  'thisweek', 'lastweek', 'nextweek',
+  'thismonth', 'lastmonth', 'nextmonth',
+  'thisyear', 'lastyear', 'nextyear',
 ].sort();
 const TOKEN_OPERATORS_BY_KEYWORD: { [keyword: string]: MatcherOperator[] } = {
   'is': [':'],
@@ -48,6 +51,7 @@ const TOKEN_OPERATORS_BY_KEYWORD: { [keyword: string]: MatcherOperator[] } = {
 
 const MOMENT_YEAR_REGEX = /^\d{4}$/;
 const MOMENT_MONTH_REGEX = /^(\d{4}-\d{1,2}|\w{3}(\d{2}){0,2})$/;
+const MOMENT_WEEK_REGEX = /^\d{4}-W\d{1,2}$/i;
 const MOMENT_DATE_FORMATS = [
   // day granularity
   'YYYY-MM-DD',
@@ -60,6 +64,9 @@ const MOMENT_DATE_FORMATS = [
   'MMMYYYY',
   'MMMYY',
   'MMM',
+  // week granularity
+  'GGGG-[W]WW',
+  'GGGG-[W]W',
   // year granularity
   'YYYY',
 ];
@@ -463,7 +470,7 @@ export class TransactionFilterService {
         interval => interval[0].unix() === 0 && interval[1].unix() === 0);
     }
 
-    let granularity: 'year' | 'month' | 'day';
+    let granularity: 'year' | 'month' | 'isoWeek' | 'day';
     let searchMoment: moment.Moment;
 
     switch (lowerValue) {
@@ -473,6 +480,9 @@ export class TransactionFilterService {
       case 'yesterday': granularity = 'day'; searchMoment = moment().subtract(1, 'day'); break;
       case 'tom':
       case 'tomorrow': granularity = 'day'; searchMoment = moment().add(1, 'day'); break;
+      case 'thisweek': granularity = 'isoWeek'; searchMoment = moment(); break;
+      case 'lastweek': granularity = 'isoWeek'; searchMoment = moment().subtract(1, 'week'); break;
+      case 'nextweek': granularity = 'isoWeek'; searchMoment = moment().add(1, 'week'); break;
       case 'thismonth': granularity = 'month'; searchMoment = moment(); break;
       case 'lastmonth': granularity = 'month'; searchMoment = moment().subtract(1, 'month'); break;
       case 'nextmonth': granularity = 'month'; searchMoment = moment().add(1, 'month'); break;
@@ -487,6 +497,9 @@ export class TransactionFilterService {
         } else if (MOMENT_MONTH_REGEX.test(value)) {
           granularity = 'month';
           searchMoment = moment(value, MOMENT_DATE_FORMATS, true);
+        } else if (MOMENT_WEEK_REGEX.test(value)) {
+          granularity = 'isoWeek';
+          searchMoment = moment(value.toUpperCase(), MOMENT_DATE_FORMATS, true);
         } else {
           granularity = 'day';
           searchMoment = moment(value, MOMENT_DATE_FORMATS, true);
@@ -508,7 +521,7 @@ export class TransactionFilterService {
       case ':':
       case '=': intervalPredicate = (from, to) => from.isSameOrBefore(searchMoment, granularity) && to.isSameOrAfter(searchMoment, granularity); break;
     }
-    return (t, d) => rangeSelector(t, d).some(interval => intervalPredicate(interval[0], interval[1]));
+    return (t, d) => rangeSelector(t, d).some(([from, to]) => intervalPredicate(from, to));
   }
 
   private makeNumericMatcher(value: string, operator: MatcherOperator,
