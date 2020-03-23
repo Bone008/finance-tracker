@@ -18,6 +18,8 @@ import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
 import { AnalysisResult, BilledTransaction, BucketInfo, BucketUnit, LabelGroup, LABEL_HIERARCHY_SEPARATOR, NONE_GROUP_NAME, OTHER_GROUP_NAME } from './types';
 
+const DAY_FORMAT = 'YYYY-MM-DD';
+
 @Component({
   selector: 'app-analytics',
   templateUrl: './analytics.component.html',
@@ -305,7 +307,36 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
   /** Splits transactions into date buckets according to billing settings and stores them in this.billedTransactionBuckets. */
   private analyzeBuckets(bucketUnit: BucketUnit, ignoreBilling: boolean) {
+    this.hasFilteredPartiallyBilledTransactions = false;
+    let passesDateFilter: (dayMoment: moment.Moment) => boolean;
+    if (this.dateRestrictingFilter) {
+      const filterPredicate = this.filterService.makeFilterPredicate(this.dateRestrictingFilter);
+      // Prepare a fake transaction used to check if a certain day passes the date filter.
+      const dummyBilling = new BillingInfo({ periodType: BillingType.DAY });
+      const dummyTransaction = new Transaction({ billing: dummyBilling, single: new TransactionData() });
+      passesDateFilter = (dayMoment: moment.Moment) => {
+        dummyBilling.date = momentToProtoDate(dayMoment);
+        return filterPredicate(dummyTransaction);
+      }
+    } else {
+      passesDateFilter = () => true;
+    }
+
+    const keyFormatsByBillingType: { [K in BillingType.DAY | BillingType.MONTH | BillingType.YEAR]: string } = {
+      [BillingType.DAY]: 'YYYY-MM-DD',
+      [BillingType.MONTH]: 'YYYY-MM',
+      [BillingType.YEAR]: 'YYYY',
+    };
+    const unitsByBillingType: { [K in BillingType.DAY | BillingType.MONTH | BillingType.YEAR]: BucketUnit } = {
+      [BillingType.DAY]: 'day',
+      [BillingType.MONTH]: 'month',
+      [BillingType.YEAR]: 'year',
+    };
+
     let keyFormat: string;
+    // Note: Do NOT directly use bucket unit as input for a moment's "granularity",
+    // since there we need to pass 'isoWeek' instead of 'week'! For add/subtract,
+    // using 'week' is fine, though.
     switch (bucketUnit) {
       case 'day': keyFormat = 'YYYY-MM-DD'; break;
       case 'week': keyFormat = 'GGGG-[W]WW'; break;
@@ -340,22 +371,45 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         continue;
       }
 
+      // billing.periodType determines which billing buckets this transaction amount should be evenly distributed across.
+      // Then, within billing buckets, the amount is evenly distributed across all contained days.
+      // This is relevant if the unit is months and years, which can have different number of days.
+      // The distribution to days is necessary in case there is a day-specific filter active,
+      // which may be finer than the configured dateUnit to view buckets in.
+
       const fromMoment = protoDateToMoment(billing.date);
       const toMoment = protoDateToMoment(billing.endDate);
-      const contributingKeys: string[] = [];
-      // Iterate over date units and collect their keys.
-      // Start with the normalized version of fromMoment (e.g. for months,
-      // 2018-05-22 is turned into 2018-05-01).
-      const it = moment(fromMoment.format(keyFormat), keyFormat);
+
+      const billingKeyFormat = keyFormatsByBillingType[billing.periodType];
+      const billingBucketUnit = unitsByBillingType[billing.periodType];
+      const contributingBillingBuckets: moment.Moment[] = [];
+      // Iterate over billing buckets and collect their moments.
+      // Start with the normalized version of fromMoment (e.g. for months, 2018-05-22 is turned into 2018-05-01).
+      const it = moment(fromMoment.format(billingKeyFormat), billingKeyFormat);
       while (it.isSameOrBefore(toMoment)) {
-        contributingKeys.push(it.format(keyFormat));
-        it.add(1, bucketUnit);
+        contributingBillingBuckets.push(it.clone());
+        it.add(1, billingBucketUnit);
       }
-      debugContribHistogram.add(contributingKeys.length + "", 1);
+      debugContribHistogram.add(contributingBillingBuckets.length + "", 1);
 
       const txAmount = getTransactionAmount(transaction, this.dataService, this.currencyService);
-      // TODO: For DAY billing granularity, we may want to consider proportional contributions to the months.
-      const amountPerBucket = txAmount / contributingKeys.length;
+      const amountPerBillingBucket = txAmount / contributingBillingBuckets.length;
+      const amountsByViewBucket = new KeyedNumberAggregate();
+      for (const itBucket of contributingBillingBuckets) {
+        // Distribute each bucket's amount share evenly across all individual days.
+        // Map individual days to the requested bucket key format and gather total amounts for this tx.
+        const numDays = itBucket.clone().add(1, billingBucketUnit).diff(itBucket, 'days');
+        const amountPerDay = amountPerBillingBucket / numDays;
+        const itDay = itBucket.clone();
+        for (let i = 0; i < numDays; i++) {
+          if (passesDateFilter(itDay)) {
+            amountsByViewBucket.add(itDay.format(keyFormat), amountPerDay);
+          } else {
+            this.hasFilteredPartiallyBilledTransactions = true;
+          }
+          itDay.add(1, 'day');
+        }
+      }
 
       // Resolve dominant label(s) and label grouping for this transaction.
       // Group number truncation to <other> happens in a *separate* step, because
@@ -367,16 +421,16 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         .map(label => this.collapsedLabelGroupNamesLookup[label] || label)
         .join(',');
 
-      for (const key of contributingKeys) {
+      // Finally create the BilledTransaction entry for each affected bucket.
+      for (const [key, amount] of amountsByViewBucket.getEntries()) {
         billedTxsByBucket.add(key, {
           source: transaction,
-          amount: amountPerBucket,
+          amount,
           labelGroupName: label,
         });
       }
     }
-
-    this.loggerService.debug("stats of # of billed months", debugContribHistogram.getEntries());
+    this.loggerService.debug("stats of # of billed buckets", debugContribHistogram.getEntries());
 
     // Fill holes in buckets with empty buckets.
     // Sort the keys alphanumerically as the keyFormat is big-endian.
@@ -390,7 +444,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         billedTxsByBucket.addMany(it.format(keyFormat), []);
       }
     }
-    this.cleanBucketsByDateFilter(billedTxsByBucket, bucketUnit, keyFormat);
 
     this.billedTransactionBuckets = billedTxsByBucket.getEntriesSorted().map(([name, billedTransactions]) => {
       const positive = billedTransactions.filter(t => t.amount > MONEY_EPSILON);
@@ -409,40 +462,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       };
       return bucket;
     });
-  }
-
-  /**
-   * Removes buckets which transactions were billed into, but which fall outside
-   * the user's date filter.
-   */
-  private cleanBucketsByDateFilter(billedBuckets: KeyedArrayAggregate<BilledTransaction>, bucketUnit: BucketUnit, keyFormat: string) {
-    this.hasFilteredPartiallyBilledTransactions = false;
-    if (!this.dateRestrictingFilter) {
-      return;
-    }
-
-    let periodType: BillingType;
-    switch (bucketUnit) {
-      case 'day': periodType = BillingType.DAY; break;
-      case 'week': periodType = BillingType.DAY; break;
-      case 'month': periodType = BillingType.MONTH; break;
-      case 'year': periodType = BillingType.YEAR; break;
-      default: throw new Error('unknown bucket unit: ' + bucketUnit);
-    }
-
-    // Create a fake transaction that is billed during the bucket's month
-    // and check if it would pass the date filter.
-    const dummyBilling = new BillingInfo({ periodType });
-    const dummyTransaction = new Transaction({ billing: dummyBilling, single: new TransactionData() });
-    for (const [key, billedTransactions] of billedBuckets.getEntries()) {
-      const keyMoment = moment(key, keyFormat);
-      dummyBilling.date = momentToProtoDate(keyMoment);
-      if (!this.filterService.matchesFilter(dummyTransaction, this.dateRestrictingFilter)) {
-        // This bucket does not pass the filter.
-        billedBuckets.delete(key);
-        this.hasFilteredPartiallyBilledTransactions = true;
-      }
-    }
   }
 
   /**
