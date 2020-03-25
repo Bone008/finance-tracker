@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
-import { debounceTime, map, skip } from 'rxjs/operators';
+import { debounceTime, map } from 'rxjs/operators';
 import { getPaletteColor } from 'src/app/core/color-util';
 import { LoggerService } from 'src/app/core/logger.service';
 import { observeFragment } from 'src/app/core/router-util';
@@ -77,7 +77,9 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.filterState.followFragment('q', this.route, this.router);
-    observeFragment('unit', this.bucketUnitSubject.pipe(skip(1)), this.route, this.router)
+    observeFragment('unit', this.bucketUnitSubject.pipe(
+      map(value => value === DEFAULT_BUCKET_UNIT ? '' : value)
+    ), this.route, this.router)
       .subscribe(value => {
         if (!value) value = DEFAULT_BUCKET_UNIT;
         if (isBucketUnit(value)) {
@@ -142,7 +144,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
     if (isAltClick) {
       // Open transactions list.
-      this.router.navigate(['/transactions'], { fragment: 'q=' + filter });
+      this.router.navigate(['/transactions'], { fragment: 'q=' + filter.trim() });
     } else {
       // Add label to filter on current page. Automatically uncollapse a clicked group.
       if (clickedLabels.length === 1 && clickedLabels[0].endsWith('+')) {
