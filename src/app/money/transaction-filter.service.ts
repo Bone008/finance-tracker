@@ -138,7 +138,7 @@ export class TransactionFilterService {
     else if (lastToken.startsWith('account:') || lastToken.startsWith('account=')) {
       continuationPrefix += lastToken.substr(0, 8);
       const accountNames = this.dataService.getCurrentAccountList()
-        .map(account => escapeQuotedString(account.name));
+        .map(account => escapeQuotedString(account.name.toLowerCase()));
       return filterFuzzyOptions(accountNames.sort(), lastToken.substr(8), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
