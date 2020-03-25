@@ -100,16 +100,26 @@ export class LabelBreakdownComponent implements OnChanges {
       },
       label: (item: ChartTooltipItem, data: ChartData) => {
         const allValues = <number[]>data.datasets![item.datasetIndex!].data;
-
         const value = allValues[item.index!];
+        const label = String(data.labels![item.index!]);
+
         const percentage = value / allValues.reduce((a, b) => a + b, 0);
         const numBuckets = this.analysisResult.buckets.length;
+        const numPresentBuckets = this.analysisResult.buckets.filter(bucket => {
+          const agg = value > 0 ? bucket.totalIncomeByLabel : bucket.totalExpensesByLabel;
+          return agg.has(label);
+        }).length;
         const perBucket = value / numBuckets;
+        const perPresentBucket = value / numPresentBuckets;
         return [
           this.currencyService.format(value, this.dataService.getMainCurrency()) + ' total',
           numBuckets > 1
             ? (this.currencyService.format(perBucket, this.dataService.getMainCurrency())
               + ` mean (over ${pluralize(numBuckets, this.analysisResult.bucketUnit)})`)
+            : '',
+          numPresentBuckets > 0 && numPresentBuckets !== numBuckets
+            ? (this.currencyService.format(perPresentBucket, this.dataService.getMainCurrency())
+              + ` mean (over ${pluralize(numPresentBuckets, 'non-zero ' + this.analysisResult.bucketUnit)})`)
             : '',
           (percentage * 100).toLocaleString('en-US',
             { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' %',

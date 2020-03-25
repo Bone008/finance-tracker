@@ -47,6 +47,10 @@ class KeyedGenericAggregate<TAggregate, TValue = TAggregate> {
     delete this.data[key];
   }
 
+  has(key: string): boolean {
+    return this.data.hasOwnProperty(key);
+  }
+
   get(key: string): TAggregate | null {
     if (this.data.hasOwnProperty(key)) {
       return this.data[key];
