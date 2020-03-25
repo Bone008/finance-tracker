@@ -6,13 +6,16 @@ export const LABEL_HIERARCHY_SEPARATOR = '/';
 export const NONE_GROUP_NAME = '<none>';
 export const OTHER_GROUP_NAME = '<other>';
 
-export type BucketUnit = 'day' | 'week' | 'month' | 'year';
+export const ALL_BUCKET_UNITS = ['day', 'week', 'month', 'year'] as const;
+export type BucketUnit = typeof ALL_BUCKET_UNITS[number];
+export function isBucketUnit(input: string): input is BucketUnit {
+  return (<readonly string[]>ALL_BUCKET_UNITS).includes(input);
+}
 
 /** Provides data about a label with sublabels (induced label hierarchy). */
 export interface LabelGroup {
   parentName: string;
   children: string[];
-  shouldCollapse: boolean;
 }
 
 /** Contains data about a transcation billed to a specific date bucket. */

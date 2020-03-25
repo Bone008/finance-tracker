@@ -2,9 +2,10 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import * as moment from 'moment';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { debounceTime, map, skip } from 'rxjs/operators';
 import { getPaletteColor } from 'src/app/core/color-util';
 import { LoggerService } from 'src/app/core/logger.service';
+import { observeFragment } from 'src/app/core/router-util';
 import { escapeRegex, nested2ToSet, nested3ToSet, sortBy, splitQuotedString } from 'src/app/core/util';
 import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
@@ -16,9 +17,10 @@ import { FilterState } from '../filter-input/filter-state';
 import { CanonicalBillingInfo, extractAllLabels, getDominantLabels, getTransactionAmount, MONEY_EPSILON, resolveTransactionCanonicalBilling } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
-import { AnalysisResult, BilledTransaction, BucketInfo, BucketUnit, LabelGroup, LABEL_HIERARCHY_SEPARATOR, NONE_GROUP_NAME, OTHER_GROUP_NAME } from './types';
+import { AnalysisResult, BilledTransaction, BucketInfo, BucketUnit, isBucketUnit, LabelGroup, LABEL_HIERARCHY_SEPARATOR, NONE_GROUP_NAME, OTHER_GROUP_NAME } from './types';
 
-const DAY_FORMAT = 'YYYY-MM-DD';
+const DEFAULT_BUCKET_UNIT = 'month';
+const BUCKET_TOTAL_BY_LABEL_PROPS = ['totalExpensesByLabel', 'totalIncomeByLabel'] as const;
 
 @Component({
   selector: 'app-analytics',
@@ -26,17 +28,13 @@ const DAY_FORMAT = 'YYYY-MM-DD';
   styleUrls: ['./analytics.component.css']
 })
 export class AnalyticsComponent implements OnInit, OnDestroy {
-  private readonly bucketTotalByLabelProps = ['totalExpensesByLabel', 'totalIncomeByLabel'] as const;
-
   readonly filterState = new FilterState();
-  readonly bucketUnitSubject = new BehaviorSubject<BucketUnit>('month');
+  readonly bucketUnitSubject = new BehaviorSubject<BucketUnit>(DEFAULT_BUCKET_UNIT);
   readonly ignoreBillingPeriodSubject = new BehaviorSubject<boolean>(false);
-  readonly labelCollapseSubject = new BehaviorSubject<void>(void (0));
+  readonly uncollapsedGroupsSubject = new BehaviorSubject<'all' | 'none' | Set<string>>('none');
   private readonly labelDominanceSubject = new BehaviorSubject<LabelDominanceOrder>({});
   private readonly labelGroupLimitsSubject = new BehaviorSubject<void>(void (0));
 
-  private static readonly uncollapsedLabels = new Set<string>();
-  // TODO: Refactor this into a "LabelGroupService" that abstracts & persists the storage of this.
   labelGroups: LabelGroup[] = [];
   totalTransactionCount = 0;
   matchingTransactionCount = 0;
@@ -51,7 +49,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
    * and truncated label groups.
    * Subcomponents can further process this dataset.
    */
-  analysisResult: AnalysisResult = { bucketUnit: 'month', buckets: [], labelGroupNames: [], labelGroupColorsByName: {}, excludedLabels: [], summedTotalIncomeByLabel: new KeyedNumberAggregate(), summedTotalExpensesByLabel: new KeyedNumberAggregate() };
+  analysisResult: AnalysisResult = { bucketUnit: DEFAULT_BUCKET_UNIT, buckets: [], labelGroupNames: [], labelGroupColorsByName: {}, excludedLabels: [], summedTotalIncomeByLabel: new KeyedNumberAggregate(), summedTotalExpensesByLabel: new KeyedNumberAggregate() };
 
   private txSubscription: Subscription;
   private matchingTransactions: Transaction[] = [];
@@ -78,14 +76,32 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     private readonly loggerService: LoggerService) { }
 
   ngOnInit() {
-    this.filterState.followFragment(this.route, this.router);
+    this.filterState.followFragment('q', this.route, this.router);
+    observeFragment('unit', this.bucketUnitSubject.pipe(skip(1)), this.route, this.router)
+      .subscribe(value => {
+        if (!value) value = DEFAULT_BUCKET_UNIT;
+        if (isBucketUnit(value)) {
+          this.bucketUnitSubject.next(value);
+        }
+      });
+    observeFragment('collapse', this.uncollapsedGroupsSubject.pipe(map(value => {
+      if (value === 'none') return '';
+      if (value === 'all') return 'none'; // inverted for easier outside interpretability
+      return Array.from(value).sort().map(v => '!' + v).join(';');
+    })), this.route, this.router)
+      .subscribe(fragmentValue => {
+        if (!fragmentValue) this.uncollapsedGroupsSubject.next('none');
+        else if (fragmentValue === 'none') this.uncollapsedGroupsSubject.next('all');
+        else {
+          const labels = fragmentValue.split(';').map(v => v.replace(/^!/, ''));
+          this.uncollapsedGroupsSubject.next(new Set(labels));
+        }
+      });
 
     // TODO @ZombieSubscription
     this.dataService.userSettings$
       .pipe(map(settings => settings.labelDominanceOrder))
       .subscribe(this.labelDominanceSubject);
-
-    this.labelCollapseSubject.subscribe(() => this.refreshUncollapsedLabels());
 
     this.txSubscription =
       combineLatest(
@@ -93,9 +109,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         this.filterState.value$,
         this.bucketUnitSubject,
         this.ignoreBillingPeriodSubject,
-        this.labelCollapseSubject,
+        this.uncollapsedGroupsSubject,
         this.labelDominanceSubject,
         this.labelGroupLimitsSubject)
+        .pipe(debounceTime(0)) // when multiple values change at once
         .subscribe(_ => this.analyzeTransactions());
   }
 
@@ -124,8 +141,13 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
 
     if (isAltClick) {
+      // Open transactions list.
       this.router.navigate(['/transactions'], { fragment: 'q=' + filter });
     } else {
+      // Add label to filter on current page. Automatically uncollapse a clicked group.
+      if (clickedLabels.length === 1 && clickedLabels[0].endsWith('+')) {
+        this.setShouldCollapseGroup(clickedLabels[0].substr(0, clickedLabels[0].length - 1), false);
+      }
       this.filterState.setValueNow(filter);
     }
   }
@@ -151,16 +173,45 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   collapseAllGroups() {
-    AnalyticsComponent.uncollapsedLabels.clear();
-    this.labelGroups.forEach(group => group.shouldCollapse = true);
-    // Note: Do not remove void param as compiler will complain even though
-    // IDE says it is fine.
-    this.labelCollapseSubject.next(void (0));
+    this.uncollapsedGroupsSubject.next('none');
   }
 
   uncollapseAllGroups() {
-    this.labelGroups.forEach(group => group.shouldCollapse = false);
-    this.labelCollapseSubject.next(void (0));
+    this.uncollapsedGroupsSubject.next('all');
+  }
+
+  shouldCollapseGroup(group: string): boolean {
+    const value = this.uncollapsedGroupsSubject.value;
+    if (value === 'all') return false;
+    if (value === 'none') return true;
+    return !value.has(group);
+  }
+
+  setShouldCollapseGroup(group: string, flag: boolean) {
+    const shouldIncludeInSet = !flag; // set tracks UNcollapsed values
+    const value = this.uncollapsedGroupsSubject.value;
+    let newValue: typeof value;
+    if (shouldIncludeInSet) {
+      if (value === 'all')
+        return; // noop
+      else if (value === 'none')
+        newValue = new Set([group]);
+      else {
+        newValue = value.add(group);
+      }
+    }
+    else {
+      if (value === 'all')
+        newValue = new Set(this.labelGroups.filter(g => g.parentName !== group).map(g => g.parentName));
+      else if (value === 'none')
+        return; // noop
+      else if (value.delete(group)) {
+        newValue = value;
+      } else {
+        return; // was not even contained, noop
+      }
+    }
+    this.uncollapsedGroupsSubject.next(newValue);
   }
 
   openLabelDominanceDialog() {
@@ -174,24 +225,14 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       });
   }
 
-  private refreshUncollapsedLabels() {
-    for (const group of this.labelGroups) {
-      if (group.shouldCollapse) {
-        AnalyticsComponent.uncollapsedLabels.delete(group.parentName);
-      } else {
-        AnalyticsComponent.uncollapsedLabels.add(group.parentName);
-      }
-    }
-  }
-
   //#region Group Limit controls
   canIncreaseGroupLimit(index: number): boolean {
-    return this.billedTransactionBuckets.some(b => b[this.bucketTotalByLabelProps[index]].get(OTHER_GROUP_NAME));
+    return this.billedTransactionBuckets.some(b => b[BUCKET_TOTAL_BY_LABEL_PROPS[index]].get(OTHER_GROUP_NAME));
   }
 
   canDecreaseGroupLimit(index: number): boolean {
     return this.labelGroupLimits[index] > 3
-      && nested2ToSet(this.billedTransactionBuckets.map(b => b[this.bucketTotalByLabelProps[index]].getKeys())).size > 3;
+      && nested2ToSet(this.billedTransactionBuckets.map(b => b[BUCKET_TOTAL_BY_LABEL_PROPS[index]].getKeys())).size > 3;
   }
 
   increaseGroupLimit(index: number) {
@@ -280,14 +321,13 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       .map(([parentName, children]) => <LabelGroup>{
         parentName,
         children,
-        shouldCollapse: !AnalyticsComponent.uncollapsedLabels.has(parentName),
       });
 
     // Build cache.
     this.collapsedLabelGroupNamesLookup = {};
     const lookup = this.collapsedLabelGroupNamesLookup;
     for (const group of this.labelGroups) {
-      if (group.shouldCollapse) {
+      if (this.shouldCollapseGroup(group.parentName)) {
         lookup[group.parentName] = group.parentName + '+';
         for (const child of group.children) {
           lookup[group.parentName + LABEL_HIERARCHY_SEPARATOR + child] = group.parentName + '+';
@@ -471,7 +511,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
    */
   private analyzeLabelGroupTruncation() {
     let i = 0;
-    for (const aggregateProp of this.bucketTotalByLabelProps) {
+    for (const aggregateProp of BUCKET_TOTAL_BY_LABEL_PROPS) {
       // Reduce all buckets to one total sum for each label group.
       // We need this to sort by a label group's total "weight".
       // This is equivalent to the final value of analysisResult.summedTotal(Expenses|Income)ByLabel,

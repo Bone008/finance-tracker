@@ -1,7 +1,7 @@
 import { async, ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { Subject } from 'rxjs';
 import { LoggerService } from 'src/app/core/logger.service';
 import { DataContainer, LabelConfig } from 'src/proto/model';
 import { makeBilling, makeTx } from 'src/testing/test-util';
@@ -15,6 +15,7 @@ fdescribe('AnalyticsComponent', () => {
   let fixture: ComponentFixture<AnalyticsComponent>;
 
   let dataService: DataService;
+  let routeFragmentSubject: Subject<string>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -22,7 +23,7 @@ fdescribe('AnalyticsComponent', () => {
       imports: [MatDialogModule],
       providers: [
         { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate', 'navigateByUrl']) },
-        { provide: ActivatedRoute, useValue: { fragment: of('') } },
+        { provide: ActivatedRoute, useValue: { fragment: routeFragmentSubject = new Subject() } },
         LoggerService,
       ],
     })
@@ -176,7 +177,7 @@ fdescribe('AnalyticsComponent', () => {
   }));
 
 
-  it('should collapse hierarchical labels', fakeAsync(() => {
+  it('should collapse hierarchical labels by default', fakeAsync(() => {
     dataService.setDataContainer(new DataContainer({
       transactions: [
         makeTx('2020-01-15', -42, ['foo/bar']),
@@ -186,6 +187,37 @@ fdescribe('AnalyticsComponent', () => {
     }));
     tick();
 
-    expect(component.labelGroups).toEqual([{ parentName: 'foo', children: ['bar', 'banana'], shouldCollapse: true }]);
+    expect(component.labelGroups).toEqual([{ parentName: 'foo', children: ['bar', 'banana'] }]);
+    expect(component.shouldCollapseGroup('foo')).toBe(true);
+  }));
+
+  it('should not collapse hierarchical labels when excluded in fragment', fakeAsync(() => {
+    dataService.setDataContainer(new DataContainer({
+      transactions: [
+        makeTx('2020-01-15', -42, ['foo/bar']),
+        makeTx('2020-01-16', -44, ['dog']),
+        makeTx('2020-01-17', -46, ['foo/banana']),
+      ]
+    }));
+    routeFragmentSubject.next('collapse=!foo');
+    tick();
+
+    expect(component.labelGroups).toEqual([{ parentName: 'foo', children: ['bar', 'banana'] }]);
+    expect(component.shouldCollapseGroup('foo')).toBe(false);
+  }));
+
+  it('should not collapse hierarchical labels when excluded by subject', fakeAsync(() => {
+    dataService.setDataContainer(new DataContainer({
+      transactions: [
+        makeTx('2020-01-15', -42, ['foo/bar']),
+        makeTx('2020-01-16', -44, ['dog']),
+        makeTx('2020-01-17', -46, ['foo/banana']),
+      ]
+    }));
+    component.uncollapsedGroupsSubject.next(new Set(['foo']));
+    tick();
+
+    expect(component.labelGroups).toEqual([{ parentName: 'foo', children: ['bar', 'banana'] }]);
+    expect(component.shouldCollapseGroup('foo')).toBe(false);
   }));
 });

@@ -91,7 +91,7 @@ export class TransactionsComponent implements AfterViewInit {
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsSubject = this.transactionsDataSource.connect();
 
-    this.filterState.followFragment(this.route, this.router);
+    this.filterState.followFragment('q', this.route, this.router);
 
     // Reset to first page whenever filter changes.
     // We do NOT want this to happen when transaction list changes, otherwise
