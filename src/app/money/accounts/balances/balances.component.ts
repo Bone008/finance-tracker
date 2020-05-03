@@ -59,7 +59,6 @@ export class BalancesComponent implements OnInit {
       date: protoDate,
       balance: numberToMoney(this.newBalance!),
     }));
-    this.newDate = null;
     this.newBalance = null;
     this.computeDisplayedBalances();
   }
