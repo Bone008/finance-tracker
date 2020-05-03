@@ -7,6 +7,7 @@ import { Account, ImportedRow, ITransactionData, Transaction, TransactionData } 
 import { LoggerService } from '../../core/logger.service';
 import { timestampNow, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
+import { extractTransactionData } from '../model-util';
 import { RuleService } from '../rule.service';
 import { FormatMapping } from './format-mapping';
 import { ALL_FILE_FORMATS, ImportFileFormat, MAPPINGS_BY_FORMAT } from './mappings';
@@ -192,7 +193,7 @@ export class ImportFileComponent implements OnInit {
       return;
     }
 
-    const existingRows = this.dataService.getImportedRows();
+    const existingRows = this.findRelevantExistingRows();
 
     // Process rows.
     for (let i = 0; i < csvData.data.length; i++) {
@@ -256,6 +257,25 @@ export class ImportFileComponent implements OnInit {
       return false;
     }
     return true;
+  }
+
+  // We want to deduplicate only against rows that are either orphaned or
+  // that have transactions in the targetAccount.
+  private findRelevantExistingRows(): ImportedRow[] {
+    const accountId = this.targetAccount!.id;
+    const allTxData = extractTransactionData(this.dataService.getCurrentTransactionList());
+
+    // Collect all IDs that transactions in OTHER accounts refer to.
+    const excludedRowIds = new Set<number>(allTxData
+      .filter(data => data.importedRowId > 0 && data.accountId !== accountId)
+      .map(data => data.importedRowId));
+    // Exclude all IDs which a transaction of the target account ALSO refers to.
+    allTxData
+      .filter(data => data.importedRowId > 0 && data.accountId === accountId)
+      .forEach(data => excludedRowIds.delete(data.importedRowId));
+    // Return all rows which are not excluded.
+    return this.dataService.getImportedRows()
+      .filter(row => !excludedRowIds.has(row.id));
   }
 
   private isDuplicate(row: { [column: string]: string }, existingRows: ImportedRow[], mapping: FormatMapping): boolean {
