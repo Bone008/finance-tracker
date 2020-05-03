@@ -34,6 +34,8 @@ export class BankSyncComponent implements OnInit {
     new FormControl(0),
     new FormControl(0),
     new FormControl(0),
+    new FormControl(0),
+    new FormControl(0),
   ], validateAnyAccounts);
   form = new FormGroup<RequiredProto<IBankSyncSettings>>({
     bankType: new FormControl('sparkasse', Validators.required),

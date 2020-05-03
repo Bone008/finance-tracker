@@ -61,7 +61,7 @@
         Account mapping
         <mat-icon class="help-icon" matTooltip="Specify which bank accounts should be imported into which Finance Tracker account, in the order they appear in the bank.">help</mat-icon>
       </h4>
-      <fieldset formArrayName="targetAccountIds" fxLayout="column">
+      <fieldset class="account-mapping-container" formArrayName="targetAccountIds" fxLayout="column">
         <mat-form-field *ngFor="let control of targetAccountsForm.controls; let i=index">
           <span matPrefix>#{{i+1}}:&nbsp;&nbsp;</span>
           <mat-select [formControlName]="i">

@@ -2,6 +2,15 @@
   text-align: right;
 }
 
+.account-mapping-container {
+  margin: -10px 0 0 0;
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
+.account-mapping-container .mat-form-field {
+  margin: -0.6em 0;
+}
+
 .log-container {
   overflow: hidden;
 }
