@@ -71,6 +71,8 @@ export class AccountsComponent implements OnInit {
   /** Opens dialog to create a new account. */
   startAdd() {
     const account = new Account({
+      icon: 'account_balance',
+      currency: this.dataService.getUserSettings().mainCurrency,
     });
 
     this.dialogService.openAccountEdit(account, 'add')

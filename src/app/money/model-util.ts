@@ -12,8 +12,8 @@ export const MONEY_EPSILON = 0.005;
 export function createDefaultDataContainer(): DataContainer {
   return new DataContainer({
     accounts: [
-      new Account({ id: 1, name: 'Cash', icon: 'money', currency: 'EUR' }),
-      new Account({ id: 2, name: 'Bank account', icon: 'assignment', currency: 'EUR' }),
+      new Account({ id: 1, name: 'Cash', icon: 'account_balance_wallet', currency: 'EUR' }),
+      new Account({ id: 2, name: 'Bank account', icon: 'account_balance', currency: 'EUR' }),
     ],
     userSettings: new UserSettings({ defaultAccountIdOnAdd: 1 }),
   });
