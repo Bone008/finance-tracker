@@ -91,9 +91,10 @@ export function protoDateToMoment(date: ProtoDate | null | undefined): moment.Mo
 }
 
 export function numberToMoney(num: number): Money {
+  const totalSubunits = Math.round(num * 100);
   return new Money({
-    units: Math.trunc(num),
-    subunits: Math.round(num * 100) % 100,
+    units: Math.trunc(totalSubunits / 100),
+    subunits: totalSubunits % 100, // Relies on -x % 100 = x.
   });
 }
 
