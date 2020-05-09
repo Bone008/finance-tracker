@@ -24,7 +24,7 @@ const TOKEN_IS_KEYWORDS = [
   'single', 'group', 'expense', 'income', 'imported'
 ].sort();
 const TOKEN_BILLING_KEYWORDS = [
-  'default', 'none', 'day', 'month', 'year', 'relative', 'absolute', 'individual', 'multiple'
+  'default', 'none', 'day', 'month', 'year', 'relative', 'absolute', 'individual', 'inherited', 'multiple'
 ].sort();
 const TOKEN_DATE_KEYWORDS = [
   'never', 'today', 'yesterday', 'tomorrow',
@@ -409,6 +409,7 @@ export class TransactionFilterService {
     const getRaw = (transaction: Transaction) => resolveTransactionRawBilling(transaction, this.dataService, labelDominanceOrder);
 
     if (operator === ':') {
+      // Note that this logic is closely related to TransactionsComponent.getTransactionBillingString().
       switch (value.toLowerCase()) {
         case 'default': return transaction => getRaw(transaction).periodType === BillingType.UNKNOWN;
         case 'none': return transaction => getRaw(transaction).periodType === BillingType.NONE;
@@ -424,6 +425,10 @@ export class TransactionFilterService {
           return billing.periodType !== BillingType.UNKNOWN && billing.periodType !== BillingType.NONE && !billing.isRelative;
         };
         case 'individual': return transaction => !!transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
+        // inherited ^= !individual && !default
+        case 'inherited': return transaction =>
+          (!transaction.billing || transaction.billing.periodType === BillingType.UNKNOWN)
+          && getRaw(transaction).periodType !== BillingType.UNKNOWN;
         case 'multiple': return transaction => transaction.labels.filter(label =>
           this.dataService.getLabelBilling(label).periodType !== BillingType.UNKNOWN
         ).length > 1;
