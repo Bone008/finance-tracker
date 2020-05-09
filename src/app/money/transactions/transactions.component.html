@@ -96,7 +96,9 @@
         </mat-checkbox>
 
         <div class="cell-date">
-          <span [matTooltip]="getTransactionDate(transaction) | date:'full'">
+          <span
+              matTooltip="{{getTransactionDate(transaction) | date:'EEEE, yyyy-MM-dd, HH:mm z'}}&#13;Billing: {{getTransactionBillingString(transaction)}}"
+              matTooltipClass="tooltip-multiline">
             {{getTransactionDate(transaction) | date}}
           </span>
           <span *ngIf="isTransactionGroup(transaction)" class="grouped-comment">

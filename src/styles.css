@@ -22,6 +22,10 @@ body {
   margin: 20px;
 }
 
+.tooltip-multiline {
+  white-space: pre-line;
+}
+
 /* Mimics default style of mat-form-field label,
    for inputs where it is not supported. */
 .custom-field-label {

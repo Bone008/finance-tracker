@@ -8,14 +8,14 @@ import { combineLatest, of, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { patchShortcuts } from 'src/app/core/keyboard-shortcuts-patch';
 import { makeSharedObject, patchObject } from 'src/app/core/util';
-import { google, GroupData, Transaction, TransactionData } from '../../../proto/model';
+import { BillingType, google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
-import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
+import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, protoDateToMoment, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, mapTransactionData, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, mapTransactionData, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction, resolveTransactionCanonicalBilling } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
@@ -451,6 +451,27 @@ export class TransactionsComponent implements AfterViewInit {
     if (!transaction.__date || transaction.__date.getTime() !== millis)
       transaction.__date = new Date(millis);
     return transaction.__date;
+  }
+
+  getTransactionBillingString(transaction: Transaction): string {
+    console.log('getTransactionBillingString', transaction);
+    const dominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
+    const isIndividual = transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
+    const billing = resolveTransactionCanonicalBilling(transaction, this.dataService, dominanceOrder);
+    if (billing.periodType == BillingType.NONE) {
+      return 'none';
+    }
+    let format: string, unit: string;
+    switch (billing.periodType) {
+      case BillingType.DAY: format = 'YYYY-MM-DD'; unit = 'day'; break;
+      case BillingType.MONTH: format = 'YYYY-MM'; unit = 'month'; break;
+      case BillingType.YEAR: format = 'YYYY'; unit = 'year'; break;
+      default: console.assert(false, 'unexpected billing type'); return 'error';
+    }
+
+    const from = protoDateToMoment(billing.date).format(format);
+    const to = protoDateToMoment(billing.endDate).format(format);
+    return `${unit} ${from}${from !== to ? ' until ' + to : ''}, ${isIndividual ? 'individual' : 'inherited'}`;
   }
 
   getTransactionIcon(transaction: Transaction): string {
