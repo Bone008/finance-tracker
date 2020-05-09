@@ -46,6 +46,7 @@
   color: rgba(0,0,0, .8);
 }
 .balances-container .missing-row .discrepancy {
+  margin-right: 5px;
   border-bottom: 1px dotted rgba(0,0,0, .66);
   font-size: 120%;
   white-space: nowrap;

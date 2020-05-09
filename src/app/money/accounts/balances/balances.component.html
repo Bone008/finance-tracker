@@ -14,7 +14,7 @@
           placeholder="Date"
           required>
     </mat-form-field>
-    <mat-form-field class="amount-field" [class.negative]="newBalance && newBalance < 0">
+    <mat-form-field class="amount-field" [class.negative]="(newBalance || 0) < 0">
       <input
           cdkFocusInitial
           matInput
@@ -62,6 +62,11 @@
                         is missing in the database for the balances to add up consistently.">
           {{balance.formattedDiscrepancy}}
         </span>
+        <button mat-flat-button color="accent"
+            (click)="fixDiscrepancy(balance)"
+            matTooltip="Click to create a transaction to correct this mismatch.">
+          Fix
+        </button>
       </div>
     </ng-container>
   </div>

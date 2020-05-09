@@ -1,13 +1,15 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import * as moment from 'moment';
-import { momentToProtoDate, moneyToNumber, numberToMoney, protoDateToMoment, timestampToMoment } from 'src/app/core/proto-util';
+import { cloneMessage, momentToProtoDate, momentToTimestamp, moneyToNumber, numberToMoney, protoDateToMoment, timestampNow, timestampToMoment } from 'src/app/core/proto-util';
 import { maxBy, removeByValue } from 'src/app/core/util';
-import { Account, Date as ProtoDate, KnownBalance } from 'src/proto/model';
+import { Account, BillingInfo, BillingType, Date as ProtoDate, KnownBalance, Transaction, TransactionData } from 'src/proto/model';
 import { isNumber } from 'util';
 import { CurrencyService } from '../../currency.service';
 import { DataService } from '../../data.service';
+import { DialogService } from '../../dialog.service';
 import { extractTransactionData, MONEY_EPSILON } from '../../model-util';
+import { RuleService } from '../../rule.service';
 
 interface DisplayedBalance {
   original: KnownBalance;
@@ -35,6 +37,8 @@ export class BalancesComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) data: { account: Account },
     private readonly dataService: DataService,
     private readonly currencyService: CurrencyService,
+    private readonly ruleService: RuleService,
+    private readonly dialogService: DialogService,
   ) {
     this.account = data.account;
     this.computeDisplayedBalances();
@@ -72,6 +76,36 @@ export class BalancesComponent implements OnInit {
     return this.currencyService.getSymbol(this.account.currency);
   }
 
+  fixDiscrepancy(displayedBalance: DisplayedBalance) {
+    const balance = displayedBalance.original;
+    const [discrepancy, previous] = this.computeDiscrepancy(balance);
+    if (!discrepancy || !previous) {
+      throw new Error('Tried to fix invalid discrepancy.');
+    }
+
+    const transaction = new Transaction({
+      billing: new BillingInfo({
+        periodType: BillingType.DAY,
+        date: momentToProtoDate(protoDateToMoment(previous.date).add(1, 'day')),
+        endDate: cloneMessage(ProtoDate, balance.date),
+      }),
+      single: new TransactionData({
+        accountId: this.account.id,
+        date: momentToTimestamp(protoDateToMoment(balance.date)),
+        amount: numberToMoney(discrepancy),
+        reason: 'untracked',
+      }),
+    });
+
+    this.dialogService.openTransactionEdit(transaction, 'add')
+      .afterConfirmed().subscribe(() => {
+        transaction.single!.created = timestampNow();
+        this.dataService.addTransactions(transaction);
+        this.ruleService.notifyAdded(transaction);
+        this.computeDisplayedBalances();
+      });
+  }
+
   private hasBalanceAtDate(protoDate: ProtoDate): boolean {
     return this.account.knownBalances.some(balance =>
       !!balance.date
@@ -84,7 +118,7 @@ export class BalancesComponent implements OnInit {
   private computeDisplayedBalances() {
     this.displayedBalances = this.account.knownBalances
       .map(balance => {
-        const discrepancy = this.computeDiscrepancy(balance);
+        const [discrepancy, _] = this.computeDiscrepancy(balance);
         return <DisplayedBalance>{
           original: balance,
           date: protoDateToMoment(balance.date).toDate(),
@@ -99,7 +133,11 @@ export class BalancesComponent implements OnInit {
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }
 
-  private computeDiscrepancy(balance: KnownBalance): number | null {
+  /**
+   * Computes a known balance's discrepancy to its closest predecessor.
+   * @returns null if no predecessor exists, otherwise the discrepancy + which predecessor was found.
+   */
+  private computeDiscrepancy(balance: KnownBalance): [number | null, KnownBalance | null] {
     const when = protoDateToMoment(balance.date);
     const allPrevious = this.account.knownBalances
       .map(knownBalance => ({ knownBalance, otherMoment: protoDateToMoment(knownBalance.date) }))
@@ -107,12 +145,12 @@ export class BalancesComponent implements OnInit {
     const previous = maxBy(allPrevious, ({ otherMoment }) => otherMoment.valueOf());
 
     if (!previous) {
-      return null;
+      return [null, null];
     }
 
     const computedBalance = this.computeAccountBalance(previous.knownBalance, when);
     const givenBalance = moneyToNumber(balance.balance);
-    return givenBalance - computedBalance;
+    return [givenBalance - computedBalance, previous.knownBalance];
   }
 
   // TODO: This is duplicated in AccountsComponent and should be moved to a utility.
