@@ -7,7 +7,7 @@ import * as moment from 'moment';
 import { combineLatest, of, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { patchShortcuts } from 'src/app/core/keyboard-shortcuts-patch';
-import { makeSharedObject, patchObject } from 'src/app/core/util';
+import { makeSharedObject } from 'src/app/core/util';
 import { BillingType, google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, protoDateToMoment, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
@@ -15,7 +15,7 @@ import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, mapTransactionData, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction, resolveTransactionCanonicalBilling } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, mapTransactionData, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
@@ -25,7 +25,11 @@ interface TransactionViewCache {
   __date?: Date;
   __formattedNotes?: [string, string][];
   __transferInfo?: object;
+  __billingString?: string;
 }
+// Keep in sync with entries above.
+const VIEW_CACHE_KEYS: Array<keyof TransactionViewCache> =
+  ['__date', '__formattedNotes', '__transferInfo', '__billingString'];
 
 @Component({
   selector: 'app-transactions',
@@ -113,6 +117,7 @@ export class TransactionsComponent implements AfterViewInit {
         })
       )
       .subscribe(value => {
+        this.clearViewCaches(value);
         this.transactionsDataSource.data = value;
 
         // Deselect all transactions that are no longer part of the filtered data.
@@ -179,6 +184,7 @@ export class TransactionsComponent implements AfterViewInit {
         this.forceShowTransactions.add(transaction);
         this.dataService.addTransactions([]); // Trigger list refresh to reorder in case date was changed.
         this.ruleService.notifyModified([transaction]);
+        this.clearViewCaches([transaction]);
       });
   }
 
@@ -205,6 +211,7 @@ export class TransactionsComponent implements AfterViewInit {
       this.forceShowTransactions.add(newTransaction);
       this.dataService.addTransactions(newTransaction);
       this.ruleService.notifyModified([transaction, newTransaction]);
+      this.clearViewCaches([transaction, newTransaction]);
 
       this.selection.select(newTransaction);
       console.log("Split", data, `into ${newAmount} + ${remainingAmount}.`);
@@ -335,6 +342,7 @@ export class TransactionsComponent implements AfterViewInit {
       addLabelToTransaction(transaction, newLabel);
     }
     this.ruleService.notifyModified(affectedTransactions);
+    this.clearViewCaches(affectedTransactions);
   }
 
   deleteLabelFromTransaction(principal: Transaction, label: string) {
@@ -346,6 +354,7 @@ export class TransactionsComponent implements AfterViewInit {
       removeLabelFromTransaction(transaction, label);
     }
     this.ruleService.notifyModified(affectedTransactions);
+    this.clearViewCaches(affectedTransactions);
   }
 
   /** Returns the label that was deleted, or null if prerequisites were not met. */
@@ -370,6 +379,7 @@ export class TransactionsComponent implements AfterViewInit {
       transaction.labels.splice(-1, 1);
     }
     this.ruleService.notifyModified(affectedTransactions);
+    this.clearViewCaches(affectedTransactions);
     return label;
   }
 
@@ -444,34 +454,44 @@ export class TransactionsComponent implements AfterViewInit {
   }
 
   getTransactionDate(transaction: Transaction & TransactionViewCache): Date {
+    if (transaction.__date) return transaction.__date;
+
     // TODO properly create aggregate date of groups.
     const millis = timestampToMilliseconds(extractTransactionData(transaction)[0].date);
 
-    // Fix object identity to play nice with Angular change tracking.
-    if (!transaction.__date || transaction.__date.getTime() !== millis)
-      transaction.__date = new Date(millis);
-    return transaction.__date;
+    return transaction.__date = new Date(millis);
   }
 
-  getTransactionBillingString(transaction: Transaction): string {
-    console.log('getTransactionBillingString', transaction);
-    const dominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
-    const isIndividual = transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
-    const billing = resolveTransactionCanonicalBilling(transaction, this.dataService, dominanceOrder);
-    if (billing.periodType == BillingType.NONE) {
-      return 'none';
-    }
-    let format: string, unit: string;
-    switch (billing.periodType) {
-      case BillingType.DAY: format = 'YYYY-MM-DD'; unit = 'day'; break;
-      case BillingType.MONTH: format = 'YYYY-MM'; unit = 'month'; break;
-      case BillingType.YEAR: format = 'YYYY'; unit = 'year'; break;
-      default: console.assert(false, 'unexpected billing type'); return 'error';
-    }
+  getTransactionBillingString(transaction: Transaction & TransactionViewCache): string {
+    if (transaction.__billingString) return transaction.__billingString;
 
-    const from = protoDateToMoment(billing.date).format(format);
-    const to = protoDateToMoment(billing.endDate).format(format);
-    return `${unit} ${from}${from !== to ? ' until ' + to : ''}, ${isIndividual ? 'individual' : 'inherited'}`;
+    // Note that this logic and terminology is closely related to the "billing:" filter matchers.
+
+    const isIndividual = transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
+    const dominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
+    const canonical = resolveTransactionCanonicalBilling(transaction, this.dataService, dominanceOrder);
+
+    if (canonical.periodType === BillingType.NONE) {
+      transaction.__billingString = `none, ${isIndividual ? 'individual' : 'inherited'}`;
+    }
+    else {
+      const raw = resolveTransactionRawBilling(transaction, this.dataService, dominanceOrder);
+      const isDefault = raw.periodType === BillingType.UNKNOWN;
+      const typeStr = isDefault ? 'default' : (isIndividual ? 'individual' : 'inherited');
+
+      let format: string, unit: string;
+      switch (canonical.periodType) {
+        case BillingType.DAY: format = 'YYYY-MM-DD'; unit = 'day'; break;
+        case BillingType.MONTH: format = 'YYYY-MM'; unit = 'month'; break;
+        case BillingType.YEAR: format = 'YYYY'; unit = 'year'; break;
+        default: console.assert(false, 'unexpected billing type'); return 'error';
+      }
+      const from = protoDateToMoment(canonical.date).format(format);
+      const to = protoDateToMoment(canonical.endDate).format(format);
+      transaction.__billingString =
+        `${unit} ${from}${from !== to ? ' until ' + to : ''}, ${typeStr}`;
+    }
+    return transaction.__billingString;
   }
 
   getTransactionIcon(transaction: Transaction): string {
@@ -493,6 +513,8 @@ export class TransactionsComponent implements AfterViewInit {
     // (Need to copy due to a bug in TypeScript intersection types.)
     const tx = transaction;
 
+    if (tx.__transferInfo) return tx.__transferInfo;
+
     // Only allow groups with exactly 2 children ...
     if (!isGroup(transaction) || transaction.group.children.length !== 2
       // ... with different accounts
@@ -513,34 +535,28 @@ export class TransactionsComponent implements AfterViewInit {
     // Since the summed amount is ~0, we can assume that fromAmount and toAmount have the same
     // monetary value. If currencies are the same, they should also be the same number.
 
-    const ret = {
+    tx.__transferInfo = {
       fromAccount: accounts[fromIndex],
       toAccount: accounts[1 - fromIndex],
       isMultiCurrency: accounts[0].currency !== accounts[1].currency,
       fromAmountFormatted: this.currencyService.format(-amounts[fromIndex], accounts[fromIndex].currency),
       toAmountFormatted: this.currencyService.format(amounts[1 - fromIndex], accounts[1 - fromIndex].currency),
-    }
-
-    // Fix object identity to play nice with Angular change tracking.
-    // NOTE: DO NOT USE patchObject BECAUSE WE DO NOT WANT DEEP UPDATES OF ACCOUNT OBJECTS!
-    if (!tx.__transferInfo) tx.__transferInfo = {};
-    return Object.assign(tx.__transferInfo, ret);
+    };
+    return tx.__transferInfo;
   }
 
   /** Returns array of lines. */
   formatTransactionNotes(transaction: Transaction & TransactionViewCache): [string, string][] {
-    const ret = extractTransactionData(transaction)
+    if (transaction.__formattedNotes) return transaction.__formattedNotes;
+
+    transaction.__formattedNotes = extractTransactionData(transaction)
       .sort((a, b) => -compareTimestamps(a.date, b.date))
-      .map<[string, string]>(data => [
+      .map(data => [
         (isGroup(transaction)
           ? `(${this.getSignString(moneyToNumber(data.amount))}) `
           : '') + [data.who, data.reason].filter(value => !!value).join(", "),
-        data.comment
+        data.comment,
       ]);
-
-    // Fix object identity to play nice with Angular change tracking.
-    if (!transaction.__formattedNotes) transaction.__formattedNotes = [];
-    patchObject(transaction.__formattedNotes, ret);
     return transaction.__formattedNotes;
   }
 
@@ -639,6 +655,18 @@ export class TransactionsComponent implements AfterViewInit {
         child => timestampToMilliseconds(child.created)));
 
     return -(createdA - createdB);
+  }
+
+  /**
+   * Clears values that were cached for efficiency. Has to be called whenever
+   * transactions are mutated in any way.
+   */
+  private clearViewCaches(transactions: Transaction[]) {
+    for (const tx of transactions) {
+      for (const key of VIEW_CACHE_KEYS) {
+        delete tx[key];
+      }
+    }
   }
 
 }
