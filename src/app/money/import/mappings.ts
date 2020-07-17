@@ -7,8 +7,8 @@ import { FormatMapping, FormatMappingBuilder } from "./format-mapping";
 // TODO Once we upgrade to TypeScript 3.4+, this can be rewritten to:
 // const ALL_FILE_FORMATS = ['foobar', ...] as const;
 // type FileFormat = typeof ALL_FILE_FORMATS;
-export const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs', 'deutsche_bank', 'ing', 'n26'];
-export type ImportFileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs' | 'deutsche_bank' | 'ing' | 'n26';
+export const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs', 'deutsche_bank', 'ing', 'n26', 'genENG'];
+export type ImportFileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs' | 'deutsche_bank' | 'ing' | 'n26' | 'genENG';
 
 /** Date formats accepted by parseDate. See: https://momentjs.com/docs/#/parsing/string-format/ */
 const ACCEPTED_DATE_FORMATS = ['YYYY-MM-DD', 'DD.MM.YYYY', 'DD.MM.YY'];
@@ -122,6 +122,11 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("whoIdentifier", "Kontonummer")
     .addMapping("amount", "Betrag (EUR)", row => parseAmount(row, ",", "."))
     .addMapping("bookingText", "Kategorie")
+    .build(),
+  'genENG': new FormatMappingBuilder<Generic_Eng>()
+    .addMapping("date", "Date", parseDate)
+    .addMapping("reason", "Description")
+    .addMapping("amount", "Amount", parseAmount)
     .build(),
 };
 
@@ -290,4 +295,10 @@ interface N26Row {
   "Betrag (Fremdwährung)": string;
   "Fremdwährung": string;
   "Wechselkurs": string;
+}
+
+interface Generic_Eng {
+  "Date" : string;
+  "Description" : string;
+  "Amount" : string;
 }
