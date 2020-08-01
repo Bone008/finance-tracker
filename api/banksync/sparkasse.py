@@ -99,6 +99,9 @@ def do_login(session: requests.Session, base_url: str, user_id: str, user_pass: 
   elif 'pin-sperre-aufheben.html' in r.url:
     log_result_error('Login error: Too many failed login attempts!')
     return False
+  elif 'sca-legitimation.html' in r.url:
+    log_result_error('Login error: TAN required! Please log in manually.')
+    return False
   else:
     doc = to_html(r)
     log_result_error('Login error:', infer_msgerror(doc))
