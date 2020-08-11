@@ -35,6 +35,7 @@ import { AddInlineLabelComponent } from './transactions/transaction-labels/add-i
 import { TransactionLabelsComponent } from './transactions/transaction-labels/transaction-labels.component';
 import { TransactionsComponent } from './transactions/transactions.component';
 import { WelcomeComponent } from './welcome/welcome.component';
+import { LabelAdjacencyComponent } from './analytics/label-adjacency/label-adjacency.component';
 
 const appRoutes: Routes = [
   { path: 'overview', component: AccountsComponent, data: { title: 'Overview' } },
@@ -87,6 +88,7 @@ const appRoutes: Routes = [
     BankSyncComponent,
     PresetsComponent,
     WelcomeComponent,
+    LabelAdjacencyComponent,
   ],
   entryComponents: [
     ImportFileComponent,
