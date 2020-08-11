@@ -43,6 +43,12 @@ export interface BucketInfo {
 
 /** Contains all relevant data and metadata about the analysis result. */
 export interface AnalysisResult {
+  /** Raw view of all transactions that matched the filter. */
+  matchingTransactions: Transaction[];
+  /** Mapping from full label names to their possibly collapsed version. */
+  collapsedLabelGroupNamesLookup: { [fullLabel: string]: string };
+
+  /** Which date unit is used for date buckets. */
   bucketUnit: BucketUnit;
   /** All appearing label groups in arbitrary order. */
   labelGroupNames: string[];

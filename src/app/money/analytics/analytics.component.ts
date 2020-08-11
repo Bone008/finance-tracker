@@ -49,7 +49,17 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
    * and truncated label groups.
    * Subcomponents can further process this dataset.
    */
-  analysisResult: AnalysisResult = { bucketUnit: DEFAULT_BUCKET_UNIT, buckets: [], labelGroupNames: [], labelGroupColorsByName: {}, excludedLabels: [], summedTotalIncomeByLabel: new KeyedNumberAggregate(), summedTotalExpensesByLabel: new KeyedNumberAggregate() };
+  analysisResult: AnalysisResult = {
+    matchingTransactions: [],
+    collapsedLabelGroupNamesLookup: {},
+    bucketUnit: DEFAULT_BUCKET_UNIT,
+    buckets: [],
+    labelGroupNames: [],
+    labelGroupColorsByName: {},
+    excludedLabels: [],
+    summedTotalIncomeByLabel: new KeyedNumberAggregate(),
+    summedTotalExpensesByLabel: new KeyedNumberAggregate()
+  };
 
   private txSubscription: Subscription;
   private matchingTransactions: Transaction[] = [];
@@ -569,6 +579,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
 
     this.analysisResult = {
+      matchingTransactions: this.matchingTransactions,
+      collapsedLabelGroupNamesLookup: this.collapsedLabelGroupNamesLookup,
       bucketUnit,
       labelGroupNames: Array.from(labelGroupNamesSet),
       labelGroupColorsByName,
