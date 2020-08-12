@@ -77,7 +77,12 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
       //.force("radial", d3.forceRadial(100, width / 2, height / 2))
     }
     this.retainSimulationData(nodes, this.simulation.nodes());
+    const nodesWithoutPosition = nodes.filter(d => d.x === undefined || d.y === undefined);
+    // Update the nodes in the simulation. This also sets their initial position,
+    // but it is centered at the top left corner and not the middle.
     this.simulation.nodes(nodes);
+    nodesWithoutPosition.forEach(d => { d.x! += width / 2; d.y! += height / 2; });
+
     // Update forces.
     // Callbacks have to be updated because the captured maxWeight param has changed.
     this.simulation.force<d3.ForceManyBody<LabelSimNode>>("charge")!
@@ -90,7 +95,7 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
         return 20 * (1 + 5 * Math.max(w1, w2) / maxWeight);
       })
       .links(links);
-    this.simulation.alpha(0.8).restart();
+    this.simulation.alpha(0.5).restart();
 
     // Set up SVG elements.
     const d3Link = container.select('g.links')
