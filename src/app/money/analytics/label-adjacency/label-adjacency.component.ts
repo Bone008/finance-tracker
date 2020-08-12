@@ -1,8 +1,8 @@
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import * as d3 from 'd3';
 import { KeyedSetAggregate } from 'src/app/core/keyed-aggregate';
+import { nested2ToSet } from 'src/app/core/util';
 import { DataService } from '../../data.service';
-import { extractAllLabels } from '../../model-util';
 import { AnalysisResult } from '../types';
 
 interface LabelSimNode extends d3.SimulationNodeDatum {
@@ -46,20 +46,21 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
       .attr('r', 2).attr('cx', width / 2).attr('cy', height / 2).attr('fill', 'red');
 
     // Transform data.
-    const labels = extractAllLabels(this.analysisResult.matchingTransactions);
+    const connections = this.buildLinks();
+    const links: LabelSimLink[] =
+      connections.map(([source, target]) => ({ source, target }));
+    console.log("links:", links);
+
+    //const labels = extractAllLabels(this.analysisResult.matchingTransactions);
+    // Extract unique labels from edges. This implicitly filters out labels that
+    // do not have any edges.
+    const labels = Array.from(nested2ToSet(connections));
     const nodes: LabelSimNode[] = labels.map(label => ({
       label,
       weight: this.analysisResult.matchingTransactions.reduce((acc, t) => acc + +t.labels.includes(label), 0),
     }));
     const maxWeight = d3.max(nodes, d => d.weight)!;
     console.log(`nodes (maxWeight=${maxWeight}):`, nodes);
-
-    const connections = this.buildLinks();
-    const links: LabelSimLink[] =
-      connections
-        .filter(([source, target]) => labels.includes(source) && labels.includes(target))
-        .map(([source, target]) => ({ source, target }));
-    console.log("links:", links);
 
     // Set up or update force simulation.
     if (!this.simulation) {
