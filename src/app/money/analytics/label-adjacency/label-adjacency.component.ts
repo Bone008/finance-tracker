@@ -74,7 +74,6 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
         .force('centerX', d3.forceX(width / 2))
         .force('centerY', d3.forceY(height / 2))
         .force("center", d3.forceCenter(width / 2, height / 2));
-      //.force("radial", d3.forceRadial(100, width / 2, height / 2))
     }
     this.retainSimulationData(nodes, this.simulation.nodes());
     const nodesWithoutPosition = nodes.filter(d => d.x === undefined || d.y === undefined);
@@ -112,7 +111,8 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
       .data(nodes, (d: LabelSimNode) => d.label)
       .join("circle")
       .attr("r", d => 5 + Math.sqrt(100 * (d.weight / maxWeight)))
-      .attr("fill", d => this.analysisResult.labelGroupColorsByName[this.analysisResult.collapsedLabelGroupNamesLookup[d.label] || d.label] || 'black');
+      .attr("fill", d => this.analysisResult.labelGroupColorsByName[this.analysisResult.collapsedLabelGroupNamesLookup[d.label] || d.label] || 'black')
+      .call(this.createDragBehavior(this.simulation));
 
     d3Node.append("title").text(d => `${d.label} (${d.weight})`);
 
@@ -144,6 +144,31 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
         newNodes[i] = oldNode;
       }
     }
+  }
+
+  private createDragBehavior(simulation: d3.Simulation<any, any>) {
+    return d3.drag<SVGElement, LabelSimNode>()
+      .on("start", (d, i, d3Nodes) => {
+        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+        d3.select(d3Nodes[i]).attr("stroke", "gray").attr("stroke-width", 3);
+      })
+      .on("drag", d => {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+      })
+      .on("end", (d, i, d3Nodes) => {
+        const event: d3.D3DragEvent<SVGElement, unknown, unknown> = d3.event;
+        if (!event.active) simulation.alphaTarget(0);
+        if ((event.sourceEvent as MouseEvent).shiftKey) {
+          d3.select(d3Nodes[i]).attr("stroke", "green");
+        } else {
+          d.fx = null;
+          d.fy = null;
+          d3.select(d3Nodes[i]).attr("stroke", null).attr("stroke-width", null);
+        }
+      });
   }
 
   private buildLinks(): [string, string][] {
