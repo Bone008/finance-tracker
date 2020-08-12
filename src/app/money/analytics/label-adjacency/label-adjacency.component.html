@@ -1,6 +1,27 @@
 <p>label-adjacency works!</p>
 
 <svg #graphContainer class="graph-container">
-  <g class="links" stroke="#999" stroke-opacity="0.6"></g>
-  <g class="nodes" stroke="#fff" stroke-width="1.5"></g>
+  <style>
+  .links {
+    stroke: #999;
+    stroke-opacity: 0.6;
+  }
+
+  .nodes circle {
+    stroke: white;
+    stroke-width: 1.5;
+  }
+
+  .nodes text {
+    fill: gray;
+    text-anchor: middle;
+    transform: translateY(5px);
+    dominant-baseline: text-before-edge;
+    text-shadow: 0 0 1px white;
+    font-size: 9px;
+    pointer-events: none;
+  }
+  </style>
+  <g class="links"></g>
+  <g class="nodes"></g>
 </svg>

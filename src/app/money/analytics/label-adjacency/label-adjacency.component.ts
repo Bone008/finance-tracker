@@ -37,6 +37,7 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
 
   setupSimulation() {
     const container = d3.select<SVGSVGElement, LabelSimNode>(this.graphContainer.nativeElement);
+    // TODO use viewBox instead of this hack?
     const { width, height } = (<SVGSVGElement>this.graphContainer.nativeElement).getBoundingClientRect();
     console.log(`SVG: ${width} x ${height}`);
 
@@ -104,17 +105,20 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
       .attr("stroke-width", d => 1); // TODO use tx count/pct as width
 
     console.log(this.analysisResult.collapsedLabelGroupNamesLookup);
-    const d3Node = container.select("g.nodes")
-      .attr("stroke", "#fff")
-      .attr("stroke-width", 1.5)
-      .selectAll("circle")
+    const d3Nodes = container.select("g.nodes")
+      .selectAll("g")
       .data(nodes, (d: LabelSimNode) => d.label)
-      .join("circle")
-      .attr("r", d => 5 + Math.sqrt(100 * (d.weight / maxWeight)))
-      .attr("fill", d => this.analysisResult.labelGroupColorsByName[this.analysisResult.collapsedLabelGroupNamesLookup[d.label] || d.label] || 'black')
-      .call(this.createDragBehavior(this.simulation));
+      .join(enter => enter.append("g")
+        .call(g => g.append("circle"))
+        .call(g => g.append("title").text(d => `${d.label} (${d.weight})`))
+        .call(g => g.append("text").text(d => d.label))
+        .call(this.createDragBehavior(this.simulation!))
+      );
 
-    d3Node.append("title").text(d => `${d.label} (${d.weight})`);
+    d3Nodes
+      .select("circle")
+      .attr("r", d => 5 + Math.sqrt(100 * (d.weight / maxWeight)))
+      .attr("fill", d => this.analysisResult.labelGroupColorsByName[this.analysisResult.collapsedLabelGroupNamesLookup[d.label] || d.label] || 'black');
 
     this.simulation.on("tick", () => {
       d3Link
@@ -123,9 +127,7 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
         .attr("x2", d => (d.target as LabelSimNode).x!)
         .attr("y2", d => (d.target as LabelSimNode).y!);
 
-      d3Node
-        .attr("cx", d => d.x!)
-        .attr("cy", d => d.y!);
+      d3Nodes.attr("transform", d => `translate(${d.x}, ${d.y})`);
     });
     //.call(drag(simulation));
 
@@ -152,7 +154,7 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
         if (!d3.event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
         d.fy = d.y;
-        d3.select(d3Nodes[i]).attr("stroke", "gray").attr("stroke-width", 3);
+        d3.select(d3Nodes[i]).select("circle").style("stroke", "gray").style("stroke-width", 3);
       })
       .on("drag", d => {
         d.fx = d3.event.x;
@@ -162,11 +164,11 @@ export class LabelAdjacencyComponent implements AfterViewInit, OnChanges {
         const event: d3.D3DragEvent<SVGElement, unknown, unknown> = d3.event;
         if (!event.active) simulation.alphaTarget(0);
         if ((event.sourceEvent as MouseEvent).shiftKey) {
-          d3.select(d3Nodes[i]).attr("stroke", "green");
+          d3.select(d3Nodes[i]).select("circle").style("stroke", "green");
         } else {
           d.fx = null;
           d.fy = null;
-          d3.select(d3Nodes[i]).attr("stroke", null).attr("stroke-width", null);
+          d3.select(d3Nodes[i]).select("circle").style("stroke", null).style("stroke-width", null);
         }
       });
   }
