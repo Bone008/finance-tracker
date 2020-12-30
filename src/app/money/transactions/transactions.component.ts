@@ -163,8 +163,10 @@ export class TransactionsComponent implements AfterViewInit {
     if (!isSingle(transaction)) throw new Error('only single transaction templates supported');
     // Reset date to now.
     transaction.single.date = timestampNow();
-    // Reset modified flag.
+    // Reset modified timestamp.
     transaction.single.modified = null;
+    // Delete association to a CSV row.
+    transaction.single.importedRowId = 0;
 
     this.dialogService.openTransactionEdit(transaction, MODE_ADD)
       .afterConfirmed().subscribe(() => {
