@@ -53,6 +53,12 @@ body {
     -webkit-appearance: none;
 }
 
+/* Style for elements that have [matToolip], but not always.  */
+.has-help-tooltip-sometimes[aria-describedby] {
+  border-bottom: 1px dotted rgba(0,0,0, .66);
+  cursor: help;
+}
+
 .help-icon {
   cursor: help;
   color: rgba(0, 0, 0, 0.5);

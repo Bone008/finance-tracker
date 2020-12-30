@@ -11,7 +11,10 @@ import { DialogService } from '../dialog.service';
 import { extractTransactionData, MONEY_EPSILON } from '../model-util';
 
 export interface AccountInfo {
+  /* Current balance in account's currency. */
   balance: number;
+  /* Current balance in main currency, or null if both currencies are the same. */
+  altBalance: number | null;
   lastTransactionMoment: moment.Moment | null;
   lastKnownBalanceMoment: moment.Moment | null;
   numTransactionsSinceLastKnown: number;
@@ -59,6 +62,7 @@ export class AccountsComponent implements OnInit {
   ngOnInit() {
   }
 
+  /** Returns the user-selected main currency, or empty if not set. */
   getMainCurrency(): string {
     return this.dataService.getUserSettings().mainCurrency;
   }
@@ -134,7 +138,17 @@ export class AccountsComponent implements OnInit {
   }
 
   formatBalance(account: Account): string {
-    return this.currencyService.format(this.accountInfosById[account.id].balance, account.currency);
+    return this.currencyService.format(
+      this.accountInfosById[account.id].balance,
+      account.currency);
+  }
+
+  formatAltBalance(account: Account): string | null {
+    const { altBalance } = this.accountInfosById[account.id];
+    if (altBalance === null) {
+      return null;
+    }
+    return this.currencyService.format(altBalance, this.dataService.getMainCurrency());
   }
 
   getAccountInfo(account: Account): AccountInfo {
@@ -177,10 +191,18 @@ export class AccountsComponent implements OnInit {
       dataSinceKnown = txDatas;
     }
     const startBalance = lastKnown ? moneyToNumber(lastKnown.balance) : 0;
-    const balance = dataSinceKnown.reduce((acc, data) => acc + moneyToNumber(data.amount), startBalance);
+    const balance = dataSinceKnown.reduce(
+      (acc, data) => acc + moneyToNumber(data.amount), startBalance);
+
+    let altBalance: number | null = null;
+    if (account.currency !== this.dataService.getMainCurrency()) {
+      altBalance = this.currencyService.convertAmount(
+        balance, account.currency, this.dataService.getMainCurrency());
+    }
 
     return {
       balance,
+      altBalance,
       lastTransactionMoment: lastTransaction ? timestampToMoment(lastTransaction.date) : null,
       lastKnownBalanceMoment: lastKnown ? protoDateToMoment(lastKnown.date) : null,
       numTransactionsSinceLastKnown: dataSinceKnown.length,

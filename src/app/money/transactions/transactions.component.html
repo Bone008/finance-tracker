@@ -134,7 +134,7 @@
 
           <ng-template #noTransfer>
             <span
-                class="amount-value"
+                class="amount-value has-help-tooltip-sometimes"
                 [class.negative]="isTransactionAmountNegative(transaction)"
                 [matTooltip]="formatTransactionAmountAlt(transaction) || ''">
               {{formatTransactionAmount(transaction)}}
