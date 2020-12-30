@@ -120,7 +120,7 @@
 /** ## Cell: buttons */
 .cell-buttons {
   flex: 0 0 80px;
-  justify-content: end;
+  justify-content: flex-end;
 }
 .data-row .cell-buttons {
   display: flex;

@@ -68,7 +68,7 @@
 .cell-balance {
   flex: 0 0 120px;
   display: flex;
-  justify-content: end;
+  justify-content: flex-end;
   font-size: 120%;
   white-space: nowrap;
 }
@@ -89,14 +89,14 @@
   flex: 1 0 200px;
   display: flex;
   flex-direction: row;
-  justify-content: end;
+  justify-content: flex-end;
 }
 
 /** Main currency selector. */
 .footer-row .cell-buttons {
   display: flex;
   flex-direction: row;
-  justify-content: end;
+  justify-content: flex-end;
 }
 .footer-row .cell-buttons > * {
   min-width: 250px; /* Force to 250px, ignoring flex. */
