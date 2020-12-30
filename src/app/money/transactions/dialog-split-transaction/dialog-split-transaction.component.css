@@ -1,8 +1,29 @@
 .mat-dialog-content {
-  max-width: 300px;
+  max-width: 600px;
 }
 
+.split-container {
+  display: flex;
+  flex-direction: row;
+}
+
+.amount-field {
+  margin-right: 16px;
+}
 .amount-remaining-field {
   /* TODO: use theme color */
   color: rgba(0, 0, 0, 0.38);
+}
+
+.comment-field {
+  flex-grow: 1;
+}
+
+@media screen and (max-width: 599px) {
+  .split-container {
+    flex-direction: column;
+  }
+  .amount-field {
+    margin-right: 0;
+  }
 }

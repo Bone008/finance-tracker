@@ -5,29 +5,51 @@
     <p style="margin-top: 0;">
       Split the money of this transaction into two independent transactions.
     </p>
-    <mat-form-field floatLabel="always" class="amount-field" [class.negative]="splitAmount < 0">
-      <input
-          matInput
-          type="number"
-          name="newAmount"
-          step="0.01"
-          min="0"
-          [max]="getTotalAmount()"
-          [ngModel]="splitAmount || null"
-          (ngModelChange)="splitAmount = $event"
-          placeholder="New amount"
-          required>
-      <span matSuffix>&nbsp;{{currencySymbol}}</span>
-    </mat-form-field>
-    <mat-form-field floatLabel="always" class="amount-field amount-remaining-field">
-      <input
-          matInput
-          type="number"
-          disabled
-          [value]="getRemainingAmount()"
-          placeholder="Remaining amount">
-      <span matSuffix>&nbsp;{{currencySymbol}}</span>
-    </mat-form-field>
+    <div class="split-container">
+      <mat-form-field floatLabel="always" class="amount-field" [class.negative]="splitAmount < 0">
+        <input
+            matInput
+            type="number"
+            name="newAmount"
+            step="0.01"
+            min="0"
+            [max]="getTotalAmount()"
+            [ngModel]="splitAmount || null"
+            (ngModelChange)="splitAmount = $event"
+            placeholder="New amount"
+            required>
+        <span matSuffix>&nbsp;{{currencySymbol}}</span>
+      </mat-form-field>
+      <mat-form-field floatLabel="always" class="comment-field">
+        <textarea
+            matInput
+            name="newComment"
+            [(ngModel)]="newComment"
+            placeholder="New comment"
+            rows="2">
+        </textarea>
+      </mat-form-field>
+    </div>
+      <div class="split-container">
+      <mat-form-field floatLabel="always" class="amount-field amount-remaining-field">
+        <input
+            matInput
+            type="number"
+            disabled
+            [value]="getRemainingAmount()"
+            placeholder="Remaining amount">
+        <span matSuffix>&nbsp;{{currencySymbol}}</span>
+      </mat-form-field>
+      <mat-form-field floatLabel="always" class="comment-field">
+        <textarea
+            matInput
+            name="remainingComment"
+            [(ngModel)]="remainingComment"
+            placeholder="Remaining comment"
+            rows="2">
+        </textarea>
+      </mat-form-field>
+    </div>
   </mat-dialog-content>
   
   <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">

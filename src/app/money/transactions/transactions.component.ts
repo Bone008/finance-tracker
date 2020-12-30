@@ -196,17 +196,22 @@ export class TransactionsComponent implements AfterViewInit {
 
     const dialogRef = this.dialogService.openTransactionSplit(data);
     dialogRef.afterConfirmed().subscribe(() => {
+      const { splitAmount, newComment, remainingComment } = dialogRef.componentInstance;
       const totalAmount = moneyToNumber(data.amount);
       const newAmount =
-        Math.sign(totalAmount) * dialogRef.componentInstance.splitAmount;
+        Math.sign(totalAmount) * splitAmount;
       const remainingAmount = totalAmount - newAmount;
 
       const newTransaction = cloneMessage(Transaction, <Transaction>transaction);
-      newTransaction.single!.amount = numberToMoney(newAmount);
-      data.amount = numberToMoney(remainingAmount);
+      const newData = newTransaction.single!;
 
+      newData.amount = numberToMoney(newAmount);
+      newData.comment = newComment;
+      data.amount = numberToMoney(remainingAmount);
+      data.comment = remainingComment;
+      // Update modified of both.
       const now = timestampNow();
-      newTransaction.single!.modified = now;
+      newData.modified = now;
       data.modified = now;
 
       this.forceShowTransactions.add(transaction);
@@ -216,7 +221,6 @@ export class TransactionsComponent implements AfterViewInit {
       this.clearViewCaches([transaction, newTransaction]);
 
       this.selection.select(newTransaction);
-      console.log("Split", data, `into ${newAmount} + ${remainingAmount}.`);
     });
   }
 

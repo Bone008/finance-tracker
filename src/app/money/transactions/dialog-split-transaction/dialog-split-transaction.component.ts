@@ -13,6 +13,8 @@ import { getTransactionDataCurrency } from '../../model-util';
 })
 export class DialogSplitTransactionComponent implements OnInit {
   splitAmount = 0;
+  newComment = "";
+  remainingComment = "";
   readonly currencySymbol: string;
 
   private readonly transactionData: TransactionData;
@@ -24,6 +26,7 @@ export class DialogSplitTransactionComponent implements OnInit {
     private readonly matDialogRef: MatDialogRef<DialogSplitTransactionComponent>
   ) {
     this.transactionData = data.transactionData;
+    this.remainingComment = data.transactionData.comment;
 
     const currency = getTransactionDataCurrency(this.transactionData, dataService);
     this.currencySymbol = currencyService.getSymbol(currency);
