@@ -2,8 +2,10 @@
 .header-row,
 .data-row,
 .footer-row {
+  position: relative;
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   padding: 10px 14px;
   border-bottom: 1px solid rgba(0,0,0,.12);
@@ -28,6 +30,10 @@
   font-weight: 500;
 }
 
+.header-row .cell-balance {
+  font-size: inherit;
+}
+
 .footer-row {
   border-top: 4px double rgba(0,0,0,.24);
   border-bottom: 4px double rgba(0,0,0,.24);
@@ -36,10 +42,12 @@
 
 .cell-icon {
   flex: 0 0 24px;
+  margin-bottom: 10px;
+  align-self: start;
 }
 
 .cell-name {
-  flex: 0 1 300px;
+  flex: 3 0 150px;
 }
 .cell-name .account-iban {
   display: block;
@@ -58,7 +66,7 @@
 }
 
 .cell-balance {
-  flex: 0 0 110px;
+  flex: 0 0 120px;
   text-align: right;
   font-size: 120%;
   white-space: nowrap;
@@ -74,7 +82,7 @@
 }
 
 .cell-last-known-date {
-  flex: 0 2 185px;
+  flex: 0 0 160px;
 }
 .cell-last-known-date .secondary {
   color: rgba(0,0,0, .66);
@@ -82,7 +90,7 @@
 }
 
 .cell-buttons {
-  flex: 1 1 210px;
+  flex: 1 0 200px;
   display: flex;
   flex-direction: row;
   justify-content: flex-end;
@@ -98,9 +106,38 @@
     top: 0; /* Because main toolbar is no longer sticky. */
   }
 
-  .header-row,
-  .data-row,
-  .footer-row {
-    flex-wrap: wrap;
+  .header-row .cell-last-transaction,
+  .header-row .cell-last-known-date {
+    display: none;
+  }
+
+  .data-row .cell-name {
+    /* Make space for absolutely positioned balance. */
+    min-height: 50px;
+    margin-bottom: 10px;
+    margin-right: 120px;
+  }
+  .cell-balance {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+  }
+  .cell-last-transaction {
+    position: absolute;
+    right: 10px;
+    top: 40px;
+  }
+  .cell-last-known-date {
+    flex: 1 1 100%;
+    text-align: right;
+  }
+  .cell-last-known-date::before {
+    content: "Last known balance: ";
+    color: rgba(0,0,0, .66);
+    font-size: 90%;
+  }
+  .cell-buttons {
+    /* Place buttons on their own row. */
+    flex: 0 0 100%;
   }
 }
