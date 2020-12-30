@@ -30,6 +30,8 @@ const SUPPORTED_CURRENCIES: CurrencyInfoMap = {
   'ISK': { symbol: 'kr', exchangeRateToEUR: 0.00721 },
   'NOK': { symbol: 'kr', exchangeRateToEUR: 0.10156 },
   'TRY': { symbol: '₺', exchangeRateToEUR: 0.15801 },
+  // below: exchange rate from 2020-12-30
+  'KRW': { symbol: '₩', exchangeRateToEUR: 0.00075 },
 };
 
 @Injectable({
