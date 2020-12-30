@@ -31,20 +31,24 @@
         <div class="cell-balance" [class.negative]="isTotalBalanceNegative()">{{formatTotalBalance()}}</div>
         <div class="cell-last-transaction"></div>
         <div class="cell-last-known-date"></div>
-        <div class="cell-buttons" fxLayout="row" fxLayoutAlign="stretch center">
-          <mat-form-field fxFlex>
-            <mat-select
-                [ngModel]="getMainCurrency()"
-                (ngModelChange)="setMainCurrency($event)"
-                placeholder="Main currency">
-              <mat-option
-                  *ngFor="let curr of allCurrencies"
-                  [value]="curr">
-                {{curr}}
-              </mat-option>
-            </mat-select>
-            <mat-hint>All foreign currencies will be converted to this throughout the app.</mat-hint>
-          </mat-form-field>
+        <div class="cell-buttons">
+          <!-- This empty wrapper is needed because mat-form-field applies 'box-sizing' CSS,
+               which otherwise messes up alignment. -->
+          <div>
+            <mat-form-field fxFlex>
+              <mat-select
+                  [ngModel]="getMainCurrency()"
+                  (ngModelChange)="setMainCurrency($event)"
+                  placeholder="Main currency">
+                <mat-option
+                    *ngFor="let curr of allCurrencies"
+                    [value]="curr">
+                  {{curr}}
+                </mat-option>
+              </mat-select>
+              <mat-hint>All foreign currencies will be converted to this.</mat-hint>
+            </mat-form-field>
+          </div>
         </div>
     </div>
     

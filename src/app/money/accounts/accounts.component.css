@@ -67,7 +67,8 @@
 
 .cell-balance {
   flex: 0 0 120px;
-  text-align: right;
+  display: flex;
+  justify-content: end;
   font-size: 120%;
   white-space: nowrap;
 }
@@ -88,7 +89,17 @@
   flex: 1 0 200px;
   display: flex;
   flex-direction: row;
-  justify-content: flex-end;
+  justify-content: end;
+}
+
+/** Main currency selector. */
+.footer-row .cell-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: end;
+}
+.footer-row .cell-buttons > * {
+  min-width: 250px; /* Force to 250px, ignoring flex. */
 }
 
 @media screen and (max-width: 959px) {
@@ -102,7 +113,10 @@
   }
 
   .header-row .cell-last-transaction,
-  .header-row .cell-last-known-date {
+  .footer-row .cell-last-transaction,
+  .header-row .cell-last-known-date,
+  .footer-row .cell-last-known-date,
+  .footer-row .cell-icon {
     display: none;
   }
 
@@ -134,5 +148,10 @@
   .cell-buttons {
     /* Place buttons on their own row. */
     flex: 0 0 100%;
+  }
+
+  .footer-row .cell-name {
+    text-align: left;
+    margin-bottom: 24px;
   }
 }
