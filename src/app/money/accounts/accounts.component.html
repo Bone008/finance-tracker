@@ -38,7 +38,7 @@
                 (ngModelChange)="setMainCurrency($event)"
                 placeholder="Main currency">
               <mat-option
-                  *ngFor="let curr of (usedCurrencies$ | async)"
+                  *ngFor="let curr of allCurrencies"
                   [value]="curr">
                 {{curr}}
               </mat-option>

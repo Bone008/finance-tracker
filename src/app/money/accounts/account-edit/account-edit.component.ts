@@ -25,7 +25,7 @@ export class AccountEditComponent implements OnInit {
     private readonly currencyService: CurrencyService,
     private readonly matDialogRef: MatDialogRef<AccountEditComponent>,
   ) {
-    this.allCurrencyCodes = this.currencyService.getAllCodes().slice().sort();
+    this.allCurrencyCodes = this.currencyService.getAllCodes().sort();
 
     this.account = data.account;
     this.editMode = data.editMode;

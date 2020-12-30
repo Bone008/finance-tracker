@@ -30,8 +30,8 @@ export class AccountsComponent implements OnInit {
   readonly openAccounts$: Observable<Account[]>;
   // Observable of all closed accounts in the db.
   readonly closedAccounts$: Observable<Account[]>;
-  // Observable of all unique used currencies of all accounts.
-  readonly usedCurrencies$: Observable<string[]>;
+  // All currency codes of all accounts.
+  readonly allCurrencies: string[];
 
   private totalBalance: number | null = null;
   private accountInfosById: AccountInfo[] = [];
@@ -54,9 +54,7 @@ export class AccountsComponent implements OnInit {
     this.closedAccounts$ = accountsObservable.pipe(
       map(accounts => accounts.filter(acc => acc.closed))
     );
-    this.usedCurrencies$ = accountsObservable.pipe(
-      map(accounts => Array.from(new Set<string>(accounts.map(a => a.currency))).sort())
-    );
+    this.allCurrencies = this.currencyService.getAllCodes().sort();
   }
 
   ngOnInit() {
@@ -119,11 +117,6 @@ export class AccountsComponent implements OnInit {
       // Note: Don't subscribe the subject directly, as it will be completed otherwise.
       this.accountEditSubject.next();
     });
-  }
-
-
-  getCurrencySymbol(currencyCode: string): string {
-    return this.currencyService.getSymbol(currencyCode);
   }
 
   isTotalBalanceNegative(): boolean {

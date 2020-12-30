@@ -40,7 +40,10 @@ const SUPPORTED_CURRENCIES: CurrencyInfoMap = {
 export class CurrencyService {
   constructor() { }
 
-  /** Returns an unordered list of all known currency codes. */
+  /**
+   * Returns an unordered list of all known currency codes.
+   * The result MAY be mutated.
+   */
   getAllCodes(): string[] {
     return Object.keys(SUPPORTED_CURRENCIES);
   }
