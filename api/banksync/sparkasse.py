@@ -16,8 +16,9 @@ SERVER_FILE_ENCODING = 'windows-1252'
 # to be set to UTF-8.
 OUTPUT_ENCODING = 'utf-8'
 
+EMPTY_RESULT_PLACEHOLDER = '<EMPTY_RESULT_SET>'
 ACCEPTED_EXPORT_BUTTONS = ['CSV-CAMT-Format', 'CSV-Format']
-THROTTLE_DELAY_RANGE = (1, 2.5)
+THROTTLE_DELAY_RANGE = (0.5, 1.5)
 
 def log_result_error(*msg):
   logging.error(' '.join(str(s) for s in msg))
@@ -149,6 +150,9 @@ def do_load_transactions(session: requests.Session, base_url: str, date_from: st
   r = submit_form(session, search_form)
   if any([button in r.text for button in ACCEPTED_EXPORT_BUTTONS]):
     return to_html(r)
+  elif 'Es sind keine Ums' in r.text:
+    log_info('Detected magic string indicating an empty results page!')
+    return EMPTY_RESULT_PLACEHOLDER
   else:
     doc = to_html(r)
     log_result_error('Search did not return the CSV export button unexpectedly!',
@@ -233,7 +237,7 @@ def main():
   account_index = int(raw_account_index)
 
 
-  user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:69.0) Gecko/20100101 Firefox/69.0'
+  user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:84.0) Gecko/20100101 Firefox/84.0'
   session = requests.Session()
   session.headers.update({'User-Agent': user_agent})
   
@@ -246,6 +250,9 @@ def main():
     do_load_transactions(session, base_url, date_from, date_to, account_index)
   if transactions_doc is None:
     return False
+  if transactions_doc == EMPTY_RESULT_PLACEHOLDER:
+    print(EMPTY_RESULT_PLACEHOLDER)
+    return True
   
   wait()
   csv_bytes = do_export_csv(session, transactions_doc)

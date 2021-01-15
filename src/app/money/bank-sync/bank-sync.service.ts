@@ -14,7 +14,7 @@ export interface BankSyncRequest {
 }
 
 export interface BankSyncResult {
-  data: string;
+  data: string | null;
   log: string;
 }
 export interface BankSyncSuccessResponse {

@@ -131,10 +131,22 @@ export class BankSyncComponent implements OnInit {
   private async processResults(results: BankSyncResult[], accountMappings: AccountMapping[]) {
     const syncId = moment().format('YYYY-MM-DD-HH-mm-ss');
 
+    if (results.length !== accountMappings.length) {
+      const msg = `WARNING: Received results for ${results.length} accounts, but requested ${accountMappings.length}! Results may not match.`;
+      this.showLog(msg);
+      alert(msg);
+    }
+
     for (let i = 0; i < results.length; i++) {
       const csvString = results[i].data;
       const targetAccountId = accountMappings[i].localAccountId;
       const targetAccount = this.dataService.getAccountById(targetAccountId);
+      if (csvString === null) {
+        // TODO: Replace with nicer message dialog.
+        alert(`Account: ${targetAccount.name}\n\nThe sync was successful, but there are no transactions in the given date range.`);
+        this.showLog(`Import into ${targetAccount.name}: EMPTY`);
+        continue;
+      }
 
       const name = `autosync_${syncId}_acc${accountMappings[i].bankAccountIndex}.csv`;
       const csvFile = new File([csvString], name, { type: 'application/octet-stream' });

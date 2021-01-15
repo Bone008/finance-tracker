@@ -2,6 +2,7 @@
 const PYTHON_EXECUTABLE = 'python3';
 const PYTHON_SCRIPT_DIR = __DIR__ . '/banksync';
 const PYTHON_SCRIPT = PYTHON_SCRIPT_DIR . '/sparkasse.py';
+const EMPTY_RESULT_PLACEHOLDER = '<EMPTY_RESULT_SET>';
 
 function run_process($command, $cwd, $stdin, &$stdout=null, &$stderr=null) {
   $proc = proc_open($command, [
@@ -70,6 +71,8 @@ Flight::route('POST /banksync', function() {
   }
   $scriptCommand = implode(' ', $scriptArgs);
 
+  // Note that the client assumes that $results ALWAYS has the same length as
+  // $accountIndices and that entries correspond to the input accordingly!
   $results = [];
   foreach($accountIndices as $accountIndex) {
     // Call Python script.
@@ -87,9 +90,15 @@ Flight::route('POST /banksync', function() {
       return;
     }
 
-    // Only gather successful results
+    $csvData = $stdout;
+    if(trim($stdout) === EMPTY_RESULT_PLACEHOLDER) {
+      // Successful, but no transactions exist in this account. Return null.
+      $csvData = null;
+    }
+
+    // Only gather successful results.
     $results[] = [
-      'data' => $stdout,
+      'data' => $csvData,
       'log' => (DEBUG_MODE ? $stderr : ''),
     ];
   }

@@ -14,6 +14,9 @@
       100
     ],
   },
+  "[python]": {
+    "editor.formatOnSave": false,
+  },
   // Configure glob patterns for excluding files and folders. For example, the files explorer decides which files and folders to show or hide based on this setting.
   "files.exclude": {
     "**/.git": true,
@@ -24,6 +27,5 @@
     "**/*.spec.ts": true, // Temporary until we got some tests.
   },
   "typescript.tsdk": "node_modules\\typescript\\lib",
-  "search.usePCRE2": true,
   "html.format.enable": false,
 }
