@@ -1,0 +1,25 @@
+<h2 mat-dialog-title>CSV row #{{row.id}}</h2>
+
+<mat-dialog-content>
+  <table class="csv-table">
+    <tr>
+      <td class="label">Source file name</td>
+      <td class="value monospace">{{row.sourceFileName}}</td>
+    </tr>
+    <tr>
+      <td class="label">Source file format</td>
+      <td class="value monospace">{{row.fileFormat}}</td>
+    </tr>
+    <tr>
+      <th colspan="2" class="subheading">Columns</th>
+    </tr>
+    <tr *ngFor="let column of columns">
+      <td class="label">{{column}}</td>
+      <td class="value">{{row.values[column]}}</td>
+    </tr>
+  </table>
+</mat-dialog-content>
+
+<mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
-import { Account, ProcessingRule, Transaction, TransactionData, TransactionPreset } from '../../proto/model';
+import { Account, ImportedRow, ProcessingRule, Transaction, TransactionData, TransactionPreset } from '../../proto/model';
 import { AccountEditComponent, AccountEditConfig } from './accounts/account-edit/account-edit.component';
 import { BalancesComponent } from './accounts/balances/balances.component';
 import { DialogLabelDominanceComponent, LabelDominanceOrder } from './analytics/dialog-label-dominance/dialog-label-dominance.component';
@@ -12,6 +12,7 @@ import { ImportDialogData, ImportFileComponent, ImportFileEncoding } from './imp
 import { RuleEditComponent, RuleEditConfig } from './rules/rule-edit/rule-edit.component';
 import { DialogDeleteWithOrphansComponent } from './transactions/dialog-delete-with-orphans/dialog-delete-with-orphans.component';
 import { DialogSplitTransactionComponent } from './transactions/dialog-split-transaction/dialog-split-transaction.component';
+import { DialogViewImportedRowComponent } from './transactions/dialog-view-imported-row/dialog-view-imported-row.component';
 import { TransactionEditComponent, TransactionEditConfig } from './transactions/transaction-edit/transaction-edit.component';
 import { WelcomeComponent } from './welcome/welcome.component';
 
@@ -83,6 +84,13 @@ export class DialogService {
     : MatDialogRef<DialogDeleteWithOrphansComponent, 'keep' | 'delete'> {
     return this.matDialog.open(DialogDeleteWithOrphansComponent, {
       data: { numTransactions, numOrphans },
+    });
+  }
+
+  openViewImportedRow(importedRow: ImportedRow)
+    : MatDialogRef<DialogViewImportedRowComponent> {
+    return this.matDialog.open(DialogViewImportedRowComponent, {
+      data: { importedRow },
     });
   }
 

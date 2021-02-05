@@ -7,6 +7,7 @@ import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '
 import { makeSharedDate, pushDeduplicate } from '../../../core/util';
 import { CurrencyService } from '../../currency.service';
 import { DataService } from '../../data.service';
+import { DialogService } from '../../dialog.service';
 
 export const MODE_ADD = 'add';
 export const MODE_EDIT = 'edit';
@@ -53,6 +54,7 @@ export class TransactionEditComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) data: TransactionEditConfig,
     private readonly dataService: DataService,
     private readonly currencyService: CurrencyService,
+    private readonly dialogService: DialogService,
     private readonly matDialogRef: MatDialogRef<TransactionEditComponent>,
   ) {
     if (data.transaction.dataType !== "single") {
@@ -146,6 +148,17 @@ export class TransactionEditComponent implements OnInit {
   getDateModified = makeSharedDate(() => {
     return this.singleData.modified ? timestampToDate(this.singleData.modified) : null;
   });
+
+  viewImportedRow() {
+    console.assert(this.singleData.importedRowId > 0);
+    const row = this.dataService.getImportedRowById(this.singleData.importedRowId);
+    if (!row) {
+      alert('Error: The transaction appears to be linked to a CSV row, but '
+        + 'the row cannot be found. This should not happen!');
+      return;
+    }
+    this.dialogService.openViewImportedRow(row);
+  }
 
   onSubmit() {
     this.matDialogRef.close(true);

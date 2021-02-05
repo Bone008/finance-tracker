@@ -155,10 +155,14 @@
     
     <p *ngIf="editMode==='edit'">
       This transaction is
-      {{singleData.importedRowId > 0 ? 'linked to CSV row #' + singleData.importedRowId : 'not linked to a CSV row'}}.<br>
+      {{singleData.importedRowId > 0 ? 'linked to CSV row #' + singleData.importedRowId : 'not linked to a CSV row'}}.
+      <button *ngIf="singleData.importedRowId > 0" type="button" mat-stroked-button
+        (click)="viewImportedRow()">View CSV data</button>
+    </p>
+    <div *ngIf="editMode==='edit'">
       It was created on {{getDateCreated() | date:'medium'}} and
       {{getDateModified() ? 'modified on ' + (getDateModified() | date:'medium') : 'never modified'}}.
-    </p>
+    </div>
   </mat-dialog-content>
   
   <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
