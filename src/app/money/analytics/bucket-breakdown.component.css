@@ -1,10 +1,24 @@
-/*.absolute-dood {
-  position: absolute;
-  right: 0;
-  z-index: 1;
-}*/
 
-.table-averages th, .table-averages td,
-.table-monthly-overview th, .table-monthly-overview td {
-  padding: 5px 18px;
+.mat-table {
+  width: 100%;
+  max-width: 550px;
+  margin-bottom: 1em;
+}
+
+.mat-column-numTransactions,
+.mat-column-totalNegative,
+.mat-column-totalPositive,
+.mat-column-balance {
+  text-align: right;
+}
+
+.mat-header-cell.mat-column-numTransactions,
+.mat-header-cell.mat-column-totalNegative,
+.mat-header-cell.mat-column-totalPositive,
+.mat-header-cell.mat-column-balance {
+  direction: rtl;
+}
+
+.table-aggregates .mat-column-name {
+  font-weight: bold;
 }

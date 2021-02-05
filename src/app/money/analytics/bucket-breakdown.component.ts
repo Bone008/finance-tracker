@@ -1,16 +1,28 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { MatSort } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
 import { ChartData, ChartDataSets, ChartTooltipCallback } from 'chart.js';
 import { sortByAll } from 'src/app/core/util';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { AnalysisResult, OTHER_GROUP_NAME } from './types';
 
+/** Contains aggregate data about a date bucket. */
+export interface BucketTableRow {
+  name: string;
+  numTransactions: number;
+  totalPositive: number;
+  /** >0 so sorting works properly. The minus is only added in the view. */
+  totalNegative: number;
+  balance: number;
+}
+
 @Component({
   selector: 'app-bucket-breakdown',
   templateUrl: './bucket-breakdown.component.html',
   styleUrls: ['./bucket-breakdown.component.css']
 })
-export class BucketBreakdownComponent implements OnChanges {
+export class BucketBreakdownComponent implements AfterViewInit, OnChanges {
   @Input()
   analysisResult: AnalysisResult;
 
@@ -31,13 +43,21 @@ export class BucketBreakdownComponent implements OnChanges {
   chartDataExpenses: ChartData = {};
   chartDataIncome: ChartData = {};
   chartTooltipCallback = this.makeTooltipCallback();
+
   // For table view.
-  bucketRows: BucketTableRow[] = [];
+  readonly bucketColumnNames = ['name', 'numTransactions', 'totalNegative', 'totalPositive', 'balance'] as const;
+  readonly bucketRowsSource = new MatTableDataSource<BucketTableRow>([]);
   aggregateBucketRows: BucketTableRow[] = [];
+  @ViewChild(MatSort) bucketRowsSort: MatSort;
 
   constructor(
     private readonly currencySerivce: CurrencyService,
     private readonly dataService: DataService) { }
+
+  ngAfterViewInit() {
+    this.bucketRowsSort.direction;
+    this.bucketRowsSource.sort = this.bucketRowsSort;
+  }
 
   ngOnChanges(changes: SimpleChanges) {
     this.analyzeBreakdown();
@@ -102,23 +122,31 @@ export class BucketBreakdownComponent implements OnChanges {
     this.chartDataExpenses = { labels: bucketNames, datasets: datasetsExpenses };
     this.chartDataIncome = { labels: bucketNames, datasets: datasetsIncome };
 
-    // Calculate mean and median.
-    const aggNames = ['Total', 'Mean', 'Median'];
-    const aggPos = this.calculateTotalMeanMedian(this.analysisResult.buckets.map(b => b.totalIncome));
-    const aggNeg = this.calculateTotalMeanMedian(this.analysisResult.buckets.map(b => b.totalExpenses));
-    const aggNum = this.calculateTotalMeanMedian(this.analysisResult.buckets.map(b => b.billedTransactions.length));
+    // Calculate aggregates, but only if there are at least 2 buckets (= rows).
+    if (this.analysisResult.buckets.length >= 2) {
+      const aggNames = ['Total', 'Mean', 'Median'];
+      const aggNum = this.calculateTotalMeanMedian(this.analysisResult.buckets.map(b => b.billedTransactions.length));
+      const aggPos = this.calculateTotalMeanMedian(this.analysisResult.buckets.map(b => b.totalIncome));
+      const aggNeg = this.calculateTotalMeanMedian(this.analysisResult.buckets.map(b => b.totalExpenses));
+      const aggBal = this.calculateTotalMeanMedian(this.analysisResult.buckets.map(b => b.totalIncome + b.totalExpenses));
 
-    this.bucketRows = this.analysisResult.buckets.map(b => ({
+      this.aggregateBucketRows = aggNames.map((name, i) => ({
+        name,
+        numTransactions: aggNum[i],
+        totalPositive: aggPos[i],
+        totalNegative: -aggNeg[i],
+        balance: aggBal[i],
+      } as BucketTableRow));
+    } else {
+      this.aggregateBucketRows = [];
+    }
+
+    this.bucketRowsSource.data = this.analysisResult.buckets.map(b => ({
       name: b.name,
-      totalPositive: b.totalIncome,
-      totalNegative: b.totalExpenses,
       numTransactions: b.billedTransactions.length,
-    } as BucketTableRow));
-    this.aggregateBucketRows = aggNames.map((name, i) => ({
-      name,
-      totalPositive: aggPos[i],
-      totalNegative: aggNeg[i],
-      numTransactions: aggNum[i],
+      totalPositive: b.totalIncome,
+      totalNegative: -b.totalExpenses,
+      balance: b.totalIncome + b.totalExpenses,
     } as BucketTableRow));
   }
 
@@ -149,13 +177,4 @@ export class BucketBreakdownComponent implements OnChanges {
       },
     };
   }
-
-}
-
-/** Contains aggregate data about a date bucket. */
-export interface BucketTableRow {
-  name: string;
-  totalPositive: number;
-  totalNegative: number;
-  numTransactions: number;
 }
