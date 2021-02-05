@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import * as moment from 'moment';
 import { BillingType, ITransactionData, Transaction, TransactionData } from "../../proto/model";
-import { protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
+import { moneyToNumber, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
 import { escapeQuotedString, filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
 import { CurrencyService } from "./currency.service";
 import { DataService } from "./data.service";
@@ -285,12 +285,17 @@ export class TransactionFilterService {
         return this.makeDateMatcher(value, operator, 'modified');
 
       case 'amount':
-        return this.makeNumericMatcher(value, operator, transaction =>
-          // Compute the summed amount, preferably in the transaction's native currency,
+        return this.makeNumericMatcher(value, operator, (test, transaction, dataList) => {
+          // Match against raw amount(s).
+          if (dataList.some(data => test(moneyToNumber(data.amount)))) {
+            return true;
+          }
+          // Match against the summed amount, preferably in the transaction's native currency,
           // otherwise in the main currency.
-          getTransactionAmount(transaction, this.dataService, this.currencyService,
-            getTransactionUniqueCurrency(transaction, this.dataService) || undefined)
-        );
+          const amount = getTransactionAmount(transaction, this.dataService, this.currencyService,
+            getTransactionUniqueCurrency(transaction, this.dataService) || undefined);
+          return test(amount);
+        });
 
       case 'reason':
         return this.makeRegexMatcher(value, operator, (test, _, dataList) =>
@@ -530,7 +535,7 @@ export class TransactionFilterService {
   }
 
   private makeNumericMatcher(value: string, operator: MatcherOperator,
-    accessor: (transaction: Transaction, dataList: TransactionData[]) => number)
+    matcher: (test: (amount: number) => boolean, transaction: Transaction, dataList: TransactionData[]) => boolean)
     : FilterMatcher | null {
     const searchAmount = Number(value);
     if (isNaN(searchAmount)) {
@@ -538,13 +543,13 @@ export class TransactionFilterService {
       return null;
     }
 
+    let amountTester: (amount: number) => boolean;
     const subPrecision = (searchAmount === 0 || value.indexOf('.') !== -1 || (operator !== ':' && operator !== '='));
     // If the value is negative or 0, do a strict match considering the sign.
     // I believe the value of exactly 0 should work in either branch, so where
     // to put it is arbitrary.
     if (searchAmount <= 0 || operator === '=' || value.startsWith('+')) {
-      return (transaction, dataList) => {
-        let amount = accessor(transaction, dataList);
+      amountTester = amount => {
         // Round towards 0.
         if (!subPrecision) amount = Math.trunc(amount);
         switch (operator) {
@@ -560,8 +565,8 @@ export class TransactionFilterService {
     else {
       console.assert(searchAmount > 0);
       // Sign-agnostic matching.
-      return (transaction, dataList) => {
-        let absAmount = Math.abs(accessor(transaction, dataList));
+      amountTester = amount => {
+        let absAmount = Math.abs(amount);
         if (!subPrecision) absAmount = Math.trunc(absAmount);
         switch (operator) {
           case '<': return absAmount < (searchAmount - MONEY_EPSILON);
@@ -573,6 +578,8 @@ export class TransactionFilterService {
         }
       };
     }
+
+    return (transaction, dataList) => matcher(amountTester, transaction, dataList);
   }
 
   private parseRegex(value: string): RegExp | null {
