@@ -7,7 +7,6 @@ import { DataContainer } from "../../proto/model";
 import { createEncryptionKey, createKnownEncryptionKey, decryptWithKey, encryptWithKey, getPasswordInfoFromPayload, isCryptoPayload, PasswordMetadata } from "../core/crypto-util";
 import { LoggerService } from "../core/logger.service";
 import { timestampNow } from "../core/proto-util";
-import { delay } from "../core/util";
 import { StorageSettings, StorageSettingsService } from "./storage-settings.service";
 
 const LEGACY_STORAGE_KEY = "money_data_container";
@@ -231,46 +230,43 @@ export class StorageService {
     return gzip(encodedData);
   }
 
-
   // Old methods for storing and loading from localStorage.
   // Code is kept around for when we add local caching for faster loads & offline mode.
+  // #region 
 
-  private loadDataLegacy(): Promise<DataContainer | null> {
-    return delay(100).then(() => {
-      const timeStart = performance.now();
+  // private loadDataLegacy(): Promise<DataContainer | null> {
+  //   return delay(100).then(() => {
+  //     const timeStart = performance.now();
+  //     const stringified = localStorage.getItem(LEGACY_STORAGE_KEY);
+  //     if (!stringified) {
+  //       return null;
+  //     }
+  //     const dataArray = this.stringToBinary(stringified);
+  //     const data = DataContainer.decodeDelimited(dataArray);
+  //     const timeEnd = performance.now();
+  //     console.log(`Loaded data from storage (packed: ${dataArray.length.toLocaleString()} B) in ${timeEnd - timeStart} ms.`);
+  //     return data;
+  //   });
+  // }
 
-      const stringified = localStorage.getItem(LEGACY_STORAGE_KEY);
-      if (!stringified) {
-        return null;
-      }
+  // private saveDataLegacy(data: DataContainer): Promise<void> {
+  //   const error = DataContainer.verify(data);
+  //   if (error) return Promise.reject(error);
+  //   try {
+  //     const dataArray = DataContainer.encodeDelimited(data).finish();
+  //     const stringified = this.binaryToString(dataArray);
+  //     localStorage.setItem(LEGACY_STORAGE_KEY, stringified);
+  //     return Promise.resolve();
+  //   } catch (e) {
+  //     return Promise.reject(e);
+  //   }
+  // }
 
-      const dataArray = this.stringToBinary(stringified);
-      const data = DataContainer.decodeDelimited(dataArray);
-
-      const timeEnd = performance.now();
-      console.log(`Loaded data from storage (packed: ${dataArray.length.toLocaleString()} B) in ${timeEnd - timeStart} ms.`);
-      return data;
-    });
-  }
-
-  private saveDataLegacy(data: DataContainer): Promise<void> {
-    const error = DataContainer.verify(data);
-    if (error) return Promise.reject(error);
-
-    try {
-      const dataArray = DataContainer.encodeDelimited(data).finish();
-      const stringified = this.binaryToString(dataArray);
-      localStorage.setItem(LEGACY_STORAGE_KEY, stringified);
-      return Promise.resolve();
-    } catch (e) {
-      return Promise.reject(e);
-    }
-  }
-
-  private deleteDataLegacy(): Promise<void> {
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
-    return Promise.resolve();
-  }
+  // private deleteDataLegacy(): Promise<void> {
+  //   localStorage.removeItem(LEGACY_STORAGE_KEY);
+  //   return Promise.resolve();
+  // }
+  // #endregion
 
   private binaryToString(bufferView: Uint8Array): string {
     // Note: While encoding each byte to an UTF-16 character

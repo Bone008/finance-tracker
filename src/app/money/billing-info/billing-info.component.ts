@@ -97,7 +97,6 @@ export class BillingInfoComponent implements OnInit {
   }
 
   setCustomComponent(range: 0 | 1, type: 'date' | 'month' | 'year', value: string | null) {
-    //console.log(`setting ${type} to`, value);
     let protoDate: ProtoDate | null;
     if (value === null || value === '') {
       protoDate = null;

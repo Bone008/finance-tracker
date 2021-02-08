@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { LoggerService } from 'src/app/core/logger.service';
 import { BillingInfo, LabelConfig } from '../../../proto/model';
 import { DataService } from '../data.service';
 
@@ -20,7 +21,9 @@ export class LabelsComponent implements OnInit {
   /** Stores LabelConfig instances for the UI of labels that have no associated instance yet. */
   private configInstancesCache: { [label: string]: LabelConfig } = {};
 
-  constructor(private readonly dataService: DataService) { }
+  constructor(
+    private readonly dataService: DataService,
+    private readonly logger: LoggerService) { }
 
   ngOnInit() {
     this.allLabels$ = this.dataService.transactions$
@@ -52,7 +55,7 @@ export class LabelsComponent implements OnInit {
       return config;
     }
 
-    console.log(`[LABELS] creating proxy for ${label}.`);
+    this.logger.debug(`[LABELS] creating proxy for ${label}.`);
     // Otherwise create a transient config, and proxy setters to start
     // persisting the config as soon as the user changes any property.
     const transientObj = new LabelConfig({
@@ -61,7 +64,6 @@ export class LabelsComponent implements OnInit {
     const proxy = new Proxy(transientObj, {
       set: (obj, prop, value) => {
         obj[prop] = value;
-        console.log(`[LABELS] persisting ${label} because of value change: ${String(prop)}=${value}.`);
         this.persistTransientConfig(label, obj);
         return true;
       },
@@ -74,5 +76,7 @@ export class LabelsComponent implements OnInit {
     this.dataService.setLabelConfig(label, config);
     // Remove proxy.
     this.configInstancesCache[label] = config;
+
+    this.logger.debug(`[LABELS] persisting ${label} because of value change.`);
   }
 }
