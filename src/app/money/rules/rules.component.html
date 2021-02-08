@@ -44,10 +44,10 @@
         <div class="cell-actions">
           <div class="action" *ngFor="let action of rule.actions" [ngSwitch]="action.type">
             <span *ngSwitchCase="'addLabel'">
-              Add label <app-label inline>{{action.addLabel}}</app-label>.
+              Add label <app-label inline [label]="action.addLabel"></app-label>.
             </span>
             <span *ngSwitchCase="'removeLabel'">
-              Remove label <app-label inline>{{action.removeLabel}}</app-label>.
+              Remove label <app-label inline [label]="action.removeLabel"></app-label>.
             </span>
             <span *ngSwitchCase="'setField'">
               Set field <span class="field-name">{{formatFieldName(action.setField.fieldName)}}</span>

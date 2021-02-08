@@ -31,7 +31,7 @@
       <span>This filter currently matches {{matchingTxsInfo.description}}</span>
       <ng-container *ngFor="let labelSet of matchingTxsInfo.labelSets; let first = first; let last = last">
         <span *ngIf="first" class="set-bracket"> {{ matchingTxsInfo.labelSets.length > 1 ? '{' : '' }}&nbsp;</span>
-        <app-label *ngFor="let label of labelSet" inline>{{label}}</app-label>
+        <app-label *ngFor="let label of labelSet" inline [label]="label"></app-label>
         <span *ngIf="!last">,&nbsp; </span>
         <span *ngIf="last && matchingTxsInfo.labelSets.length > 1" class="set-bracket">{{ '}' }}</span>
       </ng-container>
@@ -65,8 +65,8 @@
               #addChip
               [hidden]="!action.addLabel"    
               canClick canDelete
-              (delete)="action.addLabel = ''; focusDelayed(addInline)">
-            {{action.addLabel}}
+              (delete)="action.addLabel = ''; focusDelayed(addInline)"
+              [label]="action.addLabel">
           </app-label>
           <app-add-inline-label
               #addInline
@@ -81,8 +81,8 @@
               #removeChip
               [hidden]="!action.removeLabel"    
               canClick canDelete
-              (delete)="action.removeLabel = ''; focusDelayed(removeInline)">
-            {{action.removeLabel}}
+              (delete)="action.removeLabel = ''; focusDelayed(removeInline)"
+              [label]="action.removeLabel">
           </app-label>
           <app-add-inline-label
               #removeInline

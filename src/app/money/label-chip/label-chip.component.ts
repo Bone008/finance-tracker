@@ -24,6 +24,9 @@ export class LabelChipComponent {
   get canDelete() { return this._canDelete; }
   set canDelete(value: boolean) { this._canDelete = coerceBooleanProperty(value); }
 
+  @Input()
+  label = '';
+
   //@Output() click = new EventEmitter<MouseEvent>();
   /** Emitted when the user requests deletion of the label. */
   @Output() delete = new EventEmitter<MouseEvent | KeyboardEvent>();
@@ -44,7 +47,7 @@ export class LabelChipComponent {
     this.delete.emit(event);
   }
 
-  // Necessary to programmatically focus this element from the outside a template reference.
+  // Necessary to programmatically focus this element from outside a template reference.
   focus() {
     this.element.nativeElement.focus();
   }

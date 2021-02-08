@@ -4,8 +4,8 @@
       canClick canDelete
       [title]="labelTitle"
       (click)="$event.stopPropagation(); emitLabelClick(label, $event)"
-      (delete)="labelDelete.emit(label)">
-    {{label}}
+      (delete)="labelDelete.emit(label)"
+      [label]="label">
   </app-label>
 
   <app-add-inline-label
