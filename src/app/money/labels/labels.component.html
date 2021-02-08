@@ -13,23 +13,25 @@
 
     <ng-template matExpansionPanelContent>
       <div fxLayout="column">
-        <!--
         <mat-form-field>
+          <div class="optional-color-container">
+            <mat-checkbox
+                class="checkbox-prefix"
+                [checked]="isDisplayColorEnabled(label.name)"
+                (change)="setDisplayColorEnabled(label.name, $event.checked)">
+            </mat-checkbox>
           <input
               matInput
               name="displayColor"
-              placeholder="Display color">
+              type="color"
+              placeholder="Display color"
+              [disabled]="!isDisplayColorEnabled(label.name)"
+              [(ngModel)]="getConfigForLabel(label.name).displayColor">
+            </div>
         </mat-form-field>
-        <mat-form-field>
-          <input
-              matInput
-              placeholder="Transaction row display color">
-        </mat-form-field>
-        -->
         <app-billing-info
             unknownPeriodLabel="Default"
-            [billing]="getBillingForLabel(label.name)"
-            (billingChange)="updateBillingForLabel(label.name, $event)">
+            [(billing)]="getConfigForLabel(label.name).billing">
         </app-billing-info>
       </div>
     </ng-template>

@@ -178,11 +178,14 @@ export class DataService {
     return null;
   }
 
-  getOrCreateLabelConfig(label: string): LabelConfig {
-    if (!this.data.labelConfigs.hasOwnProperty(label)) {
-      this.data.labelConfigs[label] = new LabelConfig();
+  setLabelConfig(label: string, config: LabelConfig) {
+    this.data.labelConfigs[label] = config;
+  }
+
+  deleteLabelConfig(label: string) {
+    if (this.data.labelConfigs.hasOwnProperty(label)) {
+      delete this.data.labelConfigs[label];
     }
-    return this.data.labelConfigs[label];
   }
 
   /** Returns a label's configured billing info, or a default billing if unset. */

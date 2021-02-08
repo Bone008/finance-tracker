@@ -580,13 +580,23 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   private assignLabelGroupColor(name: string): string {
-    if (!this.labelGroupColorsCache.hasOwnProperty(name)) {
-      const nextIndex = Object.keys(this.labelGroupColorsCache).length;
-      this.labelGroupColorsCache[name] = name === OTHER_GROUP_NAME
-        ? '#666666'
-        : getPaletteColor(nextIndex);
+    if (this.labelGroupColorsCache.hasOwnProperty(name)) {
+      return this.labelGroupColorsCache[name];
     }
-    return this.labelGroupColorsCache[name];
+    // <other> gets special treatment.
+    if (name === OTHER_GROUP_NAME) {
+      return this.labelGroupColorsCache[name] = '#666666';
+    }
+    // Explicit user-defined color if available.
+    const labelConfig = this.dataService.getLabelConfig(
+      name.endsWith('+') ? name.substr(0, name.length - 1) : name);
+    if (labelConfig && labelConfig.displayColor) {
+      return this.labelGroupColorsCache[name] = labelConfig.displayColor;
+    }
+
+    // Otherwise use random palette.
+    const nextIndex = Object.keys(this.labelGroupColorsCache).length;
+    return this.labelGroupColorsCache[name] = getPaletteColor(nextIndex);
   }
 
 }

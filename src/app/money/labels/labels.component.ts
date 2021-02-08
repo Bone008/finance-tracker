@@ -7,8 +7,6 @@ import { DataService } from '../data.service';
 interface LabelInfo {
   name: string;
   numTransactions: number;
-  firstTransactionTime?: Date;
-  lastTransactionTime?: Date;
 }
 
 @Component({
@@ -20,7 +18,7 @@ export class LabelsComponent implements OnInit {
   allLabels$: Observable<LabelInfo[]>;
 
   /** Stores LabelConfig instances for the UI of labels that have no associated instance yet. */
-  private transientConfigInstances: { [label: string]: LabelConfig } = {};
+  private configInstancesCache: { [label: string]: LabelConfig } = {};
 
   constructor(private readonly dataService: DataService) { }
 
@@ -34,25 +32,47 @@ export class LabelsComponent implements OnInit {
         })));
   }
 
-  getBillingForLabel(label: string): BillingInfo {
-    const config = this.getConfigForLabel(label);
-    if (!config.billing) config.billing = new BillingInfo({ isRelative: true });
-    return config.billing;
+  setDisplayColorEnabled(label: string, enabled: boolean) {
+    this.getConfigForLabel(label).displayColor = enabled ? '#ffffff' : '';
   }
 
-  updateBillingForLabel(label: string, billing: BillingInfo) {
-    this.dataService.getOrCreateLabelConfig(label).billing = billing;
+  isDisplayColorEnabled(label: string): boolean {
+    return this.getConfigForLabel(label).displayColor !== '';
   }
 
-  // TODO: This model makes simple scalar properties quite annoying to update.
-  private getConfigForLabel(label: string): LabelConfig {
-    const config = this.dataService.getLabelConfig(label);
-    if (config) return config;
-
-    if (this.transientConfigInstances.hasOwnProperty(label)) {
-      return this.transientConfigInstances[label];
-    } else {
-      return this.transientConfigInstances[label] = new LabelConfig();
+  getConfigForLabel(label: string): LabelConfig {
+    if (this.configInstancesCache.hasOwnProperty(label)) {
+      return this.configInstancesCache[label];
     }
+
+    // If already persisted --> cache and return.
+    const config = this.dataService.getLabelConfig(label);
+    if (config) {
+      this.configInstancesCache[label] = config;
+      return config;
+    }
+
+    console.log(`[LABELS] creating proxy for ${label}.`);
+    // Otherwise create a transient config, and proxy setters to start
+    // persisting the config as soon as the user changes any property.
+    const transientObj = new LabelConfig({
+      billing: new BillingInfo({ isRelative: true }),
+    });
+    const proxy = new Proxy(transientObj, {
+      set: (obj, prop, value) => {
+        obj[prop] = value;
+        console.log(`[LABELS] persisting ${label} because of value change: ${String(prop)}=${value}.`);
+        this.persistTransientConfig(label, obj);
+        return true;
+      },
+    });
+    this.configInstancesCache[label] = proxy;
+    return proxy;
+  }
+
+  private persistTransientConfig(label: string, config: LabelConfig) {
+    this.dataService.setLabelConfig(label, config);
+    // Remove proxy.
+    this.configInstancesCache[label] = config;
   }
 }

@@ -3,7 +3,7 @@ syntax = "proto3";
 // Stores properties related to a single label that can be assigned
 // to transactions.
 message LabelConfig {
-  // Color in which the label itself should be displayed.
+  // CSS Color in which the label itself should be displayed.
   string display_color = 1;
 
   // Info about billing. Can be overwritten by individual transactions.
