@@ -11,4 +11,7 @@ message LabelConfig {
 
   // Background color for transactions annotated with this label.
   string transaction_background_color = 3;
+
+  // Helpful description of what this label is for.
+  string description = 4;
 }
