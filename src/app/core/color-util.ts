@@ -44,3 +44,25 @@ export function generateRandomColor(): string {
     + getRandomInt(0, 256) + ','
     + getRandomInt(0, 256) + ')';
 }
+
+/** Parses a color string in the format '#rrggbb' into RGB numbers (0-255). */
+function hexColorToRgb(color: string): { r: number, g: number, b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+  if (!result) return null;
+  return {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16),
+  };
+};
+
+/** Returns a color as a hex color string that is of good contrast on a background. */
+export function getContrastingColor(backgroundColor: string): string {
+  const rgb = hexColorToRgb(backgroundColor);
+  if (!rgb) {
+    // That's too bad.
+    return '#000000';
+  }
+  const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b);
+  return luminance < 140 ? "#ffffff" : "#000000";
+}
