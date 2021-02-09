@@ -4,7 +4,7 @@ import { debounceTime } from "rxjs/operators";
 import { Account, BillingInfo, DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, TransactionPreset, UserSettings } from "../../proto/model";
 import { pluralizeArgument, removeByValue } from "../core/util";
 import { MigrationsService } from "./migrations.service";
-import { extractAllLabels, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
+import { extractAllLabels, extractAllLabelsSet, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
 
 const DEFAULT_MAIN_CURRENCY = 'EUR';
 const DEFAULT_ACCOUNT = new Account({
@@ -75,7 +75,7 @@ export class DataService {
     return this.getUserSettings().mainCurrency || DEFAULT_MAIN_CURRENCY;
   }
 
-  getProcessingRules(): ProcessingRule[] {
+  getCurrentProcessingRules(): ProcessingRule[] {
     return this.data.processingRules;
   }
 
@@ -168,7 +168,12 @@ export class DataService {
   }
 
   getAllLabels(): string[] {
+    // TODO: Also include labels for which a persisted config exists.
     return extractAllLabels(this.data.transactions);
+  }
+
+  getAllLabelsSet(): Set<string> {
+    return extractAllLabelsSet(this.data.transactions);
   }
 
   getLabelConfig(label: string): LabelConfig | null {

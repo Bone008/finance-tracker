@@ -166,13 +166,17 @@ export function extractAllLabelsSet(transactions: Transaction[]): Set<string> {
   return labels;
 }
 
+/** Sanitizes an input string to be a valid label name. */
+export function sanitizeLabelName(rawName: string): string {
+  return rawName.trim().toLowerCase();
+}
+
 /**
  * Adds a label to a transaction after sanitizing it and checking for duplicates.
  * @returns true if the label was added, false if it already existed
  */
 export function addLabelToTransaction(transaction: Transaction, label: string): boolean {
-  label = label.toLowerCase();
-  return pushDeduplicate(transaction.labels, label);
+  return pushDeduplicate(transaction.labels, sanitizeLabelName(label));
 }
 
 /**
@@ -180,8 +184,7 @@ export function addLabelToTransaction(transaction: Transaction, label: string): 
  * @returns true if the label was removed, false if it was not found
  */
 export function removeLabelFromTransaction(transaction: Transaction, label: string): boolean {
-  label = label.toLowerCase();
-  return removeByValue(transaction.labels, label);
+  return removeByValue(transaction.labels, sanitizeLabelName(label));
 }
 
 /**

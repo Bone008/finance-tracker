@@ -3,6 +3,7 @@ import { Observable, Subject } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
 import { filterFuzzyOptions } from '../../../core/util';
 import { DataService } from '../../data.service';
+import { sanitizeLabelName } from '../../model-util';
 
 @Component({
   selector: 'app-add-inline-label',
@@ -63,7 +64,7 @@ export class AddInlineLabelComponent implements OnInit {
   }
 
   confirmAdd() {
-    const cleanLabel = this.newLabel.trim().toLowerCase();
+    const cleanLabel = sanitizeLabelName(this.newLabel);
     if (cleanLabel.length > 0) {
       this.addRequested.emit(cleanLabel);
     }
@@ -99,7 +100,7 @@ export class AddInlineLabelComponent implements OnInit {
   }
 
   private filterLabelsByInput(input: string): string[] {
-    const cleanInput = this.newLabel.trim().toLowerCase();
+    const cleanInput = sanitizeLabelName(this.newLabel);
     let matches = filterFuzzyOptions(this.allLabels, cleanInput);
     if (this.excludedLabels) {
       matches = matches.filter(label => this.excludedLabels!.indexOf(label) === -1);

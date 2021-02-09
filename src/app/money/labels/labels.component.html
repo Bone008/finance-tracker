@@ -2,46 +2,143 @@
   <mat-card-title fxLayout="row" fxLayoutGap="10px">
     Labels
   </mat-card-title>
-</mat-card>
 
-<div class="main-card">
-  <mat-expansion-panel *ngFor="let label of allLabels$ | async">
-    <mat-expansion-panel-header>
-      <mat-panel-title fxFlex="50">{{label.name}}</mat-panel-title>
-      <mat-panel-description>{{label.numTransactions}} transactions</mat-panel-description>
-    </mat-expansion-panel-header>
+  <mat-card-content>
+    <p>New labels are created automatically when you assign a new one to a transaction.</p>
+    <div fxLayout="row" fxLayoutAlign="end" fxLayoutGap="10px">
+      <button mat-stroked-button (click)="expandAll()">Expand all</button>
+      <button mat-stroked-button (click)="collapseAll()">Collapse all</button>
+    </div>
 
-    <ng-template matExpansionPanelContent>
-      <div fxLayout="column">
-        <mat-form-field>
-          <input
-              matInput
-              type="text"
-              name="description"
-              placeholder="Description"
-              [(ngModel)]="getConfigForLabel(label.name).description">
-        </mat-form-field>
-        <mat-form-field>
-          <div class="optional-color-container">
-            <mat-checkbox
-                class="checkbox-prefix"
-                [checked]="isDisplayColorEnabled(label.name)"
-                (change)="setDisplayColorEnabled(label.name, $event.checked)">
-            </mat-checkbox>
-          <input
-              matInput
-              type="color"
-              name="displayColor"
-              placeholder="Display color"
-              [disabled]="!isDisplayColorEnabled(label.name)"
-              [(ngModel)]="getConfigForLabel(label.name).displayColor">
+    
+    <div class="header-row">
+      <div class="cell-toggle"></div>
+      <div class="cell-name">Label</div>
+      <div class="cell-last-used">Last used</div>
+      <div class="cell-transactions">Transactions</div>
+      <div class="cell-buttons"></div>
+    </div>
+
+    <mat-tree [dataSource]="treeDataSource" [treeControl]="treeControl" class="label-tree">
+      <mat-nested-tree-node *matTreeNodeDef="let node">
+        <li [class.editing]="currentEditLabel === node.name">
+          <div class="editor-wrapper">
+            <div class="data-row" (click)="toggleEditLabel(node.name)">
+              <button
+                  mat-icon-button
+                  matTreeNodeToggle
+                  [disabled]="!hasChildren(node)"
+                  [attr.aria-label]="'Toggle ' + node.name"
+                  class="cell-toggle">
+                <mat-icon *ngIf="hasChildren(node)">
+                  {{isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+                </mat-icon>
+              </button>
+              <span class="cell-name">
+                <app-label inline [label]="node.name"></app-label>
+                <span *ngIf="hasHiddenChildren(node)" class="secondary">&nbsp;+{{node.children.length}}</span>
+              </span>
+              <div class="cell-last-used">
+                {{(isExpanded(node) ? node.lastUsedMoment : node.lastUsedMomentTransitive)?.format('ll') || '-'}}
+              </div>
+              <div class="cell-transactions">
+                {{isExpanded(node) ? node.numTransactions : node.numTransactionsTransitive}}
+              </div>
+              <div class="cell-buttons">
+                <a
+                    *ngIf="(isExpanded(node) ? node.numTransactions : node.numTransactionsTransitive) > 0; else: disabledShowTransactions"
+                    routerLink="/transactions"
+                    fragment="q={{getLabelFilterString(node.name, hasHiddenChildren(node))}}"
+                    mat-icon-button
+                    color="primary"
+                    matTooltip="Show transactions">
+                  <mat-icon>list</mat-icon>
+                </a>
+                <ng-template #disabledShowTransactions>
+                  <button mat-icon-button matTooltip="Show transactions" disabled>
+                    <mat-icon>list</mat-icon>
+                  </button>
+                </ng-template>
+                <button
+                    mat-icon-button
+                    color="primary"
+                    matTooltip="Edit label ...">
+                  <!--(click)="toggleEditLabel(node.name)">-->
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </div>
             </div>
-        </mat-form-field>
-        <app-billing-info
-            unknownPeriodLabel="Default"
-            [(billing)]="getConfigForLabel(label.name).billing">
-        </app-billing-info>
-      </div>
-    </ng-template>
-  </mat-expansion-panel>
-</div>
+
+            <div *ngIf="currentEditLabel === node.name" class="editor-container">
+              <div fxLayout="row" fxLayoutGap="10px" fxLayoutAlign="stretch center">
+                <mat-form-field class="color-form-field">
+                  <div class="optional-color-container">
+                    <mat-checkbox
+                        class="checkbox-prefix"
+                        [checked]="isDisplayColorEnabled(node.name)"
+                        (change)="setDisplayColorEnabled(node.name, $event.checked)">
+                    </mat-checkbox>
+                    <input
+                        matInput
+                        type="color"
+                        name="displayColor"
+                        placeholder="Display color"
+                        [class.disabled]="!isDisplayColorEnabled(node.name)"
+                        [(ngModel)]="getConfigForLabel(node.name).displayColor"
+                        (click)="setDisplayColorEnabled(node.name, true)">
+                  </div>
+                </mat-form-field>
+                <mat-form-field fxFlex>
+                  <input
+                      matInput
+                      #nameInput
+                      type="text"
+                      name="name"
+                      placeholder="Name"
+                      [ngModel]="node.name"
+                      (ngModelChange)="renameLabelNode(node, $event)"
+                      [ngModelOptions]="{updateOn: 'blur'}"
+                      (keydown.enter)="renameLabelNode(node, nameInput.value)">
+                  <button
+                      type="button"
+                      (click)="renameLabelNode(node, nameInput.value)"
+                      [hidden]="nameInput.value === node.name"
+                      tabindex="-1"
+                      mat-icon-button
+                      matSuffix>
+                    <mat-icon>check</mat-icon>
+                  </button>
+                </mat-form-field>
+                <button
+                    mat-raised-button
+                    color="warn"
+                    (click)="deleteLabelNode(node)">
+                  <mat-icon>delete</mat-icon>&nbsp;Delete
+                </button>
+              </div>
+              <mat-form-field>
+                <input
+                    matInput
+                    type="text"
+                    name="description"
+                    placeholder="Description"
+                    [(ngModel)]="getConfigForLabel(node.name).description">
+              </mat-form-field>
+              <app-billing-info
+                  unknownPeriodLabel="Default"
+                  [(billing)]="getConfigForLabel(node.name).billing">
+              </app-billing-info>
+            </div>
+          </div>
+
+          <ul
+              *ngIf="hasChildren(node)"
+              [hidden]="!isExpanded(node)"
+              class="label-child-outlet">
+            <ng-container matTreeNodeOutlet></ng-container>
+          </ul>
+        </li>
+      </mat-nested-tree-node>
+    </mat-tree>
+  </mat-card-content>
+</mat-card>

@@ -80,10 +80,6 @@
 .cell-last-known-date {
   flex: 0 0 160px;
 }
-.cell-last-known-date .secondary {
-  color: rgba(0,0,0, .66);
-  font-size: 90%;
-}
 
 .cell-buttons {
   flex: 1 0 200px;

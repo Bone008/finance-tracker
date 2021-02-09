@@ -43,6 +43,11 @@ body {
   color: #e74c3c;
 }
 
+.secondary {
+  color: rgba(0,0,0, .66);
+  font-size: 90%;
+}
+
 .amount-field input {
   text-align: right;
   -moz-appearance: textfield; /* hide spinner in Firefox */

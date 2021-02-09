@@ -31,6 +31,21 @@ export class RuleService {
     private readonly filterService: TransactionFilterService,
     private readonly logger: LoggerService) { }
 
+  patchRulesForLabelRename(oldLabelName: string, newLabelName: string) {
+    for (const rule of this.dataService.getCurrentProcessingRules()) {
+      // Note: We can only patch actions, not stored filters. The user has to
+      // adjust those manually if desired.
+      for (const action of rule.actions) {
+        if (action.addLabel === oldLabelName) {
+          action.addLabel = newLabelName;
+        }
+        if (action.removeLabel === oldLabelName) {
+          action.removeLabel = newLabelName;
+        }
+      }
+    }
+  }
+
   notifyAdded(transaction: Transaction) {
     this.applyRulesWithTrigger([transaction], ProcessingTrigger.ADDED, 'ADDED');
   }
@@ -44,7 +59,7 @@ export class RuleService {
   }
 
   private applyRulesWithTrigger(transactions: Transaction[], trigger: ProcessingTrigger, triggerName: string) {
-    const triggeredRules = this.dataService.getProcessingRules()
+    const triggeredRules = this.dataService.getCurrentProcessingRules()
       .filter(rule => rule.triggers.includes(trigger));
 
     let numAffected = 0;

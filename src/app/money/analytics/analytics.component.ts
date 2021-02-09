@@ -6,7 +6,7 @@ import { debounceTime, map } from 'rxjs/operators';
 import { getPaletteColor } from 'src/app/core/color-util';
 import { LoggerService } from 'src/app/core/logger.service';
 import { observeFragment } from 'src/app/core/router-util';
-import { escapeRegex, nested2ToSet, nested3ToSet, sortBy, splitQuotedString } from 'src/app/core/util';
+import { escapeQuotedString, escapeRegex, nested2ToSet, nested3ToSet, sortBy, splitQuotedString } from 'src/app/core/util';
 import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
@@ -129,7 +129,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       ? ['-label:.']
       : clickedLabels.map(label => (label.endsWith('+')
         ? 'label:^' + escapeRegex(label.substring(0, label.length - 1))
-        : 'label=' + label)));
+        : 'label=' + escapeQuotedString(label))));
     let filter = this.filterState.getCurrentValue();
     for (const newToken of addedTokens) {
       if (filter.length > 0) {
