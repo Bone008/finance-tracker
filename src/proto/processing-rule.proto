@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
+
 // A rule for automatic processing of transactions. Executed on matching
 // triggers, the rule applies its list of actions to every transaction
 // that passes the filter.

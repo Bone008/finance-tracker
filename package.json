@@ -33,7 +33,7 @@
     "ng-keyboard-shortcuts": "^8.2.6",
     "ngx-papaparse": "^4.0.4",
     "pako": "^1.0.11",
-    "protobufjs": "^6.10.2",
+    "protobufjs": "git://github.com/VitalyName/protobuf.js.git#236a7c757a5eada7926fdff149d0b49ada838275",
     "readable-stream": "^2.3.7",
     "rxjs": "^6.6.3",
     "tslib": "^1.14.1",
