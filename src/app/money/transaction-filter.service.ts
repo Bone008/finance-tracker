@@ -5,7 +5,7 @@ import { moneyToNumber, protoDateToMoment, timestampToMoment, timestampToWholeSe
 import { escapeQuotedString, filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
 import { CurrencyService } from "./currency.service";
 import { DataService } from "./data.service";
-import { extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, MONEY_EPSILON, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
+import { extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, MONEY_EPSILON, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
 
 type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
 interface FilterToken {
@@ -429,7 +429,7 @@ export class TransactionFilterService {
           const billing = getRaw(transaction);
           return billing.periodType !== BillingType.UNKNOWN && billing.periodType !== BillingType.NONE && !billing.isRelative;
         };
-        case 'individual': return transaction => !!transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
+        case 'individual': return transaction => isValidBilling(transaction.billing);
         // inherited ^= !individual && !default
         case 'inherited': return transaction =>
           (!transaction.billing || transaction.billing.periodType === BillingType.UNKNOWN)

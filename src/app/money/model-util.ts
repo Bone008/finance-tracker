@@ -213,6 +213,10 @@ export function getDominantLabels(
     .map(info => info.label);
 }
 
+/** Checks if the given (nullable) billing is set to a non-empty value. */
+export function isValidBilling(billing: BillingInfo | null | undefined): billing is BillingInfo {
+  return !!billing && billing.periodType !== BillingType.UNKNOWN;
+}
 
 // (NOTE: Maybe this should be simplified to an independent interface that exposes moments and not dates.)
 export type CanonicalBillingInfo = BillingInfo & { isRelative: false, date: Date, endDate: Date };
@@ -249,7 +253,7 @@ export function resolveTransactionRawBilling(
   let resolvedBilling = new BillingInfo({ periodType: BillingType.UNKNOWN });
 
   // Check for individual billing config on transaction.
-  if (transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN) {
+  if (isValidBilling(transaction.billing)) {
     resolvedBilling = transaction.billing;
   } else {
     // Check for billing config inherited from labels.

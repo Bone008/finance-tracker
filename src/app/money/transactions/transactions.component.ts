@@ -15,7 +15,7 @@ import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, mapTransactionData, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, mapTransactionData, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
@@ -473,7 +473,7 @@ export class TransactionsComponent implements AfterViewInit {
 
     // Note that this logic and terminology is closely related to the "billing:" filter matchers.
 
-    const isIndividual = transaction.billing && transaction.billing.periodType !== BillingType.UNKNOWN;
+    const isIndividual = isValidBilling(transaction.billing);
     const dominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
     const canonical = resolveTransactionCanonicalBilling(transaction, this.dataService, dominanceOrder);
 

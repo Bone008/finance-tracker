@@ -10,7 +10,7 @@ import { escapeQuotedString, escapeRegex, maxByComparator, pluralize } from 'src
 import { BillingInfo, LabelConfig } from '../../../proto/model';
 import { LABEL_HIERARCHY_SEPARATOR } from '../analytics/types';
 import { DataService } from '../data.service';
-import { mapTransactionData, removeLabelFromTransaction, sanitizeLabelName } from '../model-util';
+import { isValidBilling, mapTransactionData, removeLabelFromTransaction, sanitizeLabelName } from '../model-util';
 import { RuleService } from '../rule.service';
 
 interface LabelInfoNode {
@@ -125,7 +125,7 @@ export class LabelsComponent implements OnInit, OnDestroy {
       const mergedConfig = this.dataService.getLabelConfig(newName);
       if (isMerge && mergedConfig) {
         // Fancy merge: Only overwrite present fields.
-        mergedConfig.billing = config.billing || mergedConfig.billing;
+        mergedConfig.billing = isValidBilling(config.billing) ? config.billing : mergedConfig.billing;
         mergedConfig.description = config.description || mergedConfig.description;
         mergedConfig.displayColor = config.displayColor || mergedConfig.displayColor;
       }
