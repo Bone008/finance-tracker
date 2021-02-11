@@ -4,7 +4,6 @@ import * as moment from 'moment';
 import { cloneMessage, momentToProtoDate, momentToTimestamp, moneyToNumber, numberToMoney, protoDateToMoment, timestampNow, timestampToMoment } from 'src/app/core/proto-util';
 import { maxBy, removeByValue } from 'src/app/core/util';
 import { Account, BillingInfo, BillingType, Date as ProtoDate, KnownBalance, Transaction, TransactionData } from 'src/proto/model';
-import { isNumber } from 'util';
 import { CurrencyService } from '../../currency.service';
 import { DataService } from '../../data.service';
 import { DialogService } from '../../dialog.service';
@@ -48,9 +47,7 @@ export class BalancesComponent implements OnInit {
   }
 
   addNew() {
-    // Note that the type assertion is needed because for some reason, the type narrowing does not
-    // work within the Angular compilation.
-    if (!isNumber(this.newBalance) || !isFinite(this.newBalance!) || !this.newDate) {
+    if (typeof this.newBalance !== 'number' || !isFinite(this.newBalance) || !this.newDate) {
       return;
     }
 
