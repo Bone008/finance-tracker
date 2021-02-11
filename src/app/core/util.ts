@@ -216,7 +216,7 @@ export function filterFuzzyOptions(options: string[], input: string, allowEmptyI
 }
 
 /** Adapter between setTimeout and Promises. */
-export function delay<T = void>(delay: number, value?: T): Promise<T> {
+export function delay<T = void>(delay: number, value?: T): Promise<T | undefined> {
   return new Promise(resolve => {
     setTimeout(() => resolve(value), delay);
   });

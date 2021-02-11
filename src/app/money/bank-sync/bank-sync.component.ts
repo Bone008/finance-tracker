@@ -30,19 +30,19 @@ export class BankSyncComponent implements OnInit {
   readonly allAccounts$: Observable<Account[]>;
 
   targetAccountsForm = new FormArray<number>([
-    new FormControl(0),
-    new FormControl(0),
-    new FormControl(0),
-    new FormControl(0),
-    new FormControl(0),
-    new FormControl(0),
+    new FormControl<number>(0),
+    new FormControl<number>(0),
+    new FormControl<number>(0),
+    new FormControl<number>(0),
+    new FormControl<number>(0),
+    new FormControl<number>(0),
   ], validateAnyAccounts);
   form = new FormGroup<RequiredProto<IBankSyncSettings>>({
-    bankType: new FormControl('sparkasse', Validators.required),
-    bankUrl: new FormControl('', [Validators.required, validateUrl]),
-    loginName: new FormControl('', Validators.required),
-    loginPassword: new FormControl('', Validators.required),
-    maxTransactionAgeDays: new FormControl(31, [Validators.required, Validators.min(1)]),
+    bankType: new FormControl<string>('sparkasse', Validators.required),
+    bankUrl: new FormControl<string>('', [Validators.required, validateUrl]),
+    loginName: new FormControl<string>('', Validators.required),
+    loginPassword: new FormControl<string>('', Validators.required),
+    maxTransactionAgeDays: new FormControl<number>(31, [Validators.required, Validators.min(1)]),
     targetAccountIds: this.targetAccountsForm,
   });
 

@@ -181,10 +181,10 @@ export class LabelsComponent implements OnInit, OnDestroy {
     for (const tx of this.dataService.getCurrentTransactionList()) {
       removeLabelFromTransaction(tx, label);
     }
-    this.dataService.deleteLabelConfig(name);
+    this.dataService.deleteLabelConfig(label);
     const dominance = this.dataService.getUserSettings().labelDominanceOrder;
-    if (dominance.hasOwnProperty(name)) {
-      delete dominance[name];
+    if (dominance.hasOwnProperty(label)) {
+      delete dominance[label];
     }
 
     // Note: Processing rules are intentionally left unaffected, as it isn't
