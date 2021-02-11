@@ -41,11 +41,11 @@
   flex: 0 0 105px;
 }
 .cell-transactions {
-  flex: 0 1 75px;
+  flex: 0 1 90px;
   text-align: right;
 }
 .cell-buttons {
-  flex: 0 0 130px;
+  flex: 0 0 90px;
   display: flex;
   justify-content: flex-end;
 }
@@ -90,6 +90,12 @@
 
 /* SM */
 @media screen and (max-width: 959px) {
+  .label-tree,
+  .header-row {
+    margin-left: -10px;
+    margin-right: -10px;
+  }
+
   .header-row {
     /* App header no longer sticky. */
     top: 0;
@@ -100,6 +106,12 @@
     padding-left: 0;
     padding-right: 0;
   }
+
+  .editing > .editor-wrapper {
+    /* Add back padding to account for cell padding being gone. */
+    margin-left: 30px;
+    padding-left: 10px;
+  }
 }
 
 /* XS */
@@ -107,8 +119,18 @@
   .header-row {
     position: static;
   }
+  .cell-toggle {
+    /* Shrink toggle button a bit to save space. */
+    flex-basis: 30px;
+    transform: translate(-5px, 0);
+  }
   .cell-last-used {
     display: none;
+  }
+  
+  .editing > .editor-wrapper {
+    /* Adjust margin to correct for shrunk toggle button. */
+    margin-left: 20px;
   }
 
   .label-tree .label-child-outlet {
