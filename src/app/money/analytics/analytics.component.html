@@ -14,9 +14,9 @@
       <button mat-stroked-button (click)="uncollapseAllGroups()" class="collapse-button">None</button>
       <mat-checkbox
           *ngFor="let group of labelGroups"
-          (change)="setShouldCollapseGroup(group.parentName, $event.checked)"
-          [checked]="shouldCollapseGroup(group.parentName)">
-        {{group.parentName}}&nbsp;({{group.children.length}})
+          (change)="setShouldCollapseGroup(group.fullName, $event.checked)"
+          [checked]="shouldCollapseGroup(group.fullName)">
+        {{group.fullName}}&nbsp;({{group.children.length}})
       </mat-checkbox>
     </p>
 

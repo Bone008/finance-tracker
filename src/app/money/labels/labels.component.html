@@ -35,7 +35,11 @@
                 </mat-icon>
               </button>
               <span class="cell-name">
-                <app-label inline [label]="node.name"></app-label>
+                <app-label
+                    inline
+                    [label]="node.name"
+                    [colorUpdateRef]="currentEditLabel === node.name ? getConfigForLabel(node.name).displayColor : null">
+                </app-label>
                 <span *ngIf="hasHiddenChildren(node)" class="secondary">&nbsp;+{{node.children.length}}</span>
               </span>
               <div class="cell-last-used">

@@ -1,8 +1,6 @@
 import { KeyedNumberAggregate } from 'src/app/core/keyed-aggregate';
 import { Transaction } from 'src/proto/model';
 
-/** The character that is used in label names to define a hierarchy. */
-export const LABEL_HIERARCHY_SEPARATOR = '/';
 export const NONE_GROUP_NAME = '<none>';
 export const OTHER_GROUP_NAME = '<other>';
 

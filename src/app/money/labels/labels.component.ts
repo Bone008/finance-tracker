@@ -3,15 +3,13 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatTreeNestedDataSource } from '@angular/material/tree';
 import * as moment from 'moment';
 import { Observable, Subscription } from 'rxjs';
-import { KeyedArrayAggregate } from 'src/app/core/keyed-aggregate';
 import { LoggerService } from 'src/app/core/logger.service';
 import { timestampToMilliseconds } from 'src/app/core/proto-util';
 import { escapeQuotedString, escapeRegex, maxByComparator, pluralize } from 'src/app/core/util';
 import { BillingInfo, LabelConfig } from '../../../proto/model';
-import { LABEL_HIERARCHY_SEPARATOR } from '../analytics/types';
 import { DataService } from '../data.service';
-import { isValidBilling, mapTransactionData, removeLabelFromTransaction, sanitizeLabelName } from '../model-util';
-import { RuleService } from '../rule.service';
+import { LabelHierarchyNode, LabelService, LABEL_HIERARCHY_SEPARATOR } from '../label.service';
+import { mapTransactionData, sanitizeLabelName } from '../model-util';
 
 interface LabelInfoNode {
   name: string;
@@ -35,7 +33,9 @@ export class LabelsComponent implements OnInit, OnDestroy {
   // TODO: There is also flat tree control, which I probably want to use instead.
   // That simplifies showing multiple columns.
   // See: https://material.angular.io/components/tree/overview
-  treeControl = new NestedTreeControl<LabelInfoNode>(node => node.children);
+  treeControl = new NestedTreeControl<LabelInfoNode, string>(node => node.children, {
+    trackBy: node => node.name,
+  });
   treeDataSource = new MatTreeNestedDataSource<LabelInfoNode>();
 
   currentEditLabel: string | null = null;
@@ -45,7 +45,7 @@ export class LabelsComponent implements OnInit, OnDestroy {
   private txSubscription: Subscription;
 
   constructor(
-    private readonly ruleService: RuleService,
+    private readonly labelService: LabelService,
     private readonly dataService: DataService,
     private readonly logger: LoggerService) { }
 
@@ -97,51 +97,9 @@ export class LabelsComponent implements OnInit, OnDestroy {
   renameLabelNode(labelNode: LabelInfoNode, rawNewName: string, isRecursing = false) {
     const oldName = labelNode.name;
     const newName = sanitizeLabelName(rawNewName);
-    if (newName === oldName) {
-      return;
-    }
-    this.logger.debug('renaming:', oldName, '->', newName);
 
-    const isMerge = this.dataService.getAllLabelsSet().has(newName);
-    if (isMerge && !confirm(`The label "${newName}" already exists. If you continue, it will be merged with "${oldName}". `
-      + `Transactions will no longer be distinguishable.\n\n`
-      + `This cannot be undone! Do you want to continue?`)) {
-      return;
-    }
-
-    // Replace value in all transactions. Do not use addLabelToTransaction,
-    // since that would change ordering.
-    for (const tx of this.dataService.getCurrentTransactionList()) {
-      const i = tx.labels.indexOf(oldName);
-      if (i >= 0) {
-        tx.labels[i] = newName;
-      }
-    }
-
-    // Migrate config to new key.
-    const config = this.dataService.getLabelConfig(oldName);
-    if (config) {
-      this.dataService.deleteLabelConfig(oldName);
-      const mergedConfig = this.dataService.getLabelConfig(newName);
-      if (isMerge && mergedConfig) {
-        // Fancy merge: Only overwrite present fields.
-        mergedConfig.billing = isValidBilling(config.billing) ? config.billing : mergedConfig.billing;
-        mergedConfig.description = config.description || mergedConfig.description;
-        mergedConfig.displayColor = config.displayColor || mergedConfig.displayColor;
-      }
-      else {
-        // Just copy the old config over.
-        this.dataService.setLabelConfig(newName, config);
-      }
-    }
-
-    // Migrate other occurences.
-    this.ruleService.patchRulesForLabelRename(oldName, newName);
-    const dominance = this.dataService.getUserSettings().labelDominanceOrder;
-    if (dominance.hasOwnProperty(oldName)) {
-      dominance[newName] = dominance[oldName];
-      delete dominance[oldName];
-    }
+    const { success, didMerge } = this.labelService.renameLabel(oldName, newName);
+    if (!success) { return; }
 
     // Adjust node.
     labelNode.name = newName;
@@ -160,9 +118,12 @@ export class LabelsComponent implements OnInit, OnDestroy {
       }
     }
 
-    if (!isRecursing && isMerge) {
+    // Check if hierarchy changed.
+    const oldPrefix = oldName.substr(0, oldName.lastIndexOf(LABEL_HIERARCHY_SEPARATOR));
+    const newPrefix = newName.substr(0, newName.lastIndexOf(LABEL_HIERARCHY_SEPARATOR));
+
+    if (!isRecursing && (didMerge || oldPrefix !== newPrefix)) {
       this.refreshLabelTree();
-      this.treeControl.expansionModel
     }
   }
 
@@ -177,20 +138,7 @@ export class LabelsComponent implements OnInit, OnDestroy {
     if (!confirm(msg)) {
       return;
     }
-
-    for (const tx of this.dataService.getCurrentTransactionList()) {
-      removeLabelFromTransaction(tx, label);
-    }
-    this.dataService.deleteLabelConfig(label);
-    const dominance = this.dataService.getUserSettings().labelDominanceOrder;
-    if (dominance.hasOwnProperty(label)) {
-      delete dominance[label];
-    }
-
-    // Note: Processing rules are intentionally left unaffected, as it isn't
-    // clear what should happen to the referencing actions. If the user forgets
-    // to delete the rule, they will simply notice the next time it is run.
-
+    this.labelService.deleteLabel(label);
 
     if (this.currentEditLabel === label) {
       this.currentEditLabel = null;
@@ -247,49 +195,26 @@ export class LabelsComponent implements OnInit, OnDestroy {
 
   private refreshLabelTree() {
     this.configInstancesCache = {};
-    const treeState = this.rememberTreeState();
 
-    // TODO: Migrate to utility function to merge with analytics version.
-    // TODO: Support more than 1 nesting level.
-    const labels = this.dataService.getAllLabels();
-    const parentLabels = new KeyedArrayAggregate<string>();
-    for (const label of labels) {
-      const sepIndex = label.indexOf(LABEL_HIERARCHY_SEPARATOR);
-      if (sepIndex > 0) {
-        //parentLabels.add(label.substr(0, sepIndex), label.substr(sepIndex + 1));
-        parentLabels.add(label.substr(0, sepIndex), label);
-      } else {
-        // Just a regular label, but it may be a parent to some other children.
-        parentLabels.add(label, label);
-      }
-    }
-
-    const data = parentLabels.getEntriesSorted()
-      .map(([parentName, children]) => this.makeLabelNode(parentName, children));
-
-    // const data = this.dataService.getAllLabels()
-    //   .sort()
-    //   .map(labelName => <LabelInfoNode>{
-    //     name: labelName,
-    //     numTransactions: this.dataService.getCurrentTransactionList().filter(t => t.labels.includes(labelName)).length,
-    //   });
+    const data = this.labelService.buildHierarchyFromAll()
+      .map(node => this._convertLabelNode(node));
 
     this.treeDataSource.data = data;
     this.treeControl.dataNodes = data;
-    this.restoreTreeState(treeState);
+
+    if (this.currentEditLabel) {
+      this.expandAncestors(this.currentEditLabel);
+    }
   }
 
-  private makeLabelNode(name: string, children?: string[]): LabelInfoNode {
-    if (!children) { children = []; }
+  private _convertLabelNode({ fullName, children }: LabelHierarchyNode): LabelInfoNode {
     // Recurse.
-    const childNodes = children
-      .filter(childName => childName !== name)
-      .map(childName => this.makeLabelNode(childName));
+    const convertedChildren = children.map(child => this._convertLabelNode(child));
 
     // Count associated transactions.
     const matchingTransactions = this.dataService.getCurrentTransactionList()
-      .filter(t => t.labels.includes(name));
-    const numDescendentTransactions = childNodes
+      .filter(t => t.labels.includes(fullName));
+    const numDescendentTransactions = convertedChildren
       .map(child => child.numTransactionsTransitive)
       .reduce((a, b) => a + b, 0);
 
@@ -300,33 +225,36 @@ export class LabelsComponent implements OnInit, OnDestroy {
           ...mapTransactionData(t, data => timestampToMilliseconds(data.date))))))
       : null;
     const lastUsedDescendents = maxByComparator(
-      childNodes.map(child => child.lastUsedMomentTransitive).filter(value => value !== null),
+      convertedChildren.map(child => child.lastUsedMomentTransitive).filter(value => value !== null),
       (a, b) => a!.valueOf() - b!.valueOf());
 
     return {
-      name,
+      name: fullName,
       numTransactions: matchingTransactions.length,
       numTransactionsTransitive: matchingTransactions.length + numDescendentTransactions,
       lastUsedMoment: lastUsedSelf,
       lastUsedMomentTransitive: (lastUsedSelf && lastUsedDescendents)
         ? moment.max(lastUsedSelf, lastUsedDescendents)
         : (lastUsedSelf || lastUsedDescendents),
-      children: childNodes,
+      children: convertedChildren,
     };
   }
 
-  private rememberTreeState(): string[] {
-    return this.treeControl.expansionModel.selected.map(n => n.name);
+  /** Ensures that a given label is visible by expanding all of its ancestors. */
+  private expandAncestors(label: string) {
+    for (const node of this.treeControl.dataNodes) {
+      this._expandIfDescendantsMatch(node, label);
+    }
   }
 
-  private restoreTreeState(expandedNodes: string[]) {
-    const expandedSet = new Set(expandedNodes);
-    for (const root of this.treeControl.dataNodes) {
-      for (const node of [root, ...this.treeControl.getDescendants(root)]) {
-        if (expandedSet.has(node.name)) {
-          this.treeControl.expand(node);
-        }
-      }
+  private _expandIfDescendantsMatch(node: LabelInfoNode, label: string): boolean {
+    if (node.name === label) {
+      return true;
     }
+    const match = node.children.some(child => this._expandIfDescendantsMatch(child, label));
+    if (match) {
+      this.treeControl.expand(node);
+    }
+    return match;
   }
 }

@@ -6,7 +6,7 @@ import { debounceTime, map } from 'rxjs/operators';
 import { getPaletteColor } from 'src/app/core/color-util';
 import { LoggerService } from 'src/app/core/logger.service';
 import { observeFragment } from 'src/app/core/router-util';
-import { escapeQuotedString, escapeRegex, nested2ToSet, nested3ToSet, sortBy, splitQuotedString } from 'src/app/core/util';
+import { escapeQuotedString, escapeRegex, nested2ToSet, nested3ToSet, sortBy, splitQuotedString, traverseTree } from 'src/app/core/util';
 import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
@@ -14,10 +14,11 @@ import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
+import { LabelHierarchyNode, LabelService } from '../label.service';
 import { CanonicalBillingInfo, extractAllLabels, getDominantLabels, getTransactionAmount, MONEY_EPSILON, resolveTransactionCanonicalBilling } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
-import { AnalysisResult, BilledTransaction, BucketInfo, BucketUnit, isBucketUnit, LabelGroup, LABEL_HIERARCHY_SEPARATOR, NONE_GROUP_NAME, OTHER_GROUP_NAME } from './types';
+import { AnalysisResult, BilledTransaction, BucketInfo, BucketUnit, isBucketUnit, NONE_GROUP_NAME, OTHER_GROUP_NAME } from './types';
 
 const DEFAULT_BUCKET_UNIT = 'month';
 const BUCKET_TOTAL_BY_LABEL_PROPS = ['totalExpensesByLabel', 'totalIncomeByLabel'] as const;
@@ -35,7 +36,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   private readonly labelDominanceSubject = new BehaviorSubject<LabelDominanceOrder>({});
   private readonly labelGroupLimitsSubject = new BehaviorSubject<void>(void (0));
 
-  labelGroups: LabelGroup[] = [];
+  labelGroups: LabelHierarchyNode[] = [];
   totalTransactionCount = 0;
   matchingTransactionCount = 0;
   hasFilteredPartiallyBilledTransactions = false;
@@ -56,7 +57,10 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   /** The part of the current filter string that performs date filtering. */
   private dateRestrictingFilter: string | null = null;
 
-  // Cache built from labelGroups mapping from "foo/bar" to "foo+".
+  /**
+   * Cache built from labelGroups mapping from "foo/bar" to "foo+".
+   * Incomplete, only contains keys that were actually collapsed.
+   */
   private collapsedLabelGroupNamesLookup: { [fullLabel: string]: string } = {};
   /** Preprocessed buckets. */
   private billedTransactionBuckets: BucketInfo[] = [];
@@ -69,6 +73,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   constructor(
     private readonly dataService: DataService,
     private readonly filterService: TransactionFilterService,
+    private readonly labelService: LabelService,
     private readonly currencyService: CurrencyService,
     private readonly dialogService: DialogService,
     private readonly route: ActivatedRoute,
@@ -190,7 +195,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   setShouldCollapseGroup(group: string, flag: boolean) {
-    const shouldIncludeInSet = !flag; // set tracks UNcollapsed values
+    const shouldIncludeInSet = !flag; // the set tracks UNcollapsed values
     const value = this.uncollapsedGroupsSubject.value;
     let newValue: typeof value;
     if (shouldIncludeInSet) {
@@ -204,7 +209,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     }
     else {
       if (value === 'all')
-        newValue = new Set(this.labelGroups.filter(g => g.parentName !== group).map(g => g.parentName));
+        newValue = new Set(this.labelGroups.filter(g => g.fullName !== group).map(g => g.fullName));
       else if (value === 'none')
         return; // noop
       else if (value.delete(group)) {
@@ -302,40 +307,27 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
    * state and stores it into this.labelGroups.
    **/
   private analyzeLabelGroups() {
-    const labels = extractAllLabels(this.matchingTransactions);
-    const parentLabels = new KeyedArrayAggregate<string>();
-    for (const label of labels) {
-      if (this.dataService.getLabelBilling(label).periodType === BillingType.NONE) {
-        continue;
-      }
-
-      const sepIndex = label.indexOf(LABEL_HIERARCHY_SEPARATOR);
-      if (sepIndex > 0) {
-        parentLabels.add(label.substr(0, sepIndex), label.substr(sepIndex + 1));
-      } else {
-        // Just a regular label, but it may be a parent to some other children.
-        parentLabels.add(label, label);
-      }
-    }
-
-    this.labelGroups = parentLabels.getEntriesSorted()
-      .filter(([_, children]) => children.length > 1)
-      .map(([parentName, children]) => <LabelGroup>{
-        parentName,
-        children,
-      });
-
-    // Build cache.
+    this.labelGroups = [];
     this.collapsedLabelGroupNamesLookup = {};
-    const lookup = this.collapsedLabelGroupNamesLookup;
-    for (const group of this.labelGroups) {
-      if (this.shouldCollapseGroup(group.parentName)) {
-        lookup[group.parentName] = group.parentName + '+';
-        for (const child of group.children) {
-          lookup[group.parentName + LABEL_HIERARCHY_SEPARATOR + child] = group.parentName + '+';
+
+    const fullHierarchy = this.labelService.buildHierarchyFromTransactions(this.matchingTransactions);
+    traverseTree(fullHierarchy, (node, recurse) => {
+      if (node.children.length > 1) {
+        this.labelGroups.push(node);
+
+        if (this.shouldCollapseGroup(node.fullName)) {
+          // Build lookup cache, recursively including this entire subtree.
+          traverseTree([node], descendant => {
+            this.collapsedLabelGroupNamesLookup[descendant.fullName] =
+              node.fullName + '+';
+          });
+        }
+        else {
+          // Explore next nesting level.
+          recurse();
         }
       }
-    }
+    });
   }
 
   /** Find labels which every matched transaction is tagged with and store it in this.labelsSharedByAll. */

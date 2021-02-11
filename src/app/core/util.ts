@@ -1,5 +1,7 @@
 
 /** Coerces a data-bound value (typically a string) to a boolean. */
+
+
 // Inspired by https://github.com/angular/material2/blob/master/src/cdk/coercion/boolean-property.ts
 export function coerceBooleanProperty(value: any): boolean {
   return value != null && `${value}` !== 'false';
@@ -50,6 +52,34 @@ export function nested3ToSet<T>(elements: T[][][]): Set<T> {
     }
   }
   return set;
+}
+
+/**
+ * Recursively traverses a tree-like data structure and calls a callback on each node.
+ * The callback can optionally explicitly call "recurse" to take control over
+ * whether traversal should continue down the current subtree.
+ */
+export function traverseTree<T extends { children?: Iterable<T> }>(
+  /**/ roots: T[],
+  /**/ callback: (node: T, recurse: () => void) => void) {
+  // Sooper dooper nested closure magic.
+  function _doTraverse(node: T, parent: T | null) {
+    const recurse = () => {
+      for (const child of (node.children || [])) {
+        _doTraverse(child, node);
+      }
+    };
+    callback(node, recurse);
+
+    // If the callback is not consuming the "recurse" parameter, always call it.
+    if (callback.length < 2) {
+      recurse();
+    }
+  }
+
+  for (const node of roots) {
+    _doTraverse(node, null);
+  }
 }
 
 /** Inplace sort by a numeric key extracted by a selector. */

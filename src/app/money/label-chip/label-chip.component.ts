@@ -31,6 +31,13 @@ export class LabelChipComponent implements OnChanges {
   @Input()
   label = '';
 
+  /**
+   * Workaround to allow triggering change detection when the label config is
+   * changed in LabelsComponent. The actual value is ignored.
+   */
+  @Input()
+  colorUpdateRef: any;
+
   //@Output() click = new EventEmitter<MouseEvent>();
   /** Emitted when the user requests deletion of the label. */
   @Output() delete = new EventEmitter<MouseEvent | KeyboardEvent>();
@@ -45,7 +52,7 @@ export class LabelChipComponent implements OnChanges {
     private readonly element: ElementRef<HTMLElement>) { }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes.label) {
+    if (changes.label || changes.colorUpdateRef) {
       const config = this.dataService.getLabelConfig(this.label);
       this.backgroundColor = config?.displayColor || DEFAULT_BACKGROUND_COLOR;
       this.foregroundColor = getContrastingColor(this.backgroundColor);

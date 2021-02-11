@@ -151,12 +151,12 @@ export function getTransactionUniqueCurrency(subject: Transaction | Transaction[
 }
 
 /** Returns an unordered list of all labels that occur in any of the given transactions. */
-export function extractAllLabels(transactions: Transaction[]): string[] {
+export function extractAllLabels(transactions: Iterable<Transaction>): string[] {
   return Array.from(extractAllLabelsSet(transactions));
 }
 
 /** Returns the set of all labels that occur in any of the given transactions. */
-export function extractAllLabelsSet(transactions: Transaction[]): Set<string> {
+export function extractAllLabelsSet(transactions: Iterable<Transaction>): Set<string> {
   const labels = new Set<string>();
   for (const transaction of transactions) {
     for (const label of transaction.labels) {

@@ -21,6 +21,9 @@
   border-bottom: 1px solid rgba(0,0,0,.12);
   cursor: pointer;
 }
+.data-row app-label {
+  cursor: pointer;
+}
 
 .header-row > :not(.cell-toggle),
 .data-row > :not(.cell-toggle) {
@@ -67,6 +70,9 @@
   border-left: 2px dotted rgba(0, 0, 0, 0.33);
 }
 
+.editor-wrapper {
+  @include mat-elevation-transition;
+}
 .editing > .editor-wrapper {
   @include mat-elevation(8);
   position: relative;
