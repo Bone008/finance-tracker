@@ -51,7 +51,7 @@ const appRoutes: Routes = [
 @NgModule({
   imports: [
     CommonModule,
-    RouterModule.forRoot(appRoutes),
+    RouterModule.forRoot(appRoutes, { relativeLinkResolution: 'legacy' }),
     KeyboardShortcutsModule.forRoot(),
     FormsModule,
     NgStackFormsModule,

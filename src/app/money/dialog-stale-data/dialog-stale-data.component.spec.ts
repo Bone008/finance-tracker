@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { DialogStaleDataComponent } from './dialog-stale-data.component';
 
@@ -6,7 +6,7 @@ describe('DialogStaleDataComponent', () => {
   let component: DialogStaleDataComponent;
   let fixture: ComponentFixture<DialogStaleDataComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ DialogStaleDataComponent ]
     })

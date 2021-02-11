@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { DialogViewImportedRowComponent } from './dialog-view-imported-row.component';
 
@@ -6,7 +6,7 @@ describe('DialogViewImportedRowComponent', () => {
   let component: DialogViewImportedRowComponent;
   let fixture: ComponentFixture<DialogViewImportedRowComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ DialogViewImportedRowComponent ]
     })
