@@ -48,6 +48,14 @@ body {
   font-size: 90%;
 }
 
+code {
+  margin: 0;
+  padding: .2em .4em;
+  background-color: rgba(0, 0, 50, 0.08);
+  font-size: 85%;
+  border-radius: 4px;
+}
+
 .amount-field input {
   text-align: right;
   -moz-appearance: textfield; /* hide spinner in Firefox */

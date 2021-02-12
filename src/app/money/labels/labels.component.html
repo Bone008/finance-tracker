@@ -4,7 +4,10 @@
   </mat-card-title>
 
   <mat-card-content>
-    <p>New labels are created automatically when you assign a new one to a transaction.</p>
+    <p>
+      New labels are created automatically when you assign a new one to a transaction.
+      You can create nested labels by including "<code>/</code>" in their name.
+    </p>
     <div fxLayout="row" fxLayoutAlign="end" fxLayoutGap="10px">
       <button
           mat-stroked-button
@@ -86,9 +89,11 @@
             <div *ngIf="currentEditLabel === node.name" class="editor-container">
               <div fxLayout="row wrap" fxLayoutGap="10px" fxLayoutAlign="stretch center">
                 <mat-form-field class="color-form-field">
-                  <div class="optional-color-container">
+                  <mat-label>
+                    Display color
+                  </mat-label>
+                  <div fxLayout="row" fxLayoutGap="6px">
                     <mat-checkbox
-                        class="checkbox-prefix"
                         [checked]="isDisplayColorEnabled(node.name)"
                         (change)="setDisplayColorEnabled(node.name, $event.checked)">
                     </mat-checkbox>
@@ -96,10 +101,15 @@
                         matInput
                         type="color"
                         name="displayColor"
-                        placeholder="Display color"
                         [class.disabled]="!isDisplayColorEnabled(node.name)"
                         [(ngModel)]="getConfigForLabel(node.name).displayColor"
                         (click)="setDisplayColorEnabled(node.name, true)">
+                    <mat-icon
+                        *ngIf="hasChildren(node)"
+                        class="help-icon"
+                        matTooltip="The display color is inherited by this label's children, unless they overwrite it.">
+                      help
+                    </mat-icon>
                   </div>
                 </mat-form-field>
                 <div fxHide fxShow.xs fxFlex></div>
@@ -140,10 +150,19 @@
                     placeholder="Description"
                     [(ngModel)]="getConfigForLabel(node.name).description">
               </mat-form-field>
-              <app-billing-info
-                  unknownPeriodLabel="Default"
-                  [(billing)]="getConfigForLabel(node.name).billing">
-              </app-billing-info>
+              <div fxLayout="row" fxLayoutGap="8px" fxLayoutAlign="stretch center">
+                <app-billing-info
+                    fxFlex
+                    unknownPeriodLabel="Default"
+                    [(billing)]="getConfigForLabel(node.name).billing">
+                </app-billing-info>
+                <mat-icon
+                    *ngIf="hasChildren(node)"
+                    class="help-icon"
+                    matTooltip="The billing period is inherited by this label's children, unless they overwrite it.">
+                  help
+                </mat-icon>
+              </div>
             </div>
           </div>
 
