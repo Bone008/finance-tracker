@@ -6,8 +6,18 @@
   <mat-card-content>
     <p>New labels are created automatically when you assign a new one to a transaction.</p>
     <div fxLayout="row" fxLayoutAlign="end" fxLayoutGap="10px">
-      <button mat-stroked-button (click)="expandAll()">Expand all</button>
-      <button mat-stroked-button (click)="collapseAll()">Collapse all</button>
+      <button
+          mat-stroked-button
+          [disabled]="!hasAnyExpandableNodes"
+          (click)="expandAll()">
+        Expand all
+      </button>
+      <button
+          mat-stroked-button
+          [disabled]="!hasAnyExpandableNodes"
+          (click)="collapseAll()">
+        Collapse all
+      </button>
     </div>
 
     
@@ -74,7 +84,7 @@
             </div>
 
             <div *ngIf="currentEditLabel === node.name" class="editor-container">
-              <div fxLayout="row" fxLayoutGap="10px" fxLayoutAlign="stretch center">
+              <div fxLayout="row wrap" fxLayoutGap="10px" fxLayoutAlign="stretch center">
                 <mat-form-field class="color-form-field">
                   <div class="optional-color-container">
                     <mat-checkbox
@@ -92,7 +102,8 @@
                         (click)="setDisplayColorEnabled(node.name, true)">
                   </div>
                 </mat-form-field>
-                <mat-form-field fxFlex>
+                <div fxHide fxShow.xs fxFlex></div>
+                <mat-form-field fxFlex fxFlexOrder="0" fxFlexOrder.xs="1" fxFlex.xs="100%">
                   <input
                       matInput
                       #nameInput
@@ -115,6 +126,7 @@
                 </mat-form-field>
                 <button
                     mat-raised-button
+                    fxFlexOrder.xs="0"
                     color="warn"
                     (click)="deleteLabelNode(node)">
                   <mat-icon>delete</mat-icon>&nbsp;Delete

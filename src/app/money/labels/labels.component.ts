@@ -2,7 +2,7 @@ import { NestedTreeControl } from '@angular/cdk/tree';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatTreeNestedDataSource } from '@angular/material/tree';
 import * as moment from 'moment';
-import { Observable, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { LoggerService } from 'src/app/core/logger.service';
 import { timestampToMilliseconds } from 'src/app/core/proto-util';
 import { escapeQuotedString, escapeRegex, maxByComparator, pluralize } from 'src/app/core/util';
@@ -28,16 +28,14 @@ interface LabelInfoNode {
   styleUrls: ['./labels.component.scss']
 })
 export class LabelsComponent implements OnInit, OnDestroy {
-  allLabels$: Observable<LabelInfoNode[]>;
-
-  // TODO: There is also flat tree control, which I probably want to use instead.
-  // That simplifies showing multiple columns.
+  // Note: There is also flat tree control, which might be nicer to use.
   // See: https://material.angular.io/components/tree/overview
   treeControl = new NestedTreeControl<LabelInfoNode, string>(node => node.children, {
     trackBy: node => node.name,
   });
   treeDataSource = new MatTreeNestedDataSource<LabelInfoNode>();
 
+  hasAnyExpandableNodes = false;
   currentEditLabel: string | null = null;
 
   /** Stores LabelConfig instances for the UI of labels that have no associated instance yet. */
@@ -201,6 +199,7 @@ export class LabelsComponent implements OnInit, OnDestroy {
 
     this.treeDataSource.data = data;
     this.treeControl.dataNodes = data;
+    this.hasAnyExpandableNodes = data.some(node => node.children.length > 0);
 
     if (this.currentEditLabel) {
       this.expandAncestors(this.currentEditLabel);
