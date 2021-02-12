@@ -3,11 +3,8 @@ import { Transaction } from 'src/proto/model';
 import { KeyedArrayAggregate } from '../core/keyed-aggregate';
 import { LoggerService } from '../core/logger.service';
 import { DataService } from './data.service';
-import { extractAllLabelsSet, isValidBilling, removeLabelFromTransaction, sanitizeLabelName } from './model-util';
+import { extractAllLabelsSet, getLabelParentOf, isValidBilling, LABEL_HIERARCHY_SEPARATOR, removeLabelFromTransaction, sanitizeLabelName } from './model-util';
 import { RuleService } from './rule.service';
-
-/** The character that is used in label names to define a hierarchy. */
-export const LABEL_HIERARCHY_SEPARATOR = '/';
 
 /** A generic node in the label hierarchy tree. */
 export interface LabelHierarchyNode {
@@ -62,6 +59,18 @@ export class LabelService {
           children.filter(child => child !== name),
           prefix + name + LABEL_HIERARCHY_SEPARATOR),
       }));
+  }
+
+  getEffectiveLabelColor(label: string): string | null {
+    const config = this.dataService.getLabelConfig(label);
+    if (config && config.displayColor) {
+      return config.displayColor;
+    }
+    const parent = getLabelParentOf(label);
+    if (parent) {
+      return this.getEffectiveLabelColor(parent);
+    }
+    return null;
   }
 
   /**

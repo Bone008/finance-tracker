@@ -7,6 +7,8 @@ import { DataService } from './data.service';
 
 /** Monetary values closer to zero than this threshold should be considered 0. */
 export const MONEY_EPSILON = 0.005;
+/** The character that is used in label names to define a hierarchy. */
+export const LABEL_HIERARCHY_SEPARATOR = '/';
 
 /** Creates a DataContainer filled with default values upon first visit. */
 export function createDefaultDataContainer(): DataContainer {
@@ -185,6 +187,15 @@ export function addLabelToTransaction(transaction: Transaction, label: string): 
  */
 export function removeLabelFromTransaction(transaction: Transaction, label: string): boolean {
   return removeByValue(transaction.labels, sanitizeLabelName(label));
+}
+
+/** Returns the parent label of a nested label, or null if it is at top level. */
+export function getLabelParentOf(label: string): string | null {
+  const sepIndex = label.lastIndexOf(LABEL_HIERARCHY_SEPARATOR);
+  if (sepIndex > 0) {
+    return label.substr(0, sepIndex);
+  }
+  return null;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { Component, ElementRef, EventEmitter, HostBinding, HostListener, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { getContrastingColor } from 'src/app/core/color-util';
 import { coerceBooleanProperty } from 'src/app/core/util';
-import { DataService } from '../data.service';
+import { LabelService } from '../label.service';
 
 const DEFAULT_BACKGROUND_COLOR = '#bbdefb';
 
@@ -48,13 +48,13 @@ export class LabelChipComponent implements OnChanges {
   foregroundColor = '';
 
   constructor(
-    private readonly dataService: DataService,
+    private readonly labelService: LabelService,
     private readonly element: ElementRef<HTMLElement>) { }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes.label || changes.colorUpdateRef) {
-      const config = this.dataService.getLabelConfig(this.label);
-      this.backgroundColor = config?.displayColor || DEFAULT_BACKGROUND_COLOR;
+      const effectiveColor = this.labelService.getEffectiveLabelColor(this.label);
+      this.backgroundColor = effectiveColor || DEFAULT_BACKGROUND_COLOR;
       this.foregroundColor = getContrastingColor(this.backgroundColor);
     }
   }

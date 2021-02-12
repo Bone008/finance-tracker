@@ -8,8 +8,8 @@ import { timestampToMilliseconds } from 'src/app/core/proto-util';
 import { escapeQuotedString, escapeRegex, maxByComparator, pluralize } from 'src/app/core/util';
 import { BillingInfo, LabelConfig } from '../../../proto/model';
 import { DataService } from '../data.service';
-import { LabelHierarchyNode, LabelService, LABEL_HIERARCHY_SEPARATOR } from '../label.service';
-import { mapTransactionData, sanitizeLabelName } from '../model-util';
+import { LabelHierarchyNode, LabelService } from '../label.service';
+import { LABEL_HIERARCHY_SEPARATOR, mapTransactionData, sanitizeLabelName } from '../model-util';
 
 interface LabelInfoNode {
   name: string;

@@ -4,7 +4,7 @@ import { debounceTime } from "rxjs/operators";
 import { Account, BillingInfo, DataContainer, GlobalComment, ImportedRow, LabelConfig, ProcessingRule, Transaction, TransactionData, TransactionPreset, UserSettings } from "../../proto/model";
 import { pluralizeArgument, removeByValue } from "../core/util";
 import { MigrationsService } from "./migrations.service";
-import { extractAllLabels, extractAllLabelsSet, extractTransactionData, forEachTransactionData, isSingle } from "./model-util";
+import { extractAllLabels, extractAllLabelsSet, extractTransactionData, forEachTransactionData, getLabelParentOf, isSingle, isValidBilling } from "./model-util";
 
 const DEFAULT_MAIN_CURRENCY = 'EUR';
 const DEFAULT_ACCOUNT = new Account({
@@ -193,9 +193,15 @@ export class DataService {
     }
   }
 
-  /** Returns a label's configured billing info, or a default billing if unset. */
+  /** Returns a label's configured billing info (inherited by its parents), or a default billing if unset. */
   getLabelBilling(label: string): BillingInfo {
-    const labelConfig = this.getLabelConfig(label);
+    let current: string | null = label;
+    let labelConfig: LabelConfig | null;
+    do {
+      labelConfig = this.getLabelConfig(current);
+      current = getLabelParentOf(current!);
+    }
+    while (current && (!labelConfig || !isValidBilling(labelConfig.billing)));
     return (labelConfig && labelConfig.billing) || new BillingInfo();
   }
 
