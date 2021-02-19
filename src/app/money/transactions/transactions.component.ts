@@ -11,11 +11,12 @@ import { makeSharedObject } from 'src/app/core/util';
 import { BillingType, google, GroupData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, protoDateToMoment, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
+import { BillingService } from '../billing.service';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, mapTransactionData, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, mapTransactionData, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
@@ -83,6 +84,7 @@ export class TransactionsComponent implements AfterViewInit {
     private readonly dataService: DataService,
     private readonly filterService: TransactionFilterService,
     private readonly ruleService: RuleService,
+    private readonly billingService: BillingService,
     private readonly currencyService: CurrencyService,
     private readonly loggerService: LoggerService,
     private readonly dialogService: DialogService,
@@ -475,13 +477,13 @@ export class TransactionsComponent implements AfterViewInit {
 
     const isIndividual = isValidBilling(transaction.billing);
     const dominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
-    const canonical = resolveTransactionCanonicalBilling(transaction, this.dataService, dominanceOrder);
+    const canonical = this.billingService.resolveTransactionCanonicalBilling(transaction, dominanceOrder);
 
     if (canonical.periodType === BillingType.NONE) {
       transaction.__billingString = `none, ${isIndividual ? 'individual' : 'inherited'}`;
     }
     else {
-      const raw = resolveTransactionRawBilling(transaction, this.dataService, dominanceOrder);
+      const raw = this.billingService.resolveTransactionRawBilling(transaction, dominanceOrder);
       const isDefault = raw.periodType === BillingType.UNKNOWN;
       const typeStr = isDefault ? 'default' : (isIndividual ? 'individual' : 'inherited');
 

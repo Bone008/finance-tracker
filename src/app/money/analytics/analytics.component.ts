@@ -10,12 +10,13 @@ import { escapeQuotedString, escapeRegex, nested2ToSet, nested3ToSet, sortBy, sp
 import { BillingInfo, BillingType, Transaction, TransactionData } from '../../../proto/model';
 import { KeyedArrayAggregate, KeyedNumberAggregate } from '../../core/keyed-aggregate';
 import { momentToProtoDate, protoDateToMoment } from '../../core/proto-util';
+import { BillingService, CanonicalBillingInfo } from '../billing.service';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
 import { LabelHierarchyNode, LabelService } from '../label.service';
-import { CanonicalBillingInfo, extractAllLabels, getDominantLabels, getTransactionAmount, MONEY_EPSILON, resolveTransactionCanonicalBilling } from '../model-util';
+import { extractAllLabels, getDominantLabels, getTransactionAmount, MONEY_EPSILON } from '../model-util';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { LabelDominanceOrder } from './dialog-label-dominance/dialog-label-dominance.component';
 import { AnalysisResult, BilledTransaction, BucketInfo, BucketUnit, isBucketUnit, NONE_GROUP_NAME, OTHER_GROUP_NAME } from './types';
@@ -74,6 +75,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     private readonly dataService: DataService,
     private readonly filterService: TransactionFilterService,
     private readonly labelService: LabelService,
+    private readonly billingService: BillingService,
     private readonly currencyService: CurrencyService,
     private readonly dialogService: DialogService,
     private readonly route: ActivatedRoute,
@@ -390,14 +392,14 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         const origValues = { billing: transaction.billing, labels: transaction.labels };
         transaction.billing = null;
         transaction.labels = [];
-        try { billing = resolveTransactionCanonicalBilling(transaction, this.dataService, labelDominanceOrder); }
+        try { billing = this.billingService.resolveTransactionCanonicalBilling(transaction, labelDominanceOrder); }
         finally {
           transaction.billing = origValues.billing;
           transaction.labels = origValues.labels;
         }
       }
       else {
-        billing = resolveTransactionCanonicalBilling(transaction, this.dataService, labelDominanceOrder);
+        billing = this.billingService.resolveTransactionCanonicalBilling(transaction, labelDominanceOrder);
       }
 
       // Skip transactions that are excluded from billing.

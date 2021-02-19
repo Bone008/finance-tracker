@@ -3,9 +3,10 @@ import * as moment from 'moment';
 import { BillingType, ITransactionData, Transaction, TransactionData } from "../../proto/model";
 import { moneyToNumber, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
 import { escapeQuotedString, filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
+import { BillingService } from "./billing.service";
 import { CurrencyService } from "./currency.service";
 import { DataService } from "./data.service";
-import { extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, MONEY_EPSILON, resolveTransactionCanonicalBilling, resolveTransactionRawBilling } from "./model-util";
+import { extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, MONEY_EPSILON } from "./model-util";
 
 type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
 interface FilterToken {
@@ -82,6 +83,7 @@ export class TransactionFilterService {
 
   constructor(
     private readonly dataService: DataService,
+    private readonly billingService: BillingService,
     private readonly currencyService: CurrencyService
   ) { }
 
@@ -410,8 +412,8 @@ export class TransactionFilterService {
   private makeBillingMatcher(value: string, operator: MatcherOperator): FilterMatcher | null {
     const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
     // Helper.
-    const getCanonical = (transaction: Transaction) => resolveTransactionCanonicalBilling(transaction, this.dataService, labelDominanceOrder);
-    const getRaw = (transaction: Transaction) => resolveTransactionRawBilling(transaction, this.dataService, labelDominanceOrder);
+    const getCanonical = (transaction: Transaction) => this.billingService.resolveTransactionCanonicalBilling(transaction, labelDominanceOrder);
+    const getRaw = (transaction: Transaction) => this.billingService.resolveTransactionRawBilling(transaction, labelDominanceOrder);
 
     if (operator === ':') {
       // Note that this logic is closely related to TransactionsComponent.getTransactionBillingString().
