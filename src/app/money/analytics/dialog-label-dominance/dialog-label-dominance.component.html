@@ -29,7 +29,7 @@
             class="label-row"
             [class.irrelevant]="labelInfo.combinations.length === 0">
           <td class="label-cell" [matTooltip]="formatLabelTooltip(labelInfo)">
-            {{labelInfo.label}}
+            <app-label inline [label]="labelInfo.label"></app-label>
           </td>
           <td>
             <input
