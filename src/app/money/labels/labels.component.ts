@@ -75,6 +75,14 @@ export class LabelsComponent implements OnInit, OnDestroy {
     return node.children.length > 0 && !this.treeControl.isExpanded(node);
   }
 
+  getLabelDescription(label: string): string {
+    // Note: Does not use getConfigForLabel, because it is called for the full
+    // list and we do not want to generate proxies if not in edit mode!
+    const config = this.dataService.getLabelConfig(label);
+    if (!config) return '';
+    return config.description;
+  }
+
   getLabelFilterString(label: string, includeChildren: boolean): string {
     if (includeChildren) {
       return 'label:^' + escapeQuotedString(escapeRegex(label));

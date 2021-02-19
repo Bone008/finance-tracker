@@ -39,6 +39,9 @@
 }
 .cell-name {
   flex: 1 1 450px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 .cell-last-used {
   flex: 0 0 105px;
@@ -53,12 +56,31 @@
   justify-content: flex-end;
 }
 
+.hidden-children-count {
+  color: rgba(0,0,0, .66);
+  font-size: 90%;
+}
+.description-inline {
+  margin-left: 5px;
+  color: rgba(0,0,0, .33);
+  font-size: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 150ms linear;
+
+  .data-row:hover & {
+    color: rgba(0,0,0, 0.66);
+  }
+}
+
 
 .label-tree ul,
 .label-tree li {
   margin: 0;
   padding: 0;
   list-style-type: none;
+  transition: background-color 150ms linear;
 }
 .label-tree li:hover:not(.editing) {
   background-color: rgba(0, 0, 0, 0.05);

@@ -53,7 +53,12 @@
                     [label]="node.name"
                     [colorUpdateRef]="currentEditLabel === node.name ? getConfigForLabel(node.name).displayColor : null">
                 </app-label>
-                <span *ngIf="hasHiddenChildren(node)" class="secondary">&nbsp;+{{node.children.length}}</span>
+                <span *ngIf="hasHiddenChildren(node)" class="hidden-children-count">
+                  +{{node.children.length}}
+                </span>
+                <span *ngIf="currentEditLabel !== node.name" class="description-inline">
+                  {{getLabelDescription(node.name)}}
+                </span>
               </span>
               <div class="cell-last-used">
                 {{(isExpanded(node) ? node.lastUsedMoment : node.lastUsedMomentTransitive)?.format('ll') || '-'}}
