@@ -11,6 +11,8 @@ export interface LabelHierarchyNode {
   /** Full name of this label. */
   fullName: string;
   localName: string;
+  /** True if this node is also a proper label, false if only its children are "real". */
+  existsOnItsOwn: boolean;
   children: LabelHierarchyNode[];
 }
 
@@ -51,7 +53,7 @@ export class LabelService {
     return this._buildHierarchyFor(labels, '');
   }
 
-  private _buildHierarchyFor(labels: Iterable<string>, prefix: string) {
+  private _buildHierarchyFor(labels: Iterable<string>, prefix: string): LabelHierarchyNode[] {
     const parentLabels = new KeyedArrayAggregate<string>();
     for (const label of labels) {
       const sepIndex = label.indexOf(LABEL_HIERARCHY_SEPARATOR);
@@ -67,6 +69,7 @@ export class LabelService {
       .map(([name, children]) => ({
         fullName: prefix + name,
         localName: name,
+        existsOnItsOwn: children.some(child => child === name),
         children: this._buildHierarchyFor(
           children.filter(child => child !== name),
           prefix + name + LABEL_HIERARCHY_SEPARATOR),

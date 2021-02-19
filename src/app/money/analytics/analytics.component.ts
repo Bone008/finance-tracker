@@ -314,7 +314,8 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
 
     const fullHierarchy = this.labelService.buildHierarchyFromTransactions(this.matchingTransactions);
     traverseTree(fullHierarchy, (node, recurse) => {
-      if (node.children.length > 1) {
+      const numLabels = node.children.length + (node.existsOnItsOwn ? 1 : 0);
+      if (numLabels > 1) {
         this.labelGroups.push(node);
 
         if (this.shouldCollapseGroup(node.fullName)) {

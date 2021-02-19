@@ -16,7 +16,7 @@
           *ngFor="let group of labelGroups"
           (change)="setShouldCollapseGroup(group.fullName, $event.checked)"
           [checked]="shouldCollapseGroup(group.fullName)">
-        {{group.fullName}}&nbsp;({{group.children.length}})
+        {{group.fullName}}&nbsp;({{group.children.length + (group.existsOnItsOwn ? 1 : 0)}})
       </mat-checkbox>
     </p>
 
