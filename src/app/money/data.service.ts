@@ -168,7 +168,6 @@ export class DataService {
   }
 
   getAllLabels(): string[] {
-    // TODO: Also include labels for which a persisted config exists.
     return extractAllLabels(this.data.transactions);
   }
 

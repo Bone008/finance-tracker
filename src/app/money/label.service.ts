@@ -24,6 +24,18 @@ export class LabelService {
     private readonly logger: LoggerService,
   ) { }
 
+  /** Creates a label hierarchy from all labels of all transactions, as well as orphaned configurations. */
+  buildHierarchyFromAllIncludingOrphans(): LabelHierarchyNode[] {
+    const allLabels = this.dataService.getAllLabelsSet();
+    const debugSizeBefore = allLabels.size;
+    for (const label of Object.keys(this.dataService.getDataContainer().labelConfigs)) {
+      allLabels.add(label);
+    }
+    this.logger.debug('Orphaned labels while building hierarchy:', allLabels.size - debugSizeBefore);
+
+    return this.buildHierarchyFromLabels(allLabels);
+  }
+
   /** Creates a label hierarchy from all labels of all transactions. */
   buildHierarchyFromAll(): LabelHierarchyNode[] {
     return this.buildHierarchyFromLabels(this.dataService.getAllLabelsSet());

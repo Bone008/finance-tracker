@@ -202,7 +202,7 @@ export class LabelsComponent implements OnInit, OnDestroy {
   private refreshLabelTree() {
     this.configInstancesCache = {};
 
-    const data = this.labelService.buildHierarchyFromAll()
+    const data = this.labelService.buildHierarchyFromAllIncludingOrphans()
       .map(node => this._convertLabelNode(node));
 
     this.treeDataSource.data = data;
