@@ -20,7 +20,7 @@ export interface BucketTableRow {
 @Component({
   selector: 'app-bucket-breakdown',
   templateUrl: './bucket-breakdown.component.html',
-  styleUrls: ['./bucket-breakdown.component.css']
+  styleUrls: ['./bucket-breakdown.component.scss']
 })
 export class BucketBreakdownComponent implements AfterViewInit, OnChanges {
   @Input()

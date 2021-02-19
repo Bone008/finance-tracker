@@ -1,7 +1,9 @@
 
+$table-width: 550px;
+
 .mat-table {
   width: 100%;
-  max-width: 550px;
+  max-width: $table-width;
   margin-bottom: 1em;
 }
 
@@ -21,4 +23,12 @@
 
 .table-aggregates .mat-column-name {
   font-weight: bold;
+}
+
+.bottom-help-text {
+  // TODO: include .secondary
+  max-width: $table-width;
+  text-align: center;
+  color: rgba(0,0,0, 0.66);
+  font-size: 90%;
 }

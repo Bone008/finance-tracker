@@ -116,4 +116,6 @@
     <tr mat-header-row *matHeaderRowDef="bucketColumnNames"></tr>
     <tr mat-row *matRowDef="let row; columns: bucketColumnNames;"></tr>
   </table>
+
+  <p [fxShow]="bucketRowsSource.filteredData.length > 1" class="bottom-help-text">Click on the column headers to sort the table.</p>
 </div>
