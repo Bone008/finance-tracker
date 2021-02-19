@@ -381,7 +381,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       default: throw new Error('unknown bucket unit: ' + bucketUnit);
     }
 
-    const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
     const billedTxsByBucket = new KeyedArrayAggregate<BilledTransaction>();
 
     const debugContribHistogram = new KeyedNumberAggregate();
@@ -392,14 +391,14 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         const origValues = { billing: transaction.billing, labels: transaction.labels };
         transaction.billing = null;
         transaction.labels = [];
-        try { billing = this.billingService.resolveTransactionCanonicalBilling(transaction, labelDominanceOrder); }
+        try { billing = this.billingService.resolveTransactionCanonicalBilling(transaction); }
         finally {
           transaction.billing = origValues.billing;
           transaction.labels = origValues.labels;
         }
       }
       else {
-        billing = this.billingService.resolveTransactionCanonicalBilling(transaction, labelDominanceOrder);
+        billing = this.billingService.resolveTransactionCanonicalBilling(transaction);
       }
 
       // Skip transactions that are excluded from billing.
@@ -447,6 +446,7 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
         }
       }
 
+      const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
       // Resolve dominant label(s) and label grouping for this transaction.
       // Group number truncation to <other> happens in a *separate* step, because
       // we need to sort by how much money each label group accounts for (+ and -).

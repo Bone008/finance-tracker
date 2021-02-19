@@ -23,19 +23,16 @@ export class BillingService {
 
   /**
    * Returns the canonical billing info that applies to a transaction by resolving
-   * inheritance from labels according to the given partial order.
+   * inheritance from labels according to the partial dominance order.
    */
-  resolveTransactionCanonicalBilling(
-    transaction: Transaction,
-    labelDominanceOrder: { [label: string]: number }
-  ): CanonicalBillingInfo {
+  resolveTransactionCanonicalBilling(transaction: Transaction): CanonicalBillingInfo {
     // Get reference date.
     const dateMoment = timestampToMoment(isSingle(transaction)
       ? transaction.single.date
       : maxBy(transaction.group!.children, child => timestampToWholeSeconds(child.date))!.date
     );
 
-    const rawBilling = this.resolveTransactionRawBilling(transaction, labelDominanceOrder);
+    const rawBilling = this.resolveTransactionRawBilling(transaction);
     return this.getCanonicalBilling(rawBilling, dateMoment);
   }
 
@@ -43,7 +40,7 @@ export class BillingService {
    * Returns the NOT canonicalized billing info that applies to a transaction by
    * resolving inheritance from labels according to the given partial order.
    */
-  resolveTransactionRawBilling(transaction: Transaction, labelDominanceOrder: { [label: string]: number }): BillingInfo {
+  resolveTransactionRawBilling(transaction: Transaction): BillingInfo {
     // Check for individual billing config on transaction.
     if (isValidBilling(transaction.billing)) {
       return transaction.billing;
@@ -54,7 +51,7 @@ export class BillingService {
     // be applied and the rest ignored.
     const relevantLabels = transaction.labels
       .filter(label => isValidBilling(this.dataService.getLabelBilling(label)));
-    const dominantLabels = getDominantLabels(relevantLabels, labelDominanceOrder);
+    const dominantLabels = getDominantLabels(relevantLabels, this.getLabelDominanceOrder());
     if (dominantLabels.length > 0) {
       return this.dataService.getLabelBilling(dominantLabels[0]);
     }
@@ -108,6 +105,10 @@ export class BillingService {
       date: momentToProtoDate(startMoment),
       endDate: momentToProtoDate(endMoment),
     });
+  }
+
+  private getLabelDominanceOrder(): { [label: string]: number } {
+    return this.dataService.getUserSettings().labelDominanceOrder;
   }
 }
 

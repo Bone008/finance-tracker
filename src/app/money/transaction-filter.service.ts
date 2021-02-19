@@ -410,10 +410,9 @@ export class TransactionFilterService {
 
   /** Tries to create a matcher for the billing field. */
   private makeBillingMatcher(value: string, operator: MatcherOperator): FilterMatcher | null {
-    const labelDominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
     // Helper.
-    const getCanonical = (transaction: Transaction) => this.billingService.resolveTransactionCanonicalBilling(transaction, labelDominanceOrder);
-    const getRaw = (transaction: Transaction) => this.billingService.resolveTransactionRawBilling(transaction, labelDominanceOrder);
+    const getCanonical = (transaction: Transaction) => this.billingService.resolveTransactionCanonicalBilling(transaction);
+    const getRaw = (transaction: Transaction) => this.billingService.resolveTransactionRawBilling(transaction);
 
     if (operator === ':') {
       // Note that this logic is closely related to TransactionsComponent.getTransactionBillingString().

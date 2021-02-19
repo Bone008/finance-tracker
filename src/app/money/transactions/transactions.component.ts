@@ -476,14 +476,13 @@ export class TransactionsComponent implements AfterViewInit {
     // Note that this logic and terminology is closely related to the "billing:" filter matchers.
 
     const isIndividual = isValidBilling(transaction.billing);
-    const dominanceOrder = this.dataService.getUserSettings().labelDominanceOrder;
-    const canonical = this.billingService.resolveTransactionCanonicalBilling(transaction, dominanceOrder);
+    const canonical = this.billingService.resolveTransactionCanonicalBilling(transaction);
 
     if (canonical.periodType === BillingType.NONE) {
       transaction.__billingString = `none, ${isIndividual ? 'individual' : 'inherited'}`;
     }
     else {
-      const raw = this.billingService.resolveTransactionRawBilling(transaction, dominanceOrder);
+      const raw = this.billingService.resolveTransactionRawBilling(transaction);
       const isDefault = raw.periodType === BillingType.UNKNOWN;
       const typeStr = isDefault ? 'default' : (isIndividual ? 'individual' : 'inherited');
 
