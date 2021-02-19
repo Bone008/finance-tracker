@@ -4,11 +4,20 @@ import { google } from "src/proto/model";
 import { momentToTimestamp, numberToMoney } from "../../core/proto-util";
 import { FormatMapping, FormatMappingBuilder } from "./format-mapping";
 
-// TODO Once we upgrade to TypeScript 3.4+, this can be rewritten to:
-// const ALL_FILE_FORMATS = ['foobar', ...] as const;
-// type FileFormat = typeof ALL_FILE_FORMATS;
-export const ALL_FILE_FORMATS = ['ksk_camt', 'ksk_creditcard', 'mlp', 'dkb', 'ubs', 'deutsche_bank', 'ing', 'n26', 'generic_en'];
-export type ImportFileFormat = 'ksk_camt' | 'ksk_creditcard' | 'mlp' | 'dkb' | 'ubs' | 'deutsche_bank' | 'ing' | 'n26' | 'generic_en';
+const ALL_FILE_FORMATS_INTERNAL = [
+  'ksk_camt',
+  'ksk_creditcard',
+  'mlp',
+  'dkb',
+  'ubs',
+  'deutsche_bank',
+  'ing',
+  'n26',
+  'generic_en',
+] as const;
+
+export const ALL_FILE_FORMATS: readonly string[] = ALL_FILE_FORMATS_INTERNAL;
+export type ImportFileFormat = typeof ALL_FILE_FORMATS_INTERNAL[number];
 
 /** Date formats accepted by parseDate. See: https://momentjs.com/docs/#/parsing/string-format/ */
 const ACCEPTED_DATE_FORMATS = ['YYYY-MM-DD', 'DD.MM.YYYY', 'DD.MM.YY'];
@@ -301,10 +310,10 @@ interface N26Row {
 }
 
 interface GenericEngRow {
-  "Date" : string;
-  "Description" : string;
-  "Amount" : string;
-  "Who" : string;
-  "Who Identifier" : string;
-  "Booking Text" : string;
+  "Date": string;
+  "Description": string;
+  "Amount": string;
+  "Who": string;
+  "Who Identifier": string;
+  "Booking Text": string;
 }
