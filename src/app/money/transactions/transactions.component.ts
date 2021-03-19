@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import * as moment from 'moment';
 import { combineLatest, of, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { CacheCountable, invalidateCacheCounter } from 'src/app/core/changes-util';
 import { patchShortcuts } from 'src/app/core/keyboard-shortcuts-patch';
 import { makeSharedObject } from 'src/app/core/util';
 import { BillingType, google, GroupData, Transaction, TransactionData } from '../../../proto/model';
@@ -16,21 +17,19 @@ import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, mapTransactionData, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
 
 // Extension of Transaction class to hold objects used by the view.
-interface TransactionViewCache {
+interface TransactionViewCache extends CacheCountable {
   __date?: Date;
-  __formattedNotes?: [string, string][];
-  __transferInfo?: object;
   __billingString?: string;
 }
 // Keep in sync with entries above.
 const VIEW_CACHE_KEYS: Array<keyof TransactionViewCache> =
-  ['__date', '__formattedNotes', '__transferInfo', '__billingString'];
+  ['__date', '__billingString'];
 
 @Component({
   selector: 'app-transactions',
@@ -63,7 +62,7 @@ export class TransactionsComponent implements AfterViewInit {
     },
     // CRUD actions.
     { key: ['c', 'n', 'plus'], command: () => this.startAddTransaction() },
-    { key: 'e', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startEditTransaction(this.selection.selected[0]) },
+    { key: 'e', command: () => this.selection.selected.length !== 1 || this.startEditTransaction(this.selection.selected[0]) },
     { key: 's', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startSplitTransaction(this.selection.selected[0]) },
     { key: 'd', command: () => this.selection.selected.length !== 1 || !this.selection.selected[0].single || this.startCopyTransaction(this.selection.selected[0]) },
     { key: 'g', command: () => !this.canGroup(this.selection.selected) && !this.canUngroup(this.selection.selected) || this.groupOrUngroupTransactions(this.selection.selected) },
@@ -181,15 +180,20 @@ export class TransactionsComponent implements AfterViewInit {
 
   startEditTransaction(transaction: Transaction) {
     const tempTransaction = cloneMessage(Transaction, transaction);
-    this.dialogService.openTransactionEdit(tempTransaction, MODE_EDIT)
-      .afterConfirmed().subscribe(() => {
-        Object.assign(transaction, tempTransaction);
-        transaction.single!.modified = timestampNow();
-        this.forceShowTransactions.add(transaction);
-        this.dataService.addTransactions([]); // Trigger list refresh to reorder in case date was changed.
-        this.ruleService.notifyModified([transaction]);
-        this.clearViewCaches([transaction]);
-      });
+    const dialogRef = isSingle(tempTransaction)
+      ? this.dialogService.openTransactionEdit(tempTransaction, MODE_EDIT)
+      : this.dialogService.openTransactionEditGroup(tempTransaction);
+
+    dialogRef.afterConfirmed().subscribe(() => {
+      Object.assign(transaction, tempTransaction);
+      if (isSingle(transaction)) {
+        transaction.single.modified = timestampNow();
+      }
+      this.forceShowTransactions.add(transaction);
+      this.dataService.addTransactions([]); // Trigger list refresh to reorder in case date was changed.
+      this.ruleService.notifyModified([transaction]);
+      this.clearViewCaches([transaction]);
+    });
   }
 
   startSplitTransaction(transaction: Transaction) {
@@ -428,39 +432,6 @@ export class TransactionsComponent implements AfterViewInit {
 
   isTransactionGroup = isGroup;
 
-  /**
-   * Decides the currency in which the summed part of the transaction should be displayed and
-   * formats it accordingly.
-   */
-  formatTransactionAmount(transaction: Transaction): string {
-    let displayedCurrency = getTransactionUniqueCurrency(transaction, this.dataService);
-    if (displayedCurrency === null) {
-      displayedCurrency = this.dataService.getMainCurrency();
-    }
-    const amount = getTransactionAmount(transaction, this.dataService, this.currencyService, displayedCurrency);
-    return this.currencyService.format(amount, displayedCurrency);
-  }
-
-  /**
-   * If the transaction is not recorded in the main currency, this calculates and formats the amount
-   * converted to the main currency.
-   */
-  formatTransactionAmountAlt(transaction: Transaction): string | null {
-    let displayedCurrency = getTransactionUniqueCurrency(transaction, this.dataService);
-    if (displayedCurrency === null) {
-      return 'group of different currencies';
-    }
-    if (displayedCurrency === this.dataService.getMainCurrency()) {
-      return null;
-    }
-    const amount = getTransactionAmount(transaction, this.dataService, this.currencyService);
-    return this.currencyService.format(amount, this.dataService.getMainCurrency());
-  }
-
-  isTransactionAmountNegative(transaction: Transaction): boolean {
-    return getTransactionAmount(transaction, this.dataService, this.currencyService) < -MONEY_EPSILON;
-  }
-
   getTransactionDate(transaction: Transaction & TransactionViewCache): Date {
     if (transaction.__date) return transaction.__date;
 
@@ -499,78 +470,6 @@ export class TransactionsComponent implements AfterViewInit {
         `${unit} ${from}${from !== to ? ' until ' + to : ''}, ${typeStr}`;
     }
     return transaction.__billingString;
-  }
-
-  getTransactionIcon(transaction: Transaction): string {
-    let uniqueIcon: string | null = null;
-    for (const data of extractTransactionData(transaction)) {
-      const account = this.dataService.getAccountById(data.accountId);
-      const icon = account && account.icon;
-      if (uniqueIcon === null) {
-        uniqueIcon = icon;
-      } else if (uniqueIcon !== icon) {
-        uniqueIcon = null;
-        break;
-      }
-    }
-    return uniqueIcon || 'list';
-  }
-
-  getTransferInfo(transaction: Transaction & TransactionViewCache): object | null {
-    // (Need to copy due to a bug in TypeScript intersection types.)
-    const tx = transaction;
-
-    if (tx.__transferInfo) return tx.__transferInfo;
-
-    // Only allow groups with exactly 2 children ...
-    if (!isGroup(transaction) || transaction.group.children.length !== 2
-      // ... with different accounts
-      || transaction.group.children[0].accountId === transaction.group.children[1].accountId
-      // ... with a total amount of 0.
-      || Math.abs(getTransactionAmount(transaction, this.dataService, this.currencyService)) >= MONEY_EPSILON) {
-      return null;
-    }
-
-    const amounts = transaction.group.children.map(child => moneyToNumber(child.amount));
-    if (Math.sign(amounts[0]) === Math.sign(amounts[1])) {
-      // No opposing signs.
-      return null;
-    }
-    const accounts = mapTransactionData(transaction, this.dataService.accountFromTxDataFn);
-    const fromIndex = amounts[0] < 0 ? 0 : 1;
-
-    // Since the summed amount is ~0, we can assume that fromAmount and toAmount have the same
-    // monetary value. If currencies are the same, they should also be the same number.
-
-    tx.__transferInfo = {
-      fromAccount: accounts[fromIndex],
-      toAccount: accounts[1 - fromIndex],
-      isMultiCurrency: accounts[0].currency !== accounts[1].currency,
-      fromAmountFormatted: this.currencyService.format(-amounts[fromIndex], accounts[fromIndex].currency),
-      toAmountFormatted: this.currencyService.format(amounts[1 - fromIndex], accounts[1 - fromIndex].currency),
-    };
-    return tx.__transferInfo;
-  }
-
-  /** Returns array of lines. */
-  formatTransactionNotes(transaction: Transaction & TransactionViewCache): [string, string][] {
-    if (transaction.__formattedNotes) return transaction.__formattedNotes;
-
-    transaction.__formattedNotes = extractTransactionData(transaction)
-      .sort((a, b) => -compareTimestamps(a.date, b.date))
-      .map(data => [
-        (isGroup(transaction)
-          ? `(${this.getSignString(moneyToNumber(data.amount))}) `
-          : '') + [data.who, data.reason].filter(value => !!value).join(", "),
-        data.comment,
-      ]);
-    return transaction.__formattedNotes;
-  }
-
-  private getSignString(num: number): string {
-    if (num > 0) return '+';
-    if (num < 0) return '\u2013'; // ndash
-    return '0';
   }
 
   canGroup(selected: Transaction[]): boolean {
@@ -635,7 +534,7 @@ export class TransactionsComponent implements AfterViewInit {
   });
 
   /** Comparator for transactions so they are sorted by date in descending order. */
-  private compareTransactions(a: Transaction, b: Transaction) {
+  private compareTransactions(a: Transaction, b: Transaction): number {
     // NOTE: Could be optimized by calculating max in a manual loop
     // and thus avoiding array allocations.
     const timeA = isSingle(a)
@@ -673,6 +572,7 @@ export class TransactionsComponent implements AfterViewInit {
       for (const key of VIEW_CACHE_KEYS) {
         delete tx[key];
       }
+      invalidateCacheCounter(tx);
     }
   }
 

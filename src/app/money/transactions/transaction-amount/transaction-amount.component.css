@@ -1,0 +1,19 @@
+:host {
+  text-align: right;
+  font-size: 120%;
+  white-space: nowrap;
+}
+
+.mat-icon {
+  font-size: 18px;
+  vertical-align: middle;
+  color: rgba(0, 0, 0, 0.54);
+}
+.transfer {
+  color: rgba(0,0,128, .5);
+}
+.transfer .mat-icon {
+  color: rgba(0,0,128, .5);
+  height: 18px;
+  margin: -1px 0;
+}

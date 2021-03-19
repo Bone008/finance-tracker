@@ -45,7 +45,7 @@
             mat-icon-button
             color="primary"
             matTooltip="Edit selected (E) ..."
-            [disabled]="selection.selected.length !== 1 || !selection.selected[0].single"
+            [disabled]="selection.selected.length !== 1"
             (click)="startEditTransaction(selection.selected[0])">
           <mat-icon>edit</mat-icon>
         </button>
@@ -106,63 +106,21 @@
           </span>
         </div>
 
-        <div class="cell-amount">
-          <div
-              *ngIf="getTransferInfo(transaction) as transfer; else noTransfer"
-              class="transfer"
-              fxLayout="column" fxLayoutAlign="center end">
-            <ng-container *ngIf="transfer.isMultiCurrency; else singleCurrency">
-              <span>
-                <span>{{transfer.toAmountFormatted}}</span>
-                <mat-icon [matTooltip]="transfer.toAccount.name">{{transfer.toAccount.icon}}</mat-icon>
-              </span>
-              <mat-icon>arrow_upward</mat-icon>
-              <span>
-                <span>{{transfer.fromAmountFormatted}}</span>
-                <mat-icon [matTooltip]="transfer.fromAccount.name">{{transfer.fromAccount.icon}}</mat-icon>
-              </span>
-            </ng-container>
-            <ng-template #singleCurrency>
-              <mat-icon [matTooltip]="transfer.toAccount.name">{{transfer.toAccount.icon}}</mat-icon>
-              <span>
-                <span>{{transfer.fromAmountFormatted}}</span>
-                <mat-icon>arrow_upward</mat-icon>
-              </span>
-              <mat-icon [matTooltip]="transfer.fromAccount.name">{{transfer.fromAccount.icon}}</mat-icon>
-            </ng-template>
-          </div>
+        <app-transaction-amount [transaction]="transaction" class="cell-amount"></app-transaction-amount>
 
-          <ng-template #noTransfer>
-            <span
-                class="amount-value has-help-tooltip-sometimes"
-                [class.negative]="isTransactionAmountNegative(transaction)"
-                [matTooltip]="formatTransactionAmountAlt(transaction) || ''">
-              {{formatTransactionAmount(transaction)}}
-            </span>
-            <mat-icon>{{getTransactionIcon(transaction)}}</mat-icon>
-          </ng-template>
-        </div>
+        <app-transaction-notes [transaction]="transaction" class="cell-notes"></app-transaction-notes>
 
-        <div class="cell-notes">
-          <div *ngFor="let line of formatTransactionNotes(transaction)">
-            <span>{{line[0]}}</span>
-            <br *ngIf="line[0] && line[1]">
-            <span *ngIf="line[1]" class="notes-comment">{{line[1]}}</span>
-          </div>
-        </div>
-
-        <div class="cell-labels">
-          <app-transaction-labels
-              [labels]="transaction.labels"
-              (labelClick)="filterByLabel($event.label, $event.shiftKey)"
-              (labelAdd)="addLabelToTransaction(transaction, $event)"
-              (labelDelete)="deleteLabelFromTransaction(transaction, $event)"
-              (labelDeleteLast)="deleteLastLabelFromTransaction(transaction)"
-              (keydown.arrowup)="navigateLabelEditUp($event)"
-              (keydown.arrowdown)="navigateLabelEditDown($event)"
-              labelTitle="Click to filter by this label">
-          </app-transaction-labels>
-        </div>
+        <app-transaction-labels
+            [labels]="transaction.labels"
+            (labelClick)="filterByLabel($event.label, $event.shiftKey)"
+            (labelAdd)="addLabelToTransaction(transaction, $event)"
+            (labelDelete)="deleteLabelFromTransaction(transaction, $event)"
+            (labelDeleteLast)="deleteLastLabelFromTransaction(transaction)"
+            (keydown.arrowup)="navigateLabelEditUp($event)"
+            (keydown.arrowdown)="navigateLabelEditDown($event)"
+            labelTitle="Click to filter by this label"
+            class="cell-labels">
+        </app-transaction-labels>
       </div>
     </div>
 

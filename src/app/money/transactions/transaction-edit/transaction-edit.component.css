@@ -28,3 +28,8 @@ app-transaction-labels {
   padding-top: 11px;
   padding-bottom: 1.25em;
 }
+
+.align-top-with-left-column {
+  /* Because of the icon in the dropdown to the left, for that sweet sweet alignment. */
+  margin-top: 5.8px;
+}

@@ -1,0 +1,42 @@
+@media screen and (min-width: 960px) {
+  .mat-dialog-content {
+    width: 760px;
+  }
+}
+
+.children-container {
+  margin-bottom: 1em;
+}
+
+.children-container .data-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0,0,0,.12);
+
+  &:first-child {
+    border-top: 1px solid rgba(0,0,0,.12);
+  }
+}
+
+.children-container .cell-date {
+  flex: 1 1 auto;
+}
+
+.children-container .cell-amount {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.children-container .cell-notes {
+  flex: 0 1 100%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+app-transaction-labels {
+  padding-top: 11px;
+  padding-bottom: 1.25em;
+}

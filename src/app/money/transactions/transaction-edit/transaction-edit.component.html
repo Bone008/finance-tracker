@@ -126,16 +126,7 @@
         <app-billing-info [billing]="transaction.billing" unknownPeriodLabel="Inherit from label"></app-billing-info>
       </div>
 
-      <div fxFlex="none" fxFlex.gt-sm="40" fxLayout="column">
-        <mat-form-field>
-          <textarea
-              matInput
-              name="comment"
-              [(ngModel)]="singleData.comment"
-              placeholder="Comment"
-              rows="3">
-          </textarea>
-        </mat-form-field>
+      <div fxFlex="none" fxFlex.gt-sm="40" fxLayout="column" class="align-top-with-left-column">
         <mat-form-field>
           <input
               matInput
@@ -149,6 +140,15 @@
               name="bookingText"
               [(ngModel)]="singleData.bookingText"
               placeholder="Booking text">
+        </mat-form-field>
+        <mat-form-field fxFlexOrder="0" fxFlexOrder.lt-md="-1">
+          <textarea
+              matInput
+              name="comment"
+              [(ngModel)]="singleData.comment"
+              placeholder="Comment"
+              rows="3">
+          </textarea>
         </mat-form-field>
       </div>
     </div>

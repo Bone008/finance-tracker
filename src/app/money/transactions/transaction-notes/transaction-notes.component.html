@@ -1,0 +1,5 @@
+<div *ngFor="let line of noteLines">
+  <span>{{line[0]}}</span>
+  <br *ngIf="line[0] && line[1]">
+  <span *ngIf="line[1]" class="secondary">{{line[1]}}</span>
+</div>

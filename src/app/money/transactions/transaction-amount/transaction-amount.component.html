@@ -1,0 +1,27 @@
+<div fxLayout="column" fxLayoutAlign="center end" [class.transfer]="isTransfer">
+  <div *ngIf="isTransfer">
+    <span
+        *ngIf="isCrossCurrencyTransfer"
+        [matTooltip]="amount2.formattedAmountAlt"
+        class="amount-value has-help-tooltip-sometimes">
+      {{amount2.formattedAmount}}
+    </span>
+    <mat-icon [matTooltip]="amount2.accountName">{{amount2.accountIcon}}</mat-icon>
+  </div>
+  
+  <div *ngIf="isTransfer">
+    <span *ngIf="!isCrossCurrencyTransfer">{{amount2.formattedAmount}}</span>
+    <mat-icon>arrow_upward</mat-icon>
+  </div>
+
+  <div>
+    <span
+        *ngIf="!isTransfer || isCrossCurrencyTransfer"
+        [class.negative]="!isTransfer && amount1.isNegative"
+        [matTooltip]="amount1.formattedAmountAlt"
+        class="amount-value has-help-tooltip-sometimes">
+      {{amount1.formattedAmount}}
+    </span>
+    <mat-icon [matTooltip]="amount1.accountName">{{amount1.accountIcon}}</mat-icon>
+  </div>
+</div>

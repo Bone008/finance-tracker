@@ -124,7 +124,7 @@ export class BankSyncComponent implements OnInit {
         }
       }, err => {
         this.syncLog += 'An error occured!\n';
-        this.syncLog += JSON.stringify(err.error, null, 2);
+        this.syncLog += JSON.stringify(err, null, 2);
       });
   }
 

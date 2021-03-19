@@ -150,6 +150,20 @@ export function getTransactionUniqueCurrency(subject: Transaction | Transaction[
   return uniqueCurrency;
 }
 
+/** Returns associated account if only one appears in the given transactions, otherwise returns null. */
+export function getTransactionUniqueAccount(subject: Transaction | Transaction[], dataService: DataService): Account | null {
+  let uniqueAccount: Account | null = null;
+  const accounts = mapTransactionData(subject, dataService.accountFromTxDataFn);
+  for (const account of accounts) {
+    if (uniqueAccount === null) {
+      uniqueAccount = account;
+    } else if (uniqueAccount !== account) {
+      return null; // more than 1 account
+    }
+  }
+  return uniqueAccount;
+}
+
 /** Returns an unordered list of all labels that occur in any of the given transactions. */
 export function extractAllLabels(transactions: Iterable<Transaction>): string[] {
   return Array.from(extractAllLabelsSet(transactions));

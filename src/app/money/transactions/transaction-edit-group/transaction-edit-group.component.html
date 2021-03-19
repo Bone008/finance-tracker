@@ -1,0 +1,53 @@
+<form #editForm="ngForm" (ngSubmit)="onSubmit()" fxLayout="column">
+  <div class="title-container" fxLayout="row" fxLayoutAlign="stretch start">
+    <h2 mat-dialog-title fxFlex>Edit group transaction</h2>
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
+  </div>
+
+  <mat-dialog-content fxLayout="column">
+    <div fxLayout="column" class="children-container">
+      <div *ngFor="let child of groupData.children; let i = index" class="data-row">
+        <div class="cell-date">
+          <span [matTooltip]="childrenDates[i] | date:'EEEE, yyyy-MM-dd, HH:mm z'">
+            {{childrenDates[i] | date}}
+          </span>
+        </div>
+        <app-transaction-amount [transactionData]="child" class="cell-amount"></app-transaction-amount>
+        <app-transaction-notes [transactionData]="child" class="cell-notes"></app-transaction-notes>
+      </div>
+    </div>
+
+    <app-transaction-labels
+        alwaysOpen="true"
+        [labels]="transaction.labels"
+        (labelAdd)="addLabel($event)"
+        (labelDelete)="deleteLabel($event)"
+        (labelDeleteLast)="deleteLabel(transaction.labels[transaction.labels.length-1])">
+    </app-transaction-labels>
+  
+    <app-billing-info [billing]="transaction.billing" unknownPeriodLabel="Inherit from label"></app-billing-info>
+  
+    <mat-form-field>
+      <textarea
+          matInput
+          name="comment"
+          [(ngModel)]="groupData.comment"
+          placeholder="Comment"
+          rows="3">
+      </textarea>
+    </mat-form-field>
+    
+    <!--
+    <div *ngIf="true">
+      It was created on {{getDateCreated() | date:'medium'}} and
+      {{getDateModified() ? 'modified on ' + (getDateModified() | date:'medium') : 'never modified'}}.
+    </div>
+    -->
+  </mat-dialog-content>
+  
+  <mat-dialog-actions fxLayout="row" fxLayoutAlign="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-button type="submit" [disabled]="!editForm.valid" color="primary">Save</button>
+  </mat-dialog-actions>
+</form>

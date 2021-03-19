@@ -90,7 +90,10 @@ export class CurrencyService {
     return info ? info.symbol : currencyCode;
   }
 
-  /** Formats the given amount (number or Money object) with the respective currency symbol. */
+  /**
+   * Formats the given amount (number or Money object) with the respective currency symbol.
+   * Does NOT perform any conversion!
+   */
   format(amount: number | Money | null | undefined, currencyCode: string, forceSign = false): string {
     if (amount instanceof Money || amount === null || amount === undefined) {
       amount = moneyToNumber(amount);

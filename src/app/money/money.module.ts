@@ -36,6 +36,9 @@ import { TransactionLabelsComponent } from './transactions/transaction-labels/tr
 import { TransactionsComponent } from './transactions/transactions.component';
 import { WelcomeComponent } from './welcome/welcome.component';
 import { DialogViewImportedRowComponent } from './transactions/dialog-view-imported-row/dialog-view-imported-row.component';
+import { TransactionEditGroupComponent } from './transactions/transaction-edit-group/transaction-edit-group.component';
+import { TransactionNotesComponent } from './transactions/transaction-notes/transaction-notes.component';
+import { TransactionAmountComponent } from './transactions/transaction-amount/transaction-amount.component';
 
 const appRoutes: Routes = [
   { path: 'overview', component: AccountsComponent, data: { title: 'Overview' } },
@@ -89,6 +92,9 @@ const appRoutes: Routes = [
     PresetsComponent,
     WelcomeComponent,
     DialogViewImportedRowComponent,
+    TransactionEditGroupComponent,
+    TransactionNotesComponent,
+    TransactionAmountComponent,
   ],
   entryComponents: [
     ImportFileComponent,

@@ -30,6 +30,7 @@
   padding: 10px 14px;
   border-bottom: 1px solid rgba(0,0,0,.12);
   cursor: pointer;
+  transition: background-color 150ms ease;
 }
 .transactions-container .data-row.selected {
   background: #eee;
@@ -56,34 +57,12 @@
 .transactions-container .cell-amount {
   flex: 0 0 110px;
   min-width: 0;
-  text-align: right;
-  font-size: 120%;
-  white-space: nowrap;
-}
-.transactions-container .cell-amount .mat-icon {
-  font-size: 18px;
-  vertical-align: middle;
-  color: rgba(0, 0, 0, 0.54);
-}
-.transactions-container .cell-amount .transfer {
-  color: rgba(0,0,128, .5);
-}
-.transactions-container .cell-amount .transfer .mat-icon {
-  color: rgba(0,0,128, .5);
-  height: 18px;
-  margin: -1px 0;
 }
 
 .transactions-container .cell-notes {
   flex: 1 1 60%;
   min-width: 0;
-  word-wrap: break-word;
 }
-.transactions-container .cell-notes .notes-comment {
-  color: rgba(0,0,0, 0.54);
-  font-size: 90%;
-}
-
 
 .transactions-container .cell-labels {
   flex: 0 1 40%;
