@@ -20,6 +20,7 @@
 
     <mat-form-field>
       <mat-select
+          cdkFocusInitial
           name="properDate"
           [ngModel]="getProperDateMillis()"
           (ngModelChange)="setProperDateMillis($event)"

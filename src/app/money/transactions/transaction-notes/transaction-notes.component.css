@@ -1,3 +1,7 @@
 :host {
   word-wrap: break-word;
 }
+
+.comment {
+  white-space: pre-wrap;
+}
