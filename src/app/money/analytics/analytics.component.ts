@@ -113,14 +113,15 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
       .subscribe(this.labelDominanceSubject);
 
     this.txSubscription =
-      combineLatest(
+      combineLatest([
         this.dataService.transactions$,
         this.filterState.value$,
         this.bucketUnitSubject,
         this.ignoreBillingPeriodSubject,
         this.uncollapsedGroupsSubject,
         this.labelDominanceSubject,
-        this.labelGroupLimitsSubject)
+        this.labelGroupLimitsSubject,
+      ])
         .pipe(debounceTime(0)) // when multiple values change at once
         .subscribe(_ => this.analyzeTransactions());
   }

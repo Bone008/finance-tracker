@@ -29,6 +29,13 @@ export function dateToTimestamp(date: Date | number): google.protobuf.Timestamp 
   });
 }
 
+export function millisecondsToTimestamp(millis: number): google.protobuf.Timestamp {
+  return new google.protobuf.Timestamp({
+    seconds: Math.trunc(millis / 1000),
+    nanos: (millis % 1000) * 1e6,
+  });
+}
+
 export function momentToTimestamp(m: moment.Moment): google.protobuf.Timestamp {
   return new google.protobuf.Timestamp({
     seconds: m.unix(),

@@ -18,6 +18,27 @@
       </div>
     </div>
 
+    <mat-form-field>
+      <mat-select
+          name="properDate"
+          [ngModel]="getProperDateMillis()"
+          (ngModelChange)="setProperDateMillis($event)"
+          placeholder="Group date">
+        <mat-option
+            *ngFor="let childDate of childrenDates"
+            [value]="childDate.getTime()">
+          {{childDate | date}}
+        </mat-option>
+        <mat-option hidden disabled [value]="0">Other</mat-option>
+      </mat-select>
+      <mat-icon
+          matSuffix
+          matTooltip="Which of the children's dates should be used to sort this group into the transaction list (and as the basis for relative billing)?"
+          class="help-icon">
+        help
+      </mat-icon>
+    </mat-form-field>
+
     <app-transaction-labels
         alwaysOpen="true"
         [labels]="transaction.labels"

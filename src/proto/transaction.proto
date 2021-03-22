@@ -30,6 +30,10 @@ message GroupData {
   // to another. The summed amount will be zero, even when the internal
   // conversion rate does not match up perfectly.
   bool is_cross_currency_transfer = 2;
+
+  // The date which this group should be sorted at. If unset, the date of the
+  // first child transaction is the proper date.
+  Timestamp proper_date = 3;
   
   // A user-supplied comment about this transaction.
   // Must not be filled automatically on import.

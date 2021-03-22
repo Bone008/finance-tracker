@@ -1,8 +1,8 @@
 import { Injectable } from "@angular/core";
 import * as moment from 'moment';
 import { BillingType, ITransactionData, Transaction, TransactionData } from "../../proto/model";
-import { moneyToNumber, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
-import { escapeQuotedString, filterFuzzyOptions, maxBy, splitQuotedString } from "../core/util";
+import { moneyToNumber, protoDateToMoment, timestampToMoment } from '../core/proto-util';
+import { escapeQuotedString, filterFuzzyOptions, splitQuotedString } from "../core/util";
 import { BillingService } from "./billing.service";
 import { CurrencyService } from "./currency.service";
 import { DataService } from "./data.service";
@@ -458,10 +458,19 @@ export class TransactionFilterService {
     fieldName: keyof ITransactionData & ('date' | 'created' | 'modified')
   ): FilterMatcher | null {
     return this.makeDateRangeMatcher(value, operator,
-      (_, dataList) => {
-        // TODO Replace date selection by "nominal date" of groups once we support that.
-        const maxValue = maxBy(dataList, data => timestampToWholeSeconds(data[fieldName]))![fieldName];
-        return [[timestampToMoment(maxValue), timestampToMoment(maxValue)]];
+      (transaction, dataList) => {
+        if (isSingle(transaction)) {
+          const value = timestampToMoment(transaction.single[fieldName]);
+          return [[value, value]];
+        }
+        if (isGroup(transaction)) {
+          // This makes it so ANY of the children's dates can match.
+          return dataList.map(data => {
+            const value = timestampToMoment(data[fieldName]);
+            return [value, value];
+          });
+        }
+        return [];
       });
   }
 

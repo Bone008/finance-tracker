@@ -1,9 +1,9 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { timestampToDate } from 'src/app/core/proto-util';
+import { millisecondsToTimestamp, timestampToDate, timestampToMilliseconds } from 'src/app/core/proto-util';
 import { pushDeduplicate } from 'src/app/core/util';
 import { BillingInfo, GroupData, Transaction } from 'src/proto/model';
-import { isGroup } from '../../model-util';
+import { getTransactionTimestamp, isGroup } from '../../model-util';
 
 export interface TransactionEditGroupConfig {
   transaction: Transaction;
@@ -37,6 +37,14 @@ export class TransactionEditGroupComponent {
     }
 
     this.childrenDates = this.groupData.children.map(child => timestampToDate(child.date));
+  }
+
+  getProperDateMillis(): number {
+    return timestampToMilliseconds(getTransactionTimestamp(this.transaction));
+  }
+
+  setProperDateMillis(millis: number) {
+    this.groupData.properDate = millis !== 0 ? millisecondsToTimestamp(millis) : null;
   }
 
   // Copied from TransactionEditComponent.

@@ -1,4 +1,4 @@
-import { Account, BillingInfo, BillingType, DataContainer, GroupData, Transaction, TransactionData, UserSettings } from "../../proto/model";
+import { Account, BillingInfo, BillingType, DataContainer, google, GroupData, Transaction, TransactionData, UserSettings } from "../../proto/model";
 import { pushDeduplicate, removeByValue } from '../core/util';
 import { CurrencyService } from './currency.service';
 import { DataService } from './data.service';
@@ -39,7 +39,7 @@ export function isGroup(transaction: Transaction)
 export function extractTransactionData(subject: Transaction | Transaction[]): TransactionData[] {
   if (subject instanceof Transaction) {
     if (isSingle(subject)) {
-      return [subject.single!];
+      return [subject.single];
     } else {
       return subject.group!.children;
     }
@@ -102,6 +102,17 @@ export function mapTransactionDataField<K extends keyof TransactionData>(
   dataField: K
 ): TransactionData[K][] {
   return mapTransactionData(subject, data => data[dataField]);
+}
+
+/** Returns the proper date that should be used for this transaction (whether single or group). */
+export function getTransactionTimestamp(transaction: Transaction): google.protobuf.Timestamp | null | undefined {
+  if (isSingle(transaction)) {
+    return transaction.single.date;
+  }
+  if (isGroup(transaction)) {
+    return transaction.group.properDate || transaction.group.children[0]?.date;
+  }
+  return undefined;
 }
 
 /** Returns the summed amount of any transaction, converted to the given (or main) currency. */

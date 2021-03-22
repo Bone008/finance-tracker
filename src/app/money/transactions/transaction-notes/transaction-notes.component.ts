@@ -1,5 +1,5 @@
 import { Component, DoCheck, Input } from '@angular/core';
-import { compareTimestamps, moneyToNumber } from 'src/app/core/proto-util';
+import { moneyToNumber } from 'src/app/core/proto-util';
 import { CacheCountable, CacheCountChecker } from 'src/app/core/view-cache-util';
 import { Transaction, TransactionData } from 'src/proto/model';
 import { extractTransactionData, isGroup } from '../../model-util';
@@ -31,7 +31,6 @@ export class TransactionNotesComponent implements DoCheck {
     if (this.transaction) {
       const isAGroup = isGroup(this.transaction);
       this.noteLines = extractTransactionData(this.transaction)
-        .sort((a, b) => -compareTimestamps(a.date, b.date))
         .map(data => this.formatData(data, isAGroup));
 
       if (isAGroup) {

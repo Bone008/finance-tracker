@@ -10,14 +10,13 @@ import { patchShortcuts } from 'src/app/core/keyboard-shortcuts-patch';
 import { makeSharedObject } from 'src/app/core/util';
 import { CacheCountable, invalidateCacheCounter } from 'src/app/core/view-cache-util';
 import { BillingType, google, GroupData, Transaction, TransactionData } from '../../../proto/model';
-import { LoggerService } from '../../core/logger.service';
 import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, protoDateToMoment, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
 import { BillingService } from '../billing.service';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { FilterState } from '../filter-input/filter-state';
-import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction } from '../model-util';
+import { addLabelToTransaction, extractTransactionData, getTransactionAmount, getTransactionTimestamp, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, mapTransactionDataField, MONEY_EPSILON, removeLabelFromTransaction } from '../model-util';
 import { RuleService } from '../rule.service';
 import { TransactionFilterService } from '../transaction-filter.service';
 import { MODE_ADD, MODE_EDIT } from './transaction-edit/transaction-edit.component';
@@ -85,7 +84,6 @@ export class TransactionsComponent implements AfterViewInit {
     private readonly ruleService: RuleService,
     private readonly billingService: BillingService,
     private readonly currencyService: CurrencyService,
-    private readonly loggerService: LoggerService,
     private readonly dialogService: DialogService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -289,21 +287,28 @@ export class TransactionsComponent implements AfterViewInit {
         + this.currencyService.format(summedAmount, this.dataService.getMainCurrency(), true) + '.');
     }
 
-    const newChildren = extractTransactionData(transactions);
+    const newChildren = extractTransactionData(transactions)
+      .slice()
+      .sort((a, b) => -compareTimestamps(a.date, b.date));
     const newLabelsSet = new Set<string>();
     for (let transaction of transactions) {
       transaction.labels.forEach(newLabelsSet.add, newLabelsSet);
     }
 
+    // Retain proper date if exactly one existing one is involved.
+    const properDates = transactions.map(t => t.group?.properDate).filter(timestamp => !!timestamp);
+    const uniqueProperDate = properDates.length === 1 ? properDates[0] : null;
+    const mergedGroupComments = transactions.map(t => t.group?.comment).filter(comment => !!comment).join('\n');
+
     const newTransaction = new Transaction({
       labels: Array.from(newLabelsSet),
       group: new GroupData({
         children: newChildren,
+        properDate: uniqueProperDate,
+        comment: mergedGroupComments,
+        isCrossCurrencyTransfer,
       }),
     });
-    if (isCrossCurrencyTransfer) {
-      newTransaction.group!.isCrossCurrencyTransfer = true;
-    }
 
     this.selection.clear();
     this.forceShowTransactions.add(newTransaction);
@@ -316,11 +321,16 @@ export class TransactionsComponent implements AfterViewInit {
   ungroupTransaction(transaction: Transaction) {
     if (!isGroup(transaction)) throw new Error('can only ungroup a group');
 
+    if (transaction.group.comment && !confirm(`By ungrouping, the group's comment will be lost:\n\n`
+      + `"${transaction.group.comment}"\n\nAre you sure you want to continue?`)
+    ) {
+      return;
+    }
+
     const newTransactions = transaction.group.children.map(
       data => new Transaction({
         single: data,
         labels: transaction.labels.slice(),
-        // TODO: Group comment is lost right now.
       }));
 
     this.selection.deselect(transaction);
@@ -434,11 +444,8 @@ export class TransactionsComponent implements AfterViewInit {
 
   getTransactionDate(transaction: Transaction & TransactionViewCache): Date {
     if (transaction.__date) return transaction.__date;
-
-    // TODO properly create aggregate date of groups.
-    const millis = timestampToMilliseconds(extractTransactionData(transaction)[0].date);
-
-    return transaction.__date = new Date(millis);
+    transaction.__date = timestampToDate(getTransactionTimestamp(transaction));
+    return transaction.__date;
   }
 
   getTransactionBillingString(transaction: Transaction & TransactionViewCache): string {
@@ -535,17 +542,8 @@ export class TransactionsComponent implements AfterViewInit {
 
   /** Comparator for transactions so they are sorted by date in descending order. */
   private compareTransactions(a: Transaction, b: Transaction): number {
-    // NOTE: Could be optimized by calculating max in a manual loop
-    // and thus avoiding array allocations.
-    const timeA = isSingle(a)
-      ? timestampToWholeSeconds(a.single.date)
-      : Math.max(...a.group!.children.map(
-        child => timestampToWholeSeconds(child.date)));
-    const timeB = isSingle(b)
-      ? timestampToWholeSeconds(b.single.date)
-      : Math.max(...b.group!.children.map(
-        child => timestampToWholeSeconds(child.date)));
-
+    const timeA = timestampToWholeSeconds(getTransactionTimestamp(a));
+    const timeB = timestampToWholeSeconds(getTransactionTimestamp(b));
     if (timeA !== timeB) {
       return -(timeA - timeB);
     }
