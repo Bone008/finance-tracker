@@ -6,7 +6,7 @@ import { escapeQuotedString, filterFuzzyOptions, splitQuotedString } from "../co
 import { BillingService } from "./billing.service";
 import { CurrencyService } from "./currency.service";
 import { DataService } from "./data.service";
-import { extractTransactionData, getTransactionAmount, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, MONEY_EPSILON } from "./model-util";
+import { extractTransactionData, getTransactionAmount, getTransactionTimestamp, getTransactionUniqueCurrency, isGroup, isSingle, isValidBilling, MONEY_EPSILON } from "./model-util";
 
 type FilterMatcher = (transaction: Transaction, dataList: TransactionData[]) => boolean;
 interface FilterToken {
@@ -463,14 +463,16 @@ export class TransactionFilterService {
           const value = timestampToMoment(transaction.single[fieldName]);
           return [[value, value]];
         }
-        if (isGroup(transaction)) {
-          // This makes it so ANY of the children's dates can match.
-          return dataList.map(data => {
-            const value = timestampToMoment(data[fieldName]);
-            return [value, value];
-          });
+        // When filtering group transactions by date, only use the proper date
+        // to avoid confusion, since it is user visible and all other dates are not.
+        if (fieldName === 'date') {
+          const value = timestampToMoment(getTransactionTimestamp(transaction));
+          return [[value, value]];
         }
-        return [];
+        return dataList.map(data => {
+          const value = timestampToMoment(data[fieldName]);
+          return [value, value];
+        });
       });
   }
 
