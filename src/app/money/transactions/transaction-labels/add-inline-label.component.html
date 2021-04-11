@@ -40,6 +40,16 @@
       autoActiveFirstOption
       (optionSelected)="confirmAdd()"
       (closed)="onAutocompleteClose()">
-    <mat-option *ngFor="let label of allLabelsFiltered$ | async" [value]="label">{{label}}</mat-option>
+    <mat-option
+        *ngFor="let label of allLabelsFiltered$ | async"
+        [value]="label">
+      {{label}}
+    </mat-option>
+    <mat-option
+        *ngIf="(newlyCreatedLabelSuggestion$ | async) as labelSugg"
+        [value]="labelSugg"
+        class="new-label-option">
+      Create "{{labelSugg}}" ...
+    </mat-option>
   </mat-autocomplete>
 </mat-form-field>

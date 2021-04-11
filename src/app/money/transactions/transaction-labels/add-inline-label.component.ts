@@ -24,6 +24,7 @@ export class AddInlineLabelComponent implements OnInit {
 
   allLabels: string[] = [];
   allLabelsFiltered$: Observable<string[]>;
+  newlyCreatedLabelSuggestion$: Observable<string | null>;
 
   /**
    * This property is debounced to prevent it from jumping around
@@ -49,7 +50,7 @@ export class AddInlineLabelComponent implements OnInit {
         if (value) {
           // Update set of available labels whenever the control is opened,
           // because it can change long after ngOnInit.
-          this.allLabels = this.dataService.getAllLabels().sort();
+          this.refreshAllLabels();
         } else {
           this.confirmAdd();
         }
@@ -57,9 +58,15 @@ export class AddInlineLabelComponent implements OnInit {
 
     this.allLabelsFiltered$ = this.newLabelSubject
       .pipe(map(value => this.filterLabelsByInput(value)));
+    this.newlyCreatedLabelSuggestion$ = this.newLabelSubject
+      .pipe(map(value => this.getNewlyCreatedLabelSuggestion(value)));
   }
 
-  setIsOpen(value: boolean) {
+  private refreshAllLabels() {
+    this.allLabels = this.dataService.getAllLabels().sort();
+  }
+
+  private setIsOpen(value: boolean) {
     this.isOpenSubject.next(value);
   }
 
@@ -67,12 +74,14 @@ export class AddInlineLabelComponent implements OnInit {
     const cleanLabel = sanitizeLabelName(this.newLabel);
     if (cleanLabel.length > 0) {
       this.addRequested.emit(cleanLabel);
+      this.refreshAllLabels();
     }
     this.newLabel = "";
   }
 
   requestDelete() {
     this.deleteLastRequested.next();
+    this.refreshAllLabels();
   }
 
   // Necessary to programmatically focus this element from outside a template reference.
@@ -100,12 +109,20 @@ export class AddInlineLabelComponent implements OnInit {
   }
 
   private filterLabelsByInput(input: string): string[] {
-    const cleanInput = sanitizeLabelName(this.newLabel);
+    const cleanInput = sanitizeLabelName(input);
     let matches = filterFuzzyOptions(this.allLabels, cleanInput);
     if (this.excludedLabels) {
-      matches = matches.filter(label => this.excludedLabels!.indexOf(label) === -1);
+      matches = matches.filter(label => !this.excludedLabels!.includes(label));
     }
     return matches;
+  }
+
+  private getNewlyCreatedLabelSuggestion(input: string): string | null {
+    const cleanInput = sanitizeLabelName(this.newLabel);
+    if (cleanInput.length > 0 && !this.allLabels.includes(cleanInput)) {
+      return cleanInput;
+    }
+    return null;
   }
 
 }
