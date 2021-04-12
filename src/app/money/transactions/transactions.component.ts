@@ -36,6 +36,8 @@ const VIEW_CACHE_KEYS: Array<keyof TransactionViewCache> =
   styleUrls: ['./transactions.component.css'],
 })
 export class TransactionsComponent implements AfterViewInit {
+  private static lastPageSize = 20;
+
   readonly shortcuts = patchShortcuts([
     // Selection
     { key: 'ctrl + a', command: () => this.isAllSelected() || this.masterToggle(), preventDefault: true },
@@ -91,6 +93,12 @@ export class TransactionsComponent implements AfterViewInit {
   }
 
   ngAfterViewInit() {
+    // Statically remember selected page size so it survives component reloads.
+    this.paginator.pageSize = TransactionsComponent.lastPageSize;
+    this.paginator.page.subscribe(event => {
+      TransactionsComponent.lastPageSize = event.pageSize;
+    });
+
     this.transactionsDataSource.paginator = this.paginator;
     this.transactionsSubject = this.transactionsDataSource.connect();
 
@@ -100,7 +108,7 @@ export class TransactionsComponent implements AfterViewInit {
     // We do NOT want this to happen when transaction list changes, otherwise
     // grouping transactions while on a different page is annoying.
     this.filterState.value$.subscribe(() => {
-      this.transactionsDataSource.paginator!.firstPage();
+      this.paginator.firstPage();
       // No longer force any transactions to remain visible.
       this.forceShowTransactions.clear();
     });
