@@ -1,7 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Account } from 'src/proto/model';
-import { CurrencyService } from '../../currency.service';
+import { CurrencyMetadata, CurrencyService } from '../../currency.service';
 
 export interface AccountEditConfig {
   account: Account;
@@ -14,7 +14,7 @@ export interface AccountEditConfig {
   styleUrls: ['./account-edit.component.css']
 })
 export class AccountEditComponent implements OnInit {
-  readonly allCurrencyCodes: string[];
+  readonly allCurrencyMetadata: CurrencyMetadata[];
   readonly editMode: 'add' | 'edit';
   readonly account: Account;
 
@@ -25,7 +25,8 @@ export class AccountEditComponent implements OnInit {
     private readonly currencyService: CurrencyService,
     private readonly matDialogRef: MatDialogRef<AccountEditComponent>,
   ) {
-    this.allCurrencyCodes = this.currencyService.getAllCodes().sort();
+    this.allCurrencyMetadata = this.currencyService.getAllCurrencyMetadata()
+      .sort((a, b) => a.code.localeCompare(b.code));
 
     this.account = data.account;
     this.editMode = data.editMode;

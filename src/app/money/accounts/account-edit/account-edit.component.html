@@ -44,7 +44,10 @@
           [(ngModel)]="account.currency"
           (ngModelChange)="false"
           placeholder="Currency">
-        <mat-option *ngFor="let curr of allCurrencyCodes" [value]="curr">{{curr}}</mat-option>
+        <mat-option *ngFor="let curr of allCurrencyMetadata" [value]="curr.code">
+          <span fxFlex>{{curr.code}}</span>&nbsp;&nbsp;
+          <span class="secondary">{{curr.name}}</span>
+        </mat-option>
       </mat-select>
       <span matSuffix>&nbsp;&nbsp;{{getCurrencySymbol(account.currency)}}</span>
     </mat-form-field>

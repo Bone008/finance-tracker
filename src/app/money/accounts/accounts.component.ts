@@ -5,7 +5,7 @@ import { map, tap } from 'rxjs/operators';
 import { cloneMessage, moneyToNumber, protoDateToMoment, timestampToMilliseconds, timestampToMoment } from 'src/app/core/proto-util';
 import { escapeQuotedString, maxBy } from 'src/app/core/util';
 import { Account, KnownBalance, TransactionData } from 'src/proto/model';
-import { CurrencyService } from '../currency.service';
+import { CurrencyMetadata, CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
 import { extractTransactionData, MONEY_EPSILON } from '../model-util';
@@ -30,8 +30,8 @@ export class AccountsComponent implements OnInit {
   readonly openAccounts$: Observable<Account[]>;
   // Observable of all closed accounts in the db.
   readonly closedAccounts$: Observable<Account[]>;
-  // All currency codes of all accounts.
-  readonly allCurrencies: string[];
+  // All supported currencies.
+  readonly allCurrencyMetadata: CurrencyMetadata[];
 
   private totalBalance: number | null = null;
   private accountInfosById: AccountInfo[] = [];
@@ -54,7 +54,8 @@ export class AccountsComponent implements OnInit {
     this.closedAccounts$ = accountsObservable.pipe(
       map(accounts => accounts.filter(acc => acc.closed))
     );
-    this.allCurrencies = this.currencyService.getAllCodes().sort();
+    this.allCurrencyMetadata = this.currencyService.getAllCurrencyMetadata()
+      .sort((a, b) => a.code.localeCompare(b.code));
   }
 
   ngOnInit() {

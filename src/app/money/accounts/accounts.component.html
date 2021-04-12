@@ -40,10 +40,9 @@
                   [ngModel]="getMainCurrency()"
                   (ngModelChange)="setMainCurrency($event)"
                   placeholder="Main currency">
-                <mat-option
-                    *ngFor="let curr of allCurrencies"
-                    [value]="curr">
-                  {{curr}}
+                <mat-option *ngFor="let curr of allCurrencyMetadata" [value]="curr.code">
+                  <span fxFlex>{{curr.code}}</span>&nbsp;&nbsp;
+                  <span class="secondary">{{curr.name}}</span>
                 </mat-option>
               </mat-select>
               <mat-hint>All foreign currencies will be converted to this.</mat-hint>

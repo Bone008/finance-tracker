@@ -6,32 +6,40 @@ import { MONEY_EPSILON } from './model-util';
 const NBSP = '\xA0';
 
 interface CurrencyInfo {
+  /** Human readable name */
+  name: string;
+  /** Short symbol, if available */
   symbol: string;
   exchangeRateToEUR: number;
 }
 type CurrencyInfoMap = { [currencyCode: string]: CurrencyInfo };
 
+export interface CurrencyMetadata extends CurrencyInfo {
+  /** 3 letter currency code */
+  code: string;
+}
+
 // TODO: Load from (cached) JSON file.
 // Hard-coded exchange rates as of 2019-06-16 from www.xe.com.
 const SUPPORTED_CURRENCIES: CurrencyInfoMap = {
-  'EUR': { symbol: '€', exchangeRateToEUR: 1 },
-  'USD': { symbol: '$', exchangeRateToEUR: 0.8924 },
-  'CHF': { symbol: 'Fr', exchangeRateToEUR: 0.91 }, // Compromise with Sep 2019.
-  'ILS': { symbol: '₪', exchangeRateToEUR: 0.2478 },
-  'BGN': { symbol: 'лв', exchangeRateToEUR: 0.5113 },
-  'RON': { symbol: 'lei', exchangeRateToEUR: 0.2121 },
-  'HUF': { symbol: 'Ft', exchangeRateToEUR: 0.0031 },
-  'CZK': { symbol: 'Kč', exchangeRateToEUR: 0.0392 },
+  'EUR': { symbol: '€', exchangeRateToEUR: 1, name: 'Euro' },
+  'USD': { symbol: '$', exchangeRateToEUR: 0.8924, name: 'US Dollar' },
+  'CHF': { symbol: 'Fr', exchangeRateToEUR: 0.91, name: 'Swiss Franc' }, // Compromise with Sep 2019.
+  'ILS': { symbol: '₪', exchangeRateToEUR: 0.2478, name: 'Israeli Shekel' },
+  'BGN': { symbol: 'лв', exchangeRateToEUR: 0.5113, name: 'Bulgarian Lev' },
+  'RON': { symbol: 'lei', exchangeRateToEUR: 0.2121, name: 'Romanian Leu' },
+  'HUF': { symbol: 'Ft', exchangeRateToEUR: 0.0031, name: 'Hungarian Forint' },
+  'CZK': { symbol: 'Kč', exchangeRateToEUR: 0.0392, name: 'Czech Koruna' },
   // below: exchange rates are Jul19 - Sep19 average.
-  'GBP': { symbol: '£', exchangeRateToEUR: 1.10752 },
-  'CAD': { symbol: 'C$', exchangeRateToEUR: 0.68022 },
-  'SEK': { symbol: 'kr', exchangeRateToEUR: 0.09383 },
-  'DKK': { symbol: 'kr.', exchangeRateToEUR: 0.13393 },
-  'ISK': { symbol: 'kr', exchangeRateToEUR: 0.00721 },
-  'NOK': { symbol: 'kr', exchangeRateToEUR: 0.10156 },
-  'TRY': { symbol: '₺', exchangeRateToEUR: 0.15801 },
+  'GBP': { symbol: '£', exchangeRateToEUR: 1.10752, name: 'British Pound' },
+  'CAD': { symbol: 'C$', exchangeRateToEUR: 0.68022, name: 'Canadian Dollar' },
+  'SEK': { symbol: 'kr', exchangeRateToEUR: 0.09383, name: 'Swedish Krona' },
+  'DKK': { symbol: 'kr.', exchangeRateToEUR: 0.13393, name: 'Danish Krone' },
+  'ISK': { symbol: 'kr', exchangeRateToEUR: 0.00721, name: 'Icelandic Krona' },
+  'NOK': { symbol: 'kr', exchangeRateToEUR: 0.10156, name: 'Norwegian Krone' },
+  'TRY': { symbol: '₺', exchangeRateToEUR: 0.15801, name: 'Turkish Lira' },
   // below: exchange rate from 2020-12-30
-  'KRW': { symbol: '₩', exchangeRateToEUR: 0.00075 },
+  'KRW': { symbol: '₩', exchangeRateToEUR: 0.00075, name: 'South Korean Won' },
 };
 
 @Injectable({
@@ -41,11 +49,12 @@ export class CurrencyService {
   constructor() { }
 
   /**
-   * Returns an unordered list of all known currency codes.
+   * Returns an unordered list of all known currencies and their metadata.
    * The result MAY be mutated.
    */
-  getAllCodes(): string[] {
-    return Object.keys(SUPPORTED_CURRENCIES);
+  getAllCurrencyMetadata(): CurrencyMetadata[] {
+    return Object.entries(SUPPORTED_CURRENCIES)
+      .map(([code, info]) => ({ code, ...info }));
   }
 
   /**
