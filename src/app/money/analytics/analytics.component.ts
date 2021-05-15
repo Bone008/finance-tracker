@@ -24,6 +24,9 @@ import { AnalysisResult, BilledTransaction, BucketInfo, BucketUnit, isBucketUnit
 const DEFAULT_BUCKET_UNIT = 'month';
 const BUCKET_TOTAL_BY_LABEL_PROPS = ['totalExpensesByLabel', 'totalIncomeByLabel'] as const;
 
+/** So white does not become invisible against the white background. */
+const REPLACE_WHITE_WITH_THIS_COLOR = '#f7f7f7';
+
 @Component({
   selector: 'app-analytics',
   templateUrl: './analytics.component.html',
@@ -585,6 +588,9 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
     const labelConfig = this.dataService.getLabelConfig(
       name.endsWith('+') ? name.substr(0, name.length - 1) : name);
     if (labelConfig && labelConfig.displayColor) {
+      if (labelConfig.displayColor == '#ffffff') {
+        return REPLACE_WHITE_WITH_THIS_COLOR;
+      }
       return labelConfig.displayColor;
     }
 
