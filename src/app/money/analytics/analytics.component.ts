@@ -30,6 +30,9 @@ const BUCKET_TOTAL_BY_LABEL_PROPS = ['totalExpensesByLabel', 'totalIncomeByLabel
   styleUrls: ['./analytics.component.css']
 })
 export class AnalyticsComponent implements OnInit, OnDestroy {
+  /** Label group colors, NOT cleared to keep colors across navigations. */
+  private static labelGroupColorsCache: { [label: string]: string } = {};
+
   readonly filterState = new FilterState();
   readonly bucketUnitSubject = new BehaviorSubject<BucketUnit>(DEFAULT_BUCKET_UNIT);
   readonly ignoreBillingPeriodSubject = new BehaviorSubject<boolean>(false);
@@ -65,8 +68,6 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   private collapsedLabelGroupNamesLookup: { [fullLabel: string]: string } = {};
   /** Preprocessed buckets. */
   private billedTransactionBuckets: BucketInfo[] = [];
-  /** Label group colors, NOT cleared across recalculations for consistency. */
-  private labelGroupColorsCache: { [label: string]: string } = {};
 
   /** Maximum number of label groups to use before truncating. */
   private labelGroupLimits: [number, number] = [6, 6];
@@ -576,23 +577,24 @@ export class AnalyticsComponent implements OnInit, OnDestroy {
   }
 
   private assignLabelGroupColor(name: string): string {
-    if (this.labelGroupColorsCache.hasOwnProperty(name)) {
-      return this.labelGroupColorsCache[name];
-    }
     // <other> gets special treatment.
     if (name === OTHER_GROUP_NAME) {
-      return this.labelGroupColorsCache[name] = '#666666';
+      return '#666666';
     }
     // Explicit user-defined color if available.
     const labelConfig = this.dataService.getLabelConfig(
       name.endsWith('+') ? name.substr(0, name.length - 1) : name);
     if (labelConfig && labelConfig.displayColor) {
-      return this.labelGroupColorsCache[name] = labelConfig.displayColor;
+      return labelConfig.displayColor;
     }
 
-    // Otherwise use random palette.
-    const nextIndex = Object.keys(this.labelGroupColorsCache).length;
-    return this.labelGroupColorsCache[name] = getPaletteColor(nextIndex);
+    // Otherwise use random palette (cached).
+    const cache = AnalyticsComponent.labelGroupColorsCache;
+    if (!cache.hasOwnProperty(name)) {
+      const nextIndex = Object.keys(cache).length;
+      cache[name] = getPaletteColor(nextIndex);
+    }
+    return cache[name];
   }
 
 }
