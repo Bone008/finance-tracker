@@ -1,10 +1,9 @@
 import { Injectable } from '@angular/core';
 import * as moment from 'moment';
 import { BillingInfo, BillingType, Date as ProtoDate, Transaction } from 'src/proto/model';
-import { momentToProtoDate, protoDateToMoment, timestampToMoment, timestampToWholeSeconds } from '../core/proto-util';
-import { maxBy } from '../core/util';
+import { momentToProtoDate, protoDateToMoment, timestampToMoment } from '../core/proto-util';
 import { DataService } from './data.service';
-import { getDominantLabels, isSingle, isValidBilling } from './model-util';
+import { getDominantLabels, getTransactionTimestamp, isValidBilling } from './model-util';
 
 // (NOTE: Maybe this should be simplified to an independent interface that exposes moments and not dates.)
 export type CanonicalBillingInfo = BillingInfo & { isRelative: false, date: Date, endDate: Date };
@@ -26,12 +25,7 @@ export class BillingService {
    * inheritance from labels according to the partial dominance order.
    */
   resolveTransactionCanonicalBilling(transaction: Transaction): CanonicalBillingInfo {
-    // Get reference date.
-    const dateMoment = timestampToMoment(isSingle(transaction)
-      ? transaction.single.date
-      : maxBy(transaction.group!.children, child => timestampToWholeSeconds(child.date))!.date
-    );
-
+    const dateMoment = timestampToMoment(getTransactionTimestamp(transaction));
     const rawBilling = this.resolveTransactionRawBilling(transaction);
     return this.getCanonicalBilling(rawBilling, dateMoment);
   }
