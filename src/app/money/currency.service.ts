@@ -33,13 +33,15 @@ const SUPPORTED_CURRENCIES: CurrencyInfoMap = {
   // below: exchange rates are Jul19 - Sep19 average.
   'GBP': { symbol: '£', exchangeRateToEUR: 1.10752, name: 'British Pound' },
   'CAD': { symbol: 'C$', exchangeRateToEUR: 0.68022, name: 'Canadian Dollar' },
-  'SEK': { symbol: 'kr', exchangeRateToEUR: 0.09383, name: 'Swedish Krona' },
+  //'SEK': { symbol: 'kr', exchangeRateToEUR: 0.09383, name: 'Swedish Krona' },
   'DKK': { symbol: 'kr.', exchangeRateToEUR: 0.13393, name: 'Danish Krone' },
   'ISK': { symbol: 'kr', exchangeRateToEUR: 0.00721, name: 'Icelandic Krona' },
   'NOK': { symbol: 'kr', exchangeRateToEUR: 0.10156, name: 'Norwegian Krone' },
   'TRY': { symbol: '₺', exchangeRateToEUR: 0.15801, name: 'Turkish Lira' },
   // below: exchange rate from 2020-12-30
   'KRW': { symbol: '₩', exchangeRateToEUR: 0.00075, name: 'South Korean Won' },
+  // below: exchange rate from 2022-01-23
+  'SEK': { symbol: 'kr', exchangeRateToEUR: 0.095778, name: 'Swedish Krona' },
 };
 
 @Injectable({
