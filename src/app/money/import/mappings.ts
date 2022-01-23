@@ -13,6 +13,7 @@ const ALL_FILE_FORMATS_INTERNAL = [
   'deutsche_bank',
   'ing',
   'n26',
+  'wise',
   'generic_en',
 ] as const;
 
@@ -20,7 +21,7 @@ export const ALL_FILE_FORMATS: readonly string[] = ALL_FILE_FORMATS_INTERNAL;
 export type ImportFileFormat = typeof ALL_FILE_FORMATS_INTERNAL[number];
 
 /** Date formats accepted by parseDate. See: https://momentjs.com/docs/#/parsing/string-format/ */
-const ACCEPTED_DATE_FORMATS = ['YYYY-MM-DD', 'DD.MM.YYYY', 'DD.MM.YY'];
+const ACCEPTED_DATE_FORMATS = ['YYYY-MM-DD', 'DD.MM.YYYY', 'DD.MM.YY', 'DD-MM-YYYY'];
 
 /** Dictionary that contains configurations for each supported import format. */
 export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
@@ -32,6 +33,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("whoIdentifier", "Kontonummer/IBAN")
     .addMapping("bookingText", "Buchungstext")
     .build(),
+
   'ksk_creditcard': new FormatMappingBuilder<KskCreditcardRow>()
     .addMapping("date", "Belegdatum", parseDate)
     .addMapping("amount", "Buchungsbetrag", parseAmount)
@@ -53,6 +55,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
       return components.filter(comp => comp).join("; ");
     })
     .build(),
+
   'mlp': new FormatMappingBuilder<MlpRow>()
     .skipUntilPattern(/^"Buchungstag";"Valuta";"Auftraggeber/m)
     .addMapping("date", "Valuta", parseDate)
@@ -71,6 +74,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
       return absAmount;
     })
     .build(),
+
   'dkb': new FormatMappingBuilder<DkbRow>()
     .skipUntilPattern(/^"Buchungstag";"Wertstellung";/m)
     .addMapping("date", "Wertstellung", parseDate)
@@ -80,6 +84,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("amount", "Betrag (EUR)", parseAmount)
     .addMapping("bookingText", "Buchungstext")
     .build(),
+
   'ubs': new FormatMappingBuilder<UbsRow>()
     .addMapping("date", "Abschluss", parseDate)
     .addMapping("reason", "Beschreibung 3")
@@ -99,6 +104,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
       return amount;
     })
     .build(),
+
   'deutsche_bank': new FormatMappingBuilder<DeutscheBankRow>()
     .skipUntilPattern(/^Buchungstag;Wert;Umsatzart;/m)
     .setRowFilter(row => row['Buchungstag'] !== 'Kontostand')
@@ -116,6 +122,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
       return parseAmount(expense || income);
     })
     .build(),
+
   'ing': new FormatMappingBuilder<IngRow>()
     .skipUntilPattern(/^Buchung;Valuta;/m)
     .addMapping("date", "Valuta", parseDate)
@@ -124,6 +131,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("amount", "Betrag", parseAmount)
     .addMapping("bookingText", "Buchungstext")
     .build(),
+
   'n26': new FormatMappingBuilder<N26Row>()
     .addMapping("date", "Datum", parseDate)
     .addMapping("reason", "Verwendungszweck")
@@ -132,6 +140,28 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("amount", "Betrag (EUR)", row => parseAmount(row, ",", "."))
     .addMapping("bookingText", "Kategorie")
     .build(),
+
+  'wise': new FormatMappingBuilder<WiseRow>()
+    .addMapping("date", "Date", parseDate)
+    .addRawMapping("reason", ["Description"], row => {
+      const description = row["Description"];
+      // Slight cleanup to avoid redundancy.
+      if (description.match(/^Card transaction of .+? issued by /)) {
+        return "Card transaction";
+      }
+      return description;
+    })
+    .addRawMapping("who", ["Payee Name", "Merchant"], row => {
+      const payeeName = row["Payee Name"];
+      const merchant = row["Merchant"];
+      return payeeName + (payeeName && merchant ? "; " : "") + merchant;
+    })
+    .addMapping("whoIdentifier", "Payee Account Number")
+    .addMapping("amount", "Amount", row => parseAmount(row, ",", "."))
+    .addMapping("bookingText", "TransferWise ID")
+    .addMapping("comment", "Note") // Actually only user-supplied.
+    .build(),
+
   'generic_en': new FormatMappingBuilder<GenericEngRow>()
     .addMapping("date", "Date", parseDate)
     .addMapping("reason", "Description")
@@ -307,6 +337,28 @@ interface N26Row {
   "Betrag (Fremdwährung)": string;
   "Fremdwährung": string;
   "Wechselkurs": string;
+}
+
+interface WiseRow {
+  "TransferWise ID": string;
+  "Date": string;
+  "Amount": string;
+  "Currency": string;
+  "Description": string;
+  "Payment Reference": string;
+  "Running Balance": string;
+  "Exchange From": string;
+  "Exchange To": string;
+  "Exchange Rate": string;
+  "Payer Name": string;
+  "Payee Name": string;
+  "Payee Account Number": string;
+  "Merchant": string;
+  "Card Last Four Digits": string;
+  "Card Holder Full Name": string;
+  "Attachment": string;
+  "Note": string;
+  "Total fees": string;
 }
 
 interface GenericEngRow {
