@@ -17,7 +17,7 @@ SERVER_FILE_ENCODING = 'windows-1252'
 OUTPUT_ENCODING = 'utf-8'
 
 EMPTY_RESULT_PLACEHOLDER = '<EMPTY_RESULT_SET>'
-ACCEPTED_EXPORT_BUTTONS = ['CSV-CAMT-Format', 'CSV-Format']
+ACCEPTED_EXPORT_BUTTONS = ['Excel (CSV-CAMT)']
 THROTTLE_DELAY_RANGE = (0.5, 1.5)
 
 def log_result_error(*msg):
@@ -72,7 +72,7 @@ def infer_msgerror(doc: html.HtmlElement) -> str:
 
 
 def do_login(session: requests.Session, base_url: str, user_id: str, user_pass: str):
-  url = urljoin(base_url, '/de/home.html')
+  url = urljoin(base_url, '/de/home/login-online-banking.html')
   log_info('Loading %s ...' % url)
   r = session.get(url)
   doc = to_html(r)
@@ -94,7 +94,7 @@ def do_login(session: requests.Session, base_url: str, user_id: str, user_pass: 
   r = submit_form(session, login_form)
   log_debug('Response URL:', r.url)
   
-  if 'finanzstatus.html' in r.url:
+  if 'finanzuebersicht.html' in r.url:
     log_info('Login successful!')
     return True
   elif 'pin-sperre-aufheben.html' in r.url:
@@ -109,14 +109,31 @@ def do_login(session: requests.Session, base_url: str, user_id: str, user_pass: 
     return False
 
 
-def do_load_transactions(session: requests.Session, base_url: str, date_from: str, date_to: str, account_index: int):
-  log_info('Navigating to transactions page ...')
-  url = urljoin(base_url, '/de/home/onlinebanking/umsaetze/umsaetze.html?n=true&stref=hnav')
+def do_select_account(session: requests.Session, base_url: str, account_index: int):
+  """Chooses the correct account based on its index and returns the HTML doc of its 'Umsätze' (transactions) page."""
+
+  log_info('Navigating to account selection page ...')
+  url = urljoin(base_url, '/de/home/onlinebanking/nbf/finanzuebersicht.html')
   r = session.get(url)
   doc = to_html(r)
 
+  account_links = doc.cssselect('.mkp-card-bank-account a.mkp-identifier-link')
+  log_debug('List of account names:', [account.text_content().strip() for account in account_links])
+  if account_index >= len(account_links):
+    log_result_error('Tried to access account with index', account_index, ', but found too few accounts:', len(account_links))
+    return None
+  
+  chosen_account_url = account_links[account_index].get('href')
+  r = session.get(chosen_account_url)
+  if 'umsaetze.html' in r.url:
+    return to_html(r)
+  else:
+    log_result_error('Unexpected URL after selecting account:', r.url)
+    return None
+
+def do_apply_date_filter(session: requests.Session, transactions_doc: html.HtmlElement, date_from: str, date_to: str):
   # Locate form.
-  search_form = find_form_by_value(doc, 'Aktualisieren')
+  search_form = find_form_by_value(transactions_doc, 'Aktualisieren')
   if search_form is None:
     log_result_error('Could not locate search form!')
     return None
@@ -133,9 +150,6 @@ def do_load_transactions(session: requests.Session, base_url: str, date_from: st
     # Set the "was already submitted" indicator.
     if input_elem.value == '0':
       input_elem.value = '1'
-    # Select respective account.
-    elif input_elem.tag == 'select':
-      input_elem.value = input_elem.value_options[1 + account_index]
     # Fill date fields.
     elif input_elem.attrib.get('placeholder') == 'TT.MM.JJJJ':
       input_elem.value = date_to if found_date_from else date_from
@@ -145,49 +159,47 @@ def do_load_transactions(session: requests.Session, base_url: str, date_from: st
     log_result_error('Could not locate date input!')
     return None
   
-  wait()
   log_info('Submitting search for %s - %s ...' % (date_from, date_to))
   r = submit_form(session, search_form)
-  if any([button in r.text for button in ACCEPTED_EXPORT_BUTTONS]):
-    return to_html(r)
-  elif 'Es sind keine Ums' in r.text:
+  
+  # Special case: Empty result set (export buttin is still there, but would be pointless)
+  if 'Keine Suchergebnisse' in r.text:
     log_info('Detected magic string indicating an empty results page!')
     return EMPTY_RESULT_PLACEHOLDER
-  else:
-    doc = to_html(r)
-    log_result_error('Search did not return the CSV export button unexpectedly!',
-        infer_msgerror(doc))
+  
+  # Success!
+  if any([button in r.text for button in ACCEPTED_EXPORT_BUTTONS]):
+    return to_html(r)
+  
+  # Error: TAN entry required
+  if 'ssen Sie eine Freigabe erteilen' in r.text:
+    log_result_error('Bank is asking for TAN verification for this search! You have to export this date range manually.')
     return None
+  
+  # Other error
+  doc = to_html(r)
+  log_result_error('Search did not return the CSV export button unexpectedly!',
+      infer_msgerror(doc))
+  return None
 
 
 def do_export_csv(session: requests.Session, transactions_doc: html.HtmlElement) -> bytes:
-  # Locate form.
-  for button in ACCEPTED_EXPORT_BUTTONS:
-    search_form = find_form_by_value(transactions_doc, button)
-    if not search_form is None:
-      break
+  export_links = transactions_doc.cssselect('.nbf-druckExportOption a')
+  accepted_export_links = [el for el in export_links \
+    if any(button_text in el.text_content() for button_text in ACCEPTED_EXPORT_BUTTONS)]
+    
+  log_debug('Available export formats:', [el.text_content().strip() for el in export_links])
+  log_debug('Accepted export formats:', [el.text_content().strip() for el in accepted_export_links])
   
-  if search_form is None:
-    log_result_error('Could not locate search form!')
+  if len(accepted_export_links) == 0:
+    log_result_error('Could not find any supported CSV export format!')
     return None
   
-  # Fill out form.
-  for input_elem in search_form.inputs:
-    # Drop all submits other than the one we want to click.
-    if input_elem.tag == 'input' and input_elem.type == 'submit' and input_elem.value not in ACCEPTED_EXPORT_BUTTONS:
-      input_elem.drop_tree()
-      continue
-    
-    #log_debug(input_elem.name, '->', input_elem.value, '|', input_elem.value_options if input_elem.tag == 'select' else input_elem.type)
-    # Set the "was already submitted" indicator.
-    if input_elem.value == '0':
-      input_elem.value = '1'
-  
   log_info('Requesting CSV export ...')
-  r = submit_form(session, search_form)
+  r = session.get(accepted_export_links[0].get('href'))
   log_debug('Response URL: ', r.url)
   log_debug('Response length: ', len(r.content), 'bytes')
-  if not 'services/download?' in r.url:
+  if not 'services/download.service' in r.url:
     doc = to_html(r)
     log_result_error('Form did not lead to a download link!', infer_msgerror(doc))
     return None
@@ -199,10 +211,11 @@ def do_export_csv(session: requests.Session, transactions_doc: html.HtmlElement)
 def do_logout(session: requests.Session, last_doc: html.HtmlElement):
   log_info('Logging out ...')
 
-  logout_form = find_form_by_value(last_doc, 'Abmelden')
+  logout_form = find_form_by_value(last_doc, 'logout')
   # We do not really care if it worked.
   r = submit_form(session, logout_form)
   log_debug('Post logout URL:', r.url)
+
 
 def main():
   parser = argparse.ArgumentParser(description='Exports bank statements from Sparkasse online banking.')
@@ -246,16 +259,20 @@ def main():
     return False
   
   wait()
-  transactions_doc = \
-    do_load_transactions(session, base_url, date_from, date_to, account_index)
+  transactions_doc = do_select_account(session, base_url, account_index)
   if transactions_doc is None:
     return False
-  if transactions_doc == EMPTY_RESULT_PLACEHOLDER:
+  
+  wait()
+  transactions_doc2 = do_apply_date_filter(session, transactions_doc, date_from, date_to)
+  if transactions_doc2 is None:
+    return False
+  if transactions_doc2 == EMPTY_RESULT_PLACEHOLDER:
     print(EMPTY_RESULT_PLACEHOLDER)
     return True
   
   wait()
-  csv_bytes = do_export_csv(session, transactions_doc)
+  csv_bytes = do_export_csv(session, transactions_doc2)
   if csv_bytes is None:
     return False
 
@@ -265,7 +282,7 @@ def main():
   log_info('Done! Written %d bytes to stdout.' % len(csv_bytes))
   
   wait()
-  do_logout(session, transactions_doc)
+  do_logout(session, transactions_doc2)
   session.close()
   return True
 
