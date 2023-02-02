@@ -7,14 +7,15 @@ import { RequiredProto } from 'src/app/core/proto-util';
 import { Account, BankSyncSettings, IBankSyncSettings } from 'src/proto/model';
 import { DataService } from '../data.service';
 import { DialogService } from '../dialog.service';
-import { StorageSettingsService } from '../storage-settings.service';
-import { BankSyncRequest, BankSyncResult, BankSyncService } from './bank-sync.service';
+import { BankSyncRequest, BankSyncResult, BankSyncService, BankType } from './bank-sync.service';
 
 /**
  * Since the sync script reencodes all CSV files as UTF-8, we want to override
  * the account's default setting upon import.
  */
 const FORCED_IMPORT_ENCODING = 'utf-8';
+
+const HARDCODED_DKB_BANK_URL = 'https://www.dkb.de/';
 
 interface AccountMapping {
   bankAccountIndex: number;
@@ -53,16 +54,41 @@ export class BankSyncComponent implements OnInit {
   constructor(
     private readonly bankSyncService: BankSyncService,
     private readonly dataService: DataService,
-    private readonly storageSettingsService: StorageSettingsService,
     private readonly dialogService: DialogService
   ) {
     this.allAccounts$ = this.dataService.accounts$;
 
+    // Remember default values since FormGroup does not allow access to them later.
+    const formDefaultValues = this.form.getRawValue();
+
+    let lastBankType: string | null = null;
+    this.form.controls.bankType.valueChanges.subscribe(bankType => {
+      // The callback is called in situations where we do not want to react.
+      if (bankType === lastBankType)
+        return;
+      lastBankType = bankType;
+
+      // Load from matching settings if available, otherwise reset to empty.
+      const bankSyncEntries = this.dataService.getUserSettings().bankSyncEntries;
+      let storedEntry = bankSyncEntries.find(entry => entry.bankType === bankType);
+      if (storedEntry) {
+        this.form.patchValue(storedEntry, { emitEvent: false });
+      } else {
+        const resetValues = { ...formDefaultValues, bankType };
+        this.form.reset(resetValues, { emitEvent: false });
+      }
+
+      this.checkForHardcodedURL();
+    });
+
     this.dataService.userSettings$
-      .pipe(filter(settings => !!settings.bankSync))
-      .pipe(map(settings => settings.bankSync!))
-      .subscribe(bankSync => {
-        this.form.patchValue(bankSync);
+      .pipe(filter(settings => settings.bankSyncEntries.length > 0))
+      .pipe(map(settings => settings.bankSyncEntries!))
+      .subscribe(entries => {
+        // By default, use the first stored settings, since those are the most
+        // recently used bank type. It is enough to set the bank type, the handler
+        // above will do the rest.
+        this.form.controls.bankType.setValue(entries[0].bankType);
       });
   }
 
@@ -79,7 +105,8 @@ export class BankSyncComponent implements OnInit {
     // BankSyncService, in order to allow periodic background sync to be invoked
     // more easily.
 
-    const data = this.form.value;
+    // Use getRawValue() to include disabled controls, otherwise data may be empty.
+    const data = this.form.getRawValue();
     this.saveSyncSettings(data);
 
     // Reduce target accounts to list of indices that we want to request.
@@ -91,7 +118,7 @@ export class BankSyncComponent implements OnInit {
       .filter(mapping => mapping.localAccountId > 0);
 
     const request: BankSyncRequest = {
-      bankType: 'sparkasse',
+      bankType: data.bankType as BankType,
       bankUrl: data.bankUrl,
       loginName: data.loginName,
       loginPassword: data.loginPassword,
@@ -103,10 +130,15 @@ export class BankSyncComponent implements OnInit {
     this.bankSyncService.requestSync(request)
       .pipe(finalize(() => {
         this.form.enable();
+        this.checkForHardcodedURL();
+
         const duration = moment().diff(startTime, 'seconds');
         this.showLog(`Execution time: ${Math.round(duration)} s`);
       }))
       .subscribe(response => {
+        if (response === null) {
+          response = { success: undefined, error: 'Empty response received!' };
+        }
         if (response.success) {
           this.showLog(`Success! Received ${response.results.length} CSV files.`);
           this.lastSyncSuccess = true;
@@ -159,8 +191,25 @@ export class BankSyncComponent implements OnInit {
   }
 
   private saveSyncSettings(bankSync: IBankSyncSettings) {
+    const entries = this.dataService.getUserSettings().bankSyncEntries;
+    const existingIndex = entries.findIndex(entry => entry.bankType === bankSync.bankType);
+    // Remove existing settings and reinsert at the front of the list.
+    if (existingIndex >= 0) {
+      entries.splice(existingIndex, 1);
+    }
     const newSettings = new BankSyncSettings(bankSync);
-    this.dataService.getUserSettings().bankSync = newSettings;
+    entries.unshift(newSettings);
+  }
+
+  /** Special case for DKB: Disable URL field when selected. */
+  private checkForHardcodedURL() {
+    const bankUrlControl = this.form.controls.bankUrl;
+    if (this.form.controls.bankType.value === 'dkb') {
+      bankUrlControl.disable();
+      bankUrlControl.setValue(HARDCODED_DKB_BANK_URL);
+    } else {
+      bankUrlControl.enable();
+    }
   }
 
   private clearLog() {

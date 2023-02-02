@@ -3,8 +3,10 @@ import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { environment } from "src/environments/environment";
 
+export type BankType = 'sparkasse' | 'dkb';
+
 export interface BankSyncRequest {
-  bankType: 'sparkasse';
+  bankType: BankType;
   bankUrl: string;
   loginName: string;
   loginPassword: string;

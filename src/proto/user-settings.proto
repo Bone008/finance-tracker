@@ -17,8 +17,8 @@ message UserSettings {
   // value if unset.
   string main_currency = 4;
 
-  // Parameters for automatic bank import.
-  BankSyncSettings bank_sync = 5;
+  // Parameters for automatic bank import, one entry per bank_type.
+  repeated BankSyncSettings bank_sync_entries = 5;
 }
 
 message BankSyncSettings {

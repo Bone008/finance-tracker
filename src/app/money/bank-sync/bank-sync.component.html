@@ -13,6 +13,7 @@
       <h4>Bank details</h4>
       <mat-form-field>
         <mat-select formControlName="bankType" value="sparkasse" placeholder="Bank type" required>
+          <mat-option value="dkb">Deutsche Kreditbank (DKB)</mat-option>
           <mat-option value="sparkasse">Sparkasse</mat-option>
         </mat-select>
       </mat-form-field>
@@ -94,6 +95,7 @@
         <mat-button-toggle #viewDetailsBtn [hidden]="!syncLog">View details</mat-button-toggle>
         <mat-spinner *ngIf="form.disabled" diameter="24"></mat-spinner>
       </div>
+      <p [hidden]="form.controls.bankType.value !== 'dkb'">You will have to authorize the login from the DKB app on your phone.</p>
       <p class="error" [hidden]="!lastSyncError">{{lastSyncError}}</p>
       <p [hidden]="!lastSyncSuccess">The selected accounts were successfully loaded from the bank!</p>
       <pre *ngIf="viewDetailsBtn.checked">{{syncLog}}</pre>

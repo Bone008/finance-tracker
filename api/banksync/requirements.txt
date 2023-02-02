@@ -2,3 +2,6 @@
 requests
 lxml
 cssselect
+
+# for DKB:
+mechanize
