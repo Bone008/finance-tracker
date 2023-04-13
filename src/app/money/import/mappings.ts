@@ -176,7 +176,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
   'vimpay': new FormatMappingBuilder<VimPayRow>()
     .addMapping("date", "Date", parseDate)
     .addMapping("reason", "Reference")
-    .addMapping("amount", "Amount", parseAmount)
+    .addMapping("amount", "Amount", row => parseAmount(row, ",", "."))
     .addMapping("who", "Remitter / Recipient")
     .addMapping("whoIdentifier", "IBAN of the remitter / recipient")
     .build(),
