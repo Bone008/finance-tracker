@@ -15,6 +15,7 @@ const ALL_FILE_FORMATS_INTERNAL = [
   'n26',
   'wise',
   'generic_en',
+  'vimpay',
 ] as const;
 
 export const ALL_FILE_FORMATS: readonly string[] = ALL_FILE_FORMATS_INTERNAL;
@@ -169,6 +170,14 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("who", "Who")
     .addMapping("whoIdentifier", "Who Identifier")
     .addMapping("bookingText", "Booking Text")
+    .build(),
+  
+  'vimpay': new FormatMappingBuilder<VimPayRow>()
+    .addMapping("date", "Date", parseDate)
+    .addMapping("reason", "Reference")
+    .addMapping("amount", "Amount")
+    .addMapping("who", "Remitter / Recipient")
+    .addMapping("whoIdentifier", "IBAN of the remitter / recipient")
     .build(),
 };
 
@@ -369,3 +378,15 @@ interface GenericEngRow {
   "Who Identifier": string;
   "Booking Text": string;
 }
+
+interface VimPayRow {
+  "Date": string;
+  "Account holder": string;
+  "IBAN of the account holder": string;
+  "Reference": string;
+  "Remitter / Recipient": string;
+  "IBAN of the remitter / recipient": string;
+  "Amount": string;
+  "Currency": string;
+}
+
