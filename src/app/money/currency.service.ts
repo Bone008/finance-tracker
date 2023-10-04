@@ -42,6 +42,16 @@ const SUPPORTED_CURRENCIES: CurrencyInfoMap = {
   'KRW': { symbol: '₩', exchangeRateToEUR: 0.00075, name: 'South Korean Won' },
   // below: exchange rate from 2022-01-23
   'SEK': { symbol: 'kr', exchangeRateToEUR: 0.095778, name: 'Swedish Krona' },
+  // below: exchange rate from 2023-10-04
+  'VND': { symbol: '₫', exchangeRateToEUR: 0.000039065, name: 'Vietnamese Dong' },
+  'THB': { symbol: '฿', exchangeRateToEUR: 0.025774, name: 'Thai Baht' },
+  'LAK': { symbol: '₭', exchangeRateToEUR: 0.00004663, name: 'Lao Kip' },
+  'KHR': { symbol: 'RM', exchangeRateToEUR: 0.201071, name: 'Malaysian Ringgit' },
+  'SGD': { symbol: '$', exchangeRateToEUR: 0.693585, name: 'Singapore Dollar' },
+  'JPY': { symbol: '¥', exchangeRateToEUR: 0.00638257, name: 'Japanese Yen' },
+  'TWD': { symbol: 'NT$', exchangeRateToEUR: 0.02944, name: 'Taiwan New Dollar' },
+  'HKD': { symbol: '$', exchangeRateToEUR: 0.121529, name: 'Hong Kong Dollar' },
+  'IDR': { symbol: 'Rp', exchangeRateToEUR: 0.000060968, name: 'Indonesian Rupiah' },
 };
 
 @Injectable({
