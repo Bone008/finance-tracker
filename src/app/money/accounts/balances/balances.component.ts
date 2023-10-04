@@ -89,6 +89,7 @@ export class BalancesComponent implements OnInit {
       single: new TransactionData({
         accountId: this.account.id,
         date: momentToTimestamp(protoDateToMoment(balance.date)),
+        realDate: cloneMessage(ProtoDate, balance.date),
         amount: numberToMoney(discrepancy),
         reason: 'untracked',
       }),

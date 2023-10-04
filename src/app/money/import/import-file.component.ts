@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { Account, ImportedRow, ITransactionData, Transaction, TransactionData } from '../../../proto/model';
 import { LoggerService } from '../../core/logger.service';
-import { timestampNow, timestampToWholeSeconds } from '../../core/proto-util';
+import { timestampNow, timestampToProtoDate, timestampToWholeSeconds } from '../../core/proto-util';
 import { DataService } from '../data.service';
 import { extractTransactionData } from '../model-util';
 import { RuleService } from '../rule.service';
@@ -237,6 +237,11 @@ export class ImportFileComponent implements OnInit {
       if (hasErrors) {
         continue;
       }
+
+      // Temporary solution: Also fill in the realDate based on the Timestamp.
+      // Later, the ProtoDate should be parsed directly from the CSV, since time
+      // information is usually not present there anyway.
+      transactionProperties.realDate = timestampToProtoDate(transactionProperties.date);
 
       this.entriesToImport.push({
         row: importedRow,

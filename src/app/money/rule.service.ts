@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import * as moment from 'moment';
 import { ProcessingAction, ProcessingTrigger, Transaction, TransactionData } from '../../proto/model';
 import { LoggerService } from '../core/logger.service';
-import { momentToTimestamp, numberToMoney } from '../core/proto-util';
+import { momentToProtoDate, momentToTimestamp, numberToMoney } from '../core/proto-util';
 import { DataService } from './data.service';
 import { addLabelToTransaction, isSingle, removeLabelFromTransaction } from './model-util';
 import { TransactionFilterService } from './transaction-filter.service';
@@ -116,6 +116,7 @@ export class RuleService {
           }
 
           transaction.single.date = momentToTimestamp(m);
+          transaction.single.realDate = momentToProtoDate(m);
           return true;
         }
         else if (field === 'amount') {

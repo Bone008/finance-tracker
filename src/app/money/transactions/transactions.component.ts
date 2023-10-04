@@ -1,4 +1,5 @@
 import { SelectionModel } from '@angular/cdk/collections';
+import { formatDate } from '@angular/common';
 import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
@@ -10,7 +11,7 @@ import { patchShortcuts } from 'src/app/core/keyboard-shortcuts-patch';
 import { makeSharedObject } from 'src/app/core/util';
 import { CacheCountable, invalidateCacheCounter } from 'src/app/core/view-cache-util';
 import { BillingType, google, GroupData, Transaction, TransactionData } from '../../../proto/model';
-import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, protoDateToMoment, timestampNow, timestampToDate, timestampToMilliseconds, timestampToWholeSeconds } from '../../core/proto-util';
+import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, protoDateToMoment, timestampNow, timestampToDate, timestampToMilliseconds, timestampToProtoDate, timestampToWholeSeconds } from '../../core/proto-util';
 import { BillingService } from '../billing.service';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
@@ -158,7 +159,6 @@ export class TransactionsComponent implements AfterViewInit {
     // Adding is equivalent to copying from an empty transaction.
     this.startCopyTransaction(new Transaction({
       single: new TransactionData({
-        date: timestampNow(),
         accountId: this.dataService.getUserSettings().defaultAccountIdOnAdd,
       }),
     }));
@@ -170,6 +170,7 @@ export class TransactionsComponent implements AfterViewInit {
     if (!isSingle(transaction)) throw new Error('only single transaction templates supported');
     // Reset date to now.
     transaction.single.date = timestampNow();
+    transaction.single.realDate = timestampToProtoDate(transaction.single.date);
     // Reset modified timestamp.
     transaction.single.modified = null;
     // Delete association to a CSV row.
@@ -306,6 +307,9 @@ export class TransactionsComponent implements AfterViewInit {
     // Retain proper date if exactly one existing one is involved.
     const properDates = transactions.map(t => t.group?.properDate).filter(timestamp => !!timestamp);
     const uniqueProperDate = properDates.length === 1 ? properDates[0] : null;
+    const uniqueProperRealDate = properDates.length === 1
+      ? transactions.find(t => t.group && t.group.properDate)?.group!.properRealDate
+      : null;
     const mergedGroupComments = transactions.map(t => t.group?.comment).filter(comment => !!comment).join('\n');
 
     const newTransaction = new Transaction({
@@ -313,6 +317,7 @@ export class TransactionsComponent implements AfterViewInit {
       group: new GroupData({
         children: newChildren,
         properDate: uniqueProperDate,
+        properRealDate: uniqueProperRealDate,
         comment: mergedGroupComments,
         isCrossCurrencyTransfer,
       }),
@@ -485,6 +490,25 @@ export class TransactionsComponent implements AfterViewInit {
         `${unit} ${from}${from !== to ? ' until ' + to : ''}, ${typeStr}`;
     }
     return transaction.__billingString;
+  }
+
+  getTransactionDateTooltip(transaction: Transaction & TransactionViewCache): string {
+    const date = this.getTransactionDate(transaction);
+    // '{{moment('EEEE, yyyy-MM-dd, HH:mm z'}}&#13;Billing: {{getTransactionBillingString(transaction)}}';
+    const dateStr = formatDate(date, 'EEEE, yyyy-MM-dd, HH:mm z', 'en-US');
+    const billingStr = this.getTransactionBillingString(transaction);
+    let tooltip = `${dateStr}\nBilling: ${billingStr}`;
+
+    // Debug info to allow checking the presence of realDate, even though it is
+    // not used for calculations yet.
+    const realDate = (isSingle(transaction) && transaction.single.realDate)
+      || (isGroup(transaction) && transaction.group.properRealDate);
+    if (realDate) {
+      const realDateStr = protoDateToMoment(realDate).format('YYYY-MM-DD');
+      tooltip += `\n\nReal date: ${realDateStr}`;
+    }
+
+    return tooltip;
   }
 
   canGroup(selected: Transaction[]): boolean {

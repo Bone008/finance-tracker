@@ -3,7 +3,7 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Account, BillingInfo, Money, Transaction, TransactionData, TransactionPreset } from '../../../../proto/model';
-import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
+import { dateToProtoDate, dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
 import { makeSharedDate, pushDeduplicate } from '../../../core/util';
 import { CurrencyService } from '../../currency.service';
 import { DataService } from '../../data.service';
@@ -97,7 +97,9 @@ export class TransactionEditComponent implements OnInit {
 
   setDate(dateString: string) {
     if (dateString) {
-      this.singleData.date = dateToTimestamp(new Date(dateString));
+      const jsDate = new Date(dateString);
+      this.singleData.date = dateToTimestamp(jsDate);
+      this.singleData.realDate = dateToProtoDate(jsDate);
     }
   }
 
