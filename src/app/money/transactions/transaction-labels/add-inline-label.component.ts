@@ -110,7 +110,18 @@ export class AddInlineLabelComponent implements OnInit {
 
   private filterLabelsByInput(input: string): string[] {
     const cleanInput = sanitizeLabelName(input);
-    let matches = filterFuzzyOptions(this.allLabels, cleanInput);
+
+    // Also include descriptions in search, but always sort them after direct matches.
+    // This is copied in `TransactionFilterService.suggestFilterContinuations`!
+    const allDescriptions = this.allLabels
+      .map(label => [label, this.dataService.getLabelConfig(label)?.description])
+      .filter(([_, description]) => !!description)
+      .map(([label, description]) => label + '-_|_-' + description!.toLowerCase());
+
+    let matches = filterFuzzyOptions(this.allLabels.concat(allDescriptions), cleanInput)
+      .map(label => label.split('-_|_-')[0]) // Remove description again.
+      .filter((label, index, array) => array.indexOf(label) === index); // Deduplicate labels.
+
     if (this.excludedLabels) {
       matches = matches.filter(label => !this.excludedLabels!.includes(label));
     }
