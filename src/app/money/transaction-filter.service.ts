@@ -131,9 +131,17 @@ export class TransactionFilterService {
 
     // Suggest labels.
     else if (lastToken.startsWith('label:') || lastToken.startsWith('label=')) {
+      const allLabels = this.dataService.getAllLabels().sort();
+      const allDescriptions = allLabels
+        .map(label => [label, this.dataService.getLabelConfig(label)?.description])
+        .filter(([_, description]) => !!description)
+        .map(([label, description]) => label + '-_|_-' + description!.toLowerCase());
+
       continuationPrefix += lastToken.substr(0, 6);
-      return filterFuzzyOptions(this.dataService.getAllLabels().sort(), lastToken.substr(6), true)
-        .map(keyword => continuationPrefix + keyword + ' ');
+      return filterFuzzyOptions(allLabels.concat(allDescriptions), lastToken.substr(6), true)
+        .map(label => label.split('-_|_-')[0]) // Remove description again.
+        .filter((label, index, array) => array.indexOf(label) === index) // Deduplicate labels.
+        .map(label => continuationPrefix + label + ' ');
     }
 
     // Suggest account names.

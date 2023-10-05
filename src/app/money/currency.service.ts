@@ -22,6 +22,8 @@ export interface CurrencyMetadata extends CurrencyInfo {
 }
 
 // TODO: Load from (cached) JSON file.
+// See this API https://currencyapi.com/docs/currencies for ways to semi-automate this.
+
 // Hard-coded exchange rates as of 2019-06-16 from www.xe.com.
 const SUPPORTED_CURRENCIES: CurrencyInfoMap = {
   'EUR': { symbol: '€', exchangeRateToEUR: 1, name: 'Euro' },
