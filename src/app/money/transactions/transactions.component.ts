@@ -11,7 +11,7 @@ import { patchShortcuts } from 'src/app/core/keyboard-shortcuts-patch';
 import { makeSharedObject } from 'src/app/core/util';
 import { CacheCountable, invalidateCacheCounter } from 'src/app/core/view-cache-util';
 import { BillingType, google, GroupData, Transaction, TransactionData } from '../../../proto/model';
-import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, protoDateToMoment, timestampNow, timestampToDate, timestampToMilliseconds, timestampToProtoDate, timestampToWholeSeconds } from '../../core/proto-util';
+import { cloneMessage, compareTimestamps, moneyToNumber, numberToMoney, protoDateToMoment, timestampNow, timestampToDate, timestampToMilliseconds, timestampToMoment, timestampToProtoDate, timestampToWholeSeconds } from '../../core/proto-util';
 import { BillingService } from '../billing.service';
 import { CurrencyService } from '../currency.service';
 import { DataService } from '../data.service';
@@ -323,12 +323,51 @@ export class TransactionsComponent implements AfterViewInit {
       }),
     });
 
+    if (!uniqueProperDate) {
+      this.inferProperGroupDate(newTransaction);
+    }
+
     this.selection.clear();
     this.forceShowTransactions.add(newTransaction);
     this.dataService.removeTransactions(transactions);
     this.dataService.addTransactions(newTransaction);
     this.ruleService.notifyModified([newTransaction]);
     this.selection.select(newTransaction);
+  }
+
+  /** Attempts to automatically set the group's date based on the sign of the amounts of its children. */
+  private inferProperGroupDate(groupTransaction: Transaction) {
+    const totalAmount = getTransactionAmount(groupTransaction, this.dataService, this.currencyService);
+    // Does not make sense for groups without a dominant sign (^= transfers).
+    if (Math.abs(totalAmount) < MONEY_EPSILON) {
+      return;
+    }
+
+    const positiveChildren: TransactionData[] = [];
+    const negativeChildren: TransactionData[] = [];
+    for (const child of groupTransaction.group!.children) {
+      const amount = moneyToNumber(child.amount);
+      if (amount >= MONEY_EPSILON) {
+        positiveChildren.push(child);
+      }
+      else if (amount <= -MONEY_EPSILON) {
+        negativeChildren.push(child);
+      }
+    }
+
+    // Does not make sense if the group does not contain children with both signs.
+    if (positiveChildren.length === 0 || negativeChildren.length === 0) {
+      return;
+    }
+
+    groupTransaction.group!.properDate =
+      totalAmount > 0 ? positiveChildren[0].date : negativeChildren[0].date;
+    groupTransaction.group!.properRealDate =
+      totalAmount > 0 ? positiveChildren[0].realDate : negativeChildren[0].realDate;
+
+    console.log(`Inferred proper date for group with totalAmount ${totalAmount} from`,
+      `${positiveChildren.length} positive and ${negativeChildren.length} negative children:`,
+      timestampToMoment(groupTransaction.group!.properDate).format('YYYY-MM-DD'));
   }
 
   ungroupTransaction(transaction: Transaction) {
