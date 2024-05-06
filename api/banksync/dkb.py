@@ -166,7 +166,7 @@ class DkbScraper(object):
         br.form["screenHeight"] = "800"
         br.form["osName"] = "UNIX"
         response = br.submit()
-        if ("Wechseln Sie in die <strong>DKB-Banking-App</strong> und best" in response.read().decode('utf-8') ):
+        if ("Wechseln Sie in die" in response.read().decode('utf-8') ):
             self.confirm_app_login()
         else:
             self.confirm_tan_login()
