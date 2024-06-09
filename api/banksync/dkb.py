@@ -45,6 +45,8 @@ CSV_ENCODING = 'latin1'
 # to be set to UTF-8.
 CSV_OUTPUT_ENCODING = 'utf-8'
 
+EXIT_CODE_ERROR = 2
+
 class RecordingBrowser(mechanize.Browser):
     _recording_path = None
     _recording_enabled = False
@@ -164,7 +166,7 @@ class DkbScraper(object):
         br.form["screenHeight"] = "800"
         br.form["osName"] = "UNIX"
         response = br.submit()
-        if ("Wechseln Sie in die <strong>DKB-Banking-App</strong> und best" in response.read().decode('utf-8') ):
+        if ("Wechseln Sie in die" in response.read().decode('utf-8') ):
             self.confirm_app_login()
         else:
             self.confirm_tan_login()
@@ -189,7 +191,7 @@ class DkbScraper(object):
             time.sleep(2)
             if x >= 29:
                 print("Authentication timed out")
-                quit()
+                exit(EXIT_CODE_ERROR)
             if not ("PROCESSING" in br.open('https://www.dkb.de/DkbTransactionBanking/content/LoginWithBoundDevice/LoginWithBoundDeviceProcess/mfaConfirmLogin.xhtml?$event=pollingVerification').read().decode('utf-8')):
                 break
         br.open(self.BASEURL + "?$javascript=disabled")

@@ -1,9 +1,10 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import * as moment from 'moment';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Account, BillingInfo, Money, Transaction, TransactionData, TransactionPreset } from '../../../../proto/model';
-import { dateToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
+import { momentToProtoDate, momentToTimestamp, moneyToNumber, numberToMoney, timestampToDate } from '../../../core/proto-util';
 import { makeSharedDate, pushDeduplicate } from '../../../core/util';
 import { CurrencyService } from '../../currency.service';
 import { DataService } from '../../data.service';
@@ -97,7 +98,17 @@ export class TransactionEditComponent implements OnInit {
 
   setDate(dateString: string) {
     if (dateString) {
-      this.singleData.date = dateToTimestamp(new Date(dateString));
+      // NOTE: This previously used "new Date(dateString)", which was NOT consistent
+      // in terms of returning local/UTC times, see: https://stackoverflow.com/a/5619588
+      // Firefox returned UTC midnight, so e.g. "02:00 GMT+0200 (CEST)".
+      // This is in contrast to imported CSV rows, which are parsed using moment(),
+      // so their times have always resulted in stuff like "00:00 GMT+0200 (CEST)".
+      // Now we interpret everything as local time ...
+      // Since we also started saving realDate, we should be able to migrate
+      // eventually after using and backfilling realDate.
+      const newMoment = moment(dateString, 'YYYY-MM-DD', true);
+      this.singleData.date = momentToTimestamp(newMoment);
+      this.singleData.realDate = momentToProtoDate(newMoment);
     }
   }
 

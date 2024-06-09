@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatAutocompleteTrigger } from '@angular/material/autocomplete';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { cloneMessage, moneyToNumber, numberToMoney, timestampNow } from 'src/app/core/proto-util';
+import { cloneMessage, moneyToNumber, numberToMoney, timestampNow, timestampToProtoDate } from 'src/app/core/proto-util';
 import { delay } from 'src/app/core/util';
 import { Money, Transaction, TransactionData, TransactionPreset } from 'src/proto/model';
 import { DataService } from '../../data.service';
@@ -81,6 +81,7 @@ export class PresetsComponent implements OnInit {
     }
 
     transaction.single.date = timestampNow();
+    transaction.single.realDate = timestampToProtoDate(transaction.single.date);
     if (preset.allowModification) {
       this.patchAmountIfNecessary(preset.amountIsPositive, transaction.single);
       this.dialogService.openTransactionEdit(transaction, MODE_ADD)

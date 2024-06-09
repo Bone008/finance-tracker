@@ -36,6 +36,11 @@ export class TransactionEditGroupComponent {
       this.transaction.billing = new BillingInfo();
     }
 
+    // Dropdown options for the date selector.
+    // Note that we do NOT want the dropdown's ngModel to access children directly,
+    // since the data model may contain arbitrary dates that do not need to match
+    // the dropdown's options (so the lookup "locate child by timestamp" is necessary
+    // SOMEWHERE anyway).
     this.childrenDates = this.groupData.children.map(child => timestampToDate(child.date));
   }
 
@@ -45,6 +50,15 @@ export class TransactionEditGroupComponent {
 
   setProperDateMillis(millis: number) {
     this.groupData.properDate = millis !== 0 ? millisecondsToTimestamp(millis) : null;
+
+    // Temporary: Try to detect if realDate is set on the selected child.
+    const child = this.groupData.children.find(child => timestampToMilliseconds(child.date) === millis);
+    if (child && child.realDate) {
+      this.groupData.properRealDate = child.realDate;
+    } else {
+      // Important: Reset if it is not.
+      this.groupData.properRealDate = null;
+    }
   }
 
   // Copied from TransactionEditComponent.

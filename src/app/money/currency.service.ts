@@ -11,6 +11,8 @@ interface CurrencyInfo {
   /** Short symbol, if available */
   symbol: string;
   exchangeRateToEUR: number;
+  /** Optional override of number of decimal digits for formatting. */
+  decimalDigits?: number;
 }
 type CurrencyInfoMap = { [currencyCode: string]: CurrencyInfo };
 
@@ -20,6 +22,8 @@ export interface CurrencyMetadata extends CurrencyInfo {
 }
 
 // TODO: Load from (cached) JSON file.
+// See this API https://currencyapi.com/docs/currencies for ways to semi-automate this.
+
 // Hard-coded exchange rates as of 2019-06-16 from www.xe.com.
 const SUPPORTED_CURRENCIES: CurrencyInfoMap = {
   'EUR': { symbol: '€', exchangeRateToEUR: 1, name: 'Euro' },
@@ -42,6 +46,16 @@ const SUPPORTED_CURRENCIES: CurrencyInfoMap = {
   'KRW': { symbol: '₩', exchangeRateToEUR: 0.00075, name: 'South Korean Won' },
   // below: exchange rate from 2022-01-23
   'SEK': { symbol: 'kr', exchangeRateToEUR: 0.095778, name: 'Swedish Krona' },
+  // below: exchange rate from 2023-10-04
+  'HKD': { symbol: '$', exchangeRateToEUR: 0.121529, name: 'Hong Kong Dollar' },
+  'IDR': { symbol: 'Rp', exchangeRateToEUR: 0.000060968, name: 'Indonesian Rupiah', decimalDigits: 0 },
+  'JPY': { symbol: '¥', exchangeRateToEUR: 0.00638257, name: 'Japanese Yen', decimalDigits: 0 },
+  'KHR': { symbol: 'RM', exchangeRateToEUR: 0.201071, name: 'Malaysian Ringgit' },
+  'LAK': { symbol: '₭', exchangeRateToEUR: 0.00004663, name: 'Lao Kip', decimalDigits: 0 },
+  'SGD': { symbol: '$', exchangeRateToEUR: 0.693585, name: 'Singapore Dollar' },
+  'THB': { symbol: '฿', exchangeRateToEUR: 0.025774, name: 'Thai Baht' },
+  'TWD': { symbol: 'NT$', exchangeRateToEUR: 0.02944, name: 'Taiwan New Dollar' },
+  'VND': { symbol: '₫', exchangeRateToEUR: 0.000039065, name: 'Vietnamese Dong', decimalDigits: 0 },
 };
 
 @Injectable({
@@ -114,10 +128,15 @@ export class CurrencyService {
       amount = 0;
     }
 
+    const decimalDigits = SUPPORTED_CURRENCIES[currencyCode]?.decimalDigits ?? 2;
+
     // Note: not using style:'currency', because it does not allow individual control over the
     // placement of the currency symbol and the separator chars.
     return (forceSign && amount >= 0 ? '+' : '')
-      + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      + amount.toLocaleString('en-US', {
+        minimumFractionDigits: decimalDigits,
+        maximumFractionDigits: decimalDigits,
+      })
       + NBSP + this.getSymbol(currencyCode);
   }
 }

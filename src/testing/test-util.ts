@@ -1,5 +1,5 @@
 import * as moment from "moment";
-import { momentToTimestamp, numberToMoney, timestampNow } from "src/app/core/proto-util";
+import { momentToProtoDate, momentToTimestamp, numberToMoney, timestampNow } from "src/app/core/proto-util";
 import { BillingInfo, BillingType, Date as ProtoDate, IBillingInfo, IDate, Transaction, TransactionData } from "src/proto/model";
 
 /** Helper to create a basic single transaction. */
@@ -10,6 +10,7 @@ export function makeTx(dateStr: string, amount: number, labels: string[] = [], b
     single: new TransactionData({
       accountId: 1,
       date: momentToTimestamp(moment(dateStr)),
+      realDate: momentToProtoDate(moment(dateStr)),
       amount: numberToMoney(amount),
       created: timestampNow(),
     })

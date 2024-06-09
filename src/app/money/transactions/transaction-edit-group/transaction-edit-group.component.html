@@ -9,6 +9,7 @@
     <div fxLayout="column" class="children-container">
       <div *ngFor="let child of groupData.children; let i = index" class="data-row">
         <div class="cell-date">
+          <!-- TODO: use realDate here -->
           <span [matTooltip]="childrenDates[i] | date:'EEEE, yyyy-MM-dd, HH:mm z'">
             {{childrenDates[i] | date}}
           </span>

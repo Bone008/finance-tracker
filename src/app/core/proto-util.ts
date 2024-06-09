@@ -74,12 +74,35 @@ export function compareTimestamps(a: google.protobuf.Timestamp | null | undefine
   return a.nanos - b.nanos;
 }
 
+/** Converts a proto Timestamp to a ProtoDate using local time. */
+export function timestampToProtoDate(timestamp: google.protobuf.Timestamp): ProtoDate;
+/** Converts a proto Timestamp to a ProtoDate using local time. */
+export function timestampToProtoDate(timestamp: google.protobuf.Timestamp | null | undefined): ProtoDate | null | undefined;
+export function timestampToProtoDate(timestamp: google.protobuf.Timestamp | null | undefined): ProtoDate | null | undefined {
+  if (!timestamp) return timestamp;
+  return dateToProtoDate(timestampToDate(timestamp));
+}
+
+/** Converts a JS Date to a ProtoDate using local time. */
+export function dateToProtoDate(d: Date): ProtoDate {
+  return new ProtoDate({
+    year: d.getFullYear(),
+    month: d.getMonth() + 1,
+    day: d.getDate(),
+  });
+}
+
 export function momentToProtoDate(m: moment.Moment): ProtoDate {
   return new ProtoDate({
     year: m.year(),
     month: m.month() + 1,
     day: m.date(),
   });
+}
+
+export function protoDateToDate(date: ProtoDate | null | undefined): Date {
+  if (!date) return new Date(0);
+  return new Date(date.year, date.month - 1, date.day);
 }
 
 export function protoDateToMoment(date: ProtoDate | null | undefined): moment.Moment {
