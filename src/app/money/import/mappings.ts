@@ -17,6 +17,7 @@ const ALL_FILE_FORMATS_INTERNAL = [
   'generic_en',
   'vimpay',
   'paypal',
+  'revolut'
 ] as const;
 
 export const ALL_FILE_FORMATS: readonly string[] = ALL_FILE_FORMATS_INTERNAL;
@@ -188,6 +189,11 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("who", "Name")
     .addMapping("bookingText", "Zugehöriger Transaktionscode")
     .build(),
+
+  'revolut': new FormatMappingBuilder<RevolutRow>()
+    .addMapping("date", "Started Date", parseDate)
+    .addMapping("reason", "Description")
+    .addMapping("amount", "Amount")
 };
 
 function parseDate(rawValue: string): google.protobuf.Timestamp {
@@ -418,6 +424,19 @@ interface PaypalRow {
   "Umsatzsteuer": string;
   "Rechnungsnummer": string;
   "Zugehöriger Transaktionscode": string;
+}
+
+interface RevolutRow {
+  "Type":string;
+  "Product": string;
+  "Started Date": string;
+  "Completed Date": string;
+  "Description": string;
+  "Amount": string;
+  "Fee": string;
+  "Currency": string;
+  "State": string;
+  "Balance": string;
 }
 
 
