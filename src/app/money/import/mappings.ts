@@ -17,7 +17,7 @@ const ALL_FILE_FORMATS_INTERNAL = [
   'generic_en',
   'vimpay',
   'paypal',
-  'revolut'
+  'revolut',
 ] as const;
 
 export const ALL_FILE_FORMATS: readonly string[] = ALL_FILE_FORMATS_INTERNAL;
