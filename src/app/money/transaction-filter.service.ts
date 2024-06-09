@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import * as moment from 'moment';
 import { BillingType, ITransactionData, Transaction, TransactionData } from "../../proto/model";
 import { moneyToNumber, protoDateToMoment, timestampToMoment } from '../core/proto-util';
-import { escapeQuotedString, filterFuzzyOptions, splitQuotedString } from "../core/util";
+import { escapeQuotedString, escapeRegex, filterFuzzyOptions, splitQuotedString } from "../core/util";
 import { BillingService } from "./billing.service";
 import { CurrencyService } from "./currency.service";
 import { DataService } from "./data.service";
@@ -147,8 +147,16 @@ export class TransactionFilterService {
     // Suggest account names.
     else if (lastToken.startsWith('account:') || lastToken.startsWith('account=')) {
       continuationPrefix += lastToken.substr(0, 8);
+      const isRegex = lastToken.startsWith('account:');
       const accountNames = this.dataService.getCurrentAccountList()
-        .map(account => escapeQuotedString(account.name.toLowerCase()));
+        .map(account => {
+          let name = account.name.toLowerCase();
+          if (isRegex) {
+            name = escapeRegex(name);
+          }
+          name = escapeQuotedString(name);
+          return name;
+        });
       return filterFuzzyOptions(accountNames.sort(), lastToken.substr(8), true)
         .map(keyword => continuationPrefix + keyword + ' ');
     }
