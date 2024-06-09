@@ -16,7 +16,8 @@ const ALL_FILE_FORMATS_INTERNAL = [
   'wise',
   'generic_en',
   'vimpay',
-  'paypal',
+  'paypal_de',
+  'paypal_en',
   'revolut',
 ] as const;
 
@@ -173,7 +174,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("whoIdentifier", "Who Identifier")
     .addMapping("bookingText", "Booking Text")
     .build(),
-  
+
   'vimpay': new FormatMappingBuilder<VimPayRow>()
     .addMapping("date", "Date", parseDate)
     .addMapping("reason", "Reference")
@@ -181,19 +182,32 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("who", "Remitter / Recipient")
     .addMapping("whoIdentifier", "IBAN of the remitter / recipient")
     .build(),
-  
-  'paypal': new FormatMappingBuilder<PaypalRow>()
+
+  'paypal_en': new FormatMappingBuilder<PaypalEnglishRow>()
+    .addMapping("date", "Date", parseDate)
+    .addMapping("reason", "Description")
+    .addMapping("amount", "Gross", parseAmount)
+    .addRawMapping("who", ["Name"], row => row["Name"] || row["Bank Name"])
+    .addMapping("whoIdentifier", "From Email Address")
+    .addMapping("bookingText", "Reference Txn ID")
+    .build(),
+
+  'paypal_de': new FormatMappingBuilder<PaypalGermanRow>()
     .addMapping("date", "Datum", parseDate)
     .addMapping("reason", "Beschreibung")
     .addMapping("amount", "Brutto", parseAmount)
-    .addMapping("who", "Name")
+    .addRawMapping("who", ["Name"], row => row["Name"] || row["Name der Bank"])
+    .addMapping("whoIdentifier", "Absender E-Mail-Adresse")
     .addMapping("bookingText", "Zugehöriger Transaktionscode")
     .build(),
 
   'revolut': new FormatMappingBuilder<RevolutRow>()
-    .addMapping("date", "Started Date", parseDate)
+    // Convert date from full ISO 8601 to just the date part.
+    .addMapping("date", "Started Date", rawValue => parseDate(rawValue.split(' ')[0]))
     .addMapping("reason", "Description")
     .addMapping("amount", "Amount")
+    .addMapping("bookingText", "Type")
+    .build()
 };
 
 function parseDate(rawValue: string): google.protobuf.Timestamp {
@@ -405,7 +419,28 @@ interface VimPayRow {
   "Currency": string;
 }
 
-interface PaypalRow {
+interface PaypalEnglishRow {
+  "Date": string;
+  "Time": string;
+  "Time Zone": string;
+  "Description": string;
+  "Currency": string;
+  "Gross": string;
+  "Fee": string;
+  "Net": string;
+  "Balance": string;
+  "Transaction ID": string;
+  "From Email Address": string;
+  "Name": string;
+  "Bank Name": string;
+  "Bank Account": string;
+  "Shipping and Handling Amount": string;
+  "Sales Tax": string;
+  "Invoice ID": string;
+  "Reference Txn ID": string;
+}
+
+interface PaypalGermanRow {
   "Datum": string;
   "Uhrzeit": string;
   "Zeitzone": string;
@@ -427,7 +462,7 @@ interface PaypalRow {
 }
 
 interface RevolutRow {
-  "Type":string;
+  "Type": string;
   "Product": string;
   "Started Date": string;
   "Completed Date": string;
