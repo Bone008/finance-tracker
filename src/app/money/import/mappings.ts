@@ -15,6 +15,9 @@ const ALL_FILE_FORMATS_INTERNAL = [
   'n26',
   'wise',
   'generic_en',
+  'vimpay',
+  'paypal',
+  'revolut',
 ] as const;
 
 export const ALL_FILE_FORMATS: readonly string[] = ALL_FILE_FORMATS_INTERNAL;
@@ -170,6 +173,27 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("whoIdentifier", "Who Identifier")
     .addMapping("bookingText", "Booking Text")
     .build(),
+  
+  'vimpay': new FormatMappingBuilder<VimPayRow>()
+    .addMapping("date", "Date", parseDate)
+    .addMapping("reason", "Reference")
+    .addMapping("amount", "Amount", row => parseAmount(row, ",", "."))
+    .addMapping("who", "Remitter / Recipient")
+    .addMapping("whoIdentifier", "IBAN of the remitter / recipient")
+    .build(),
+  
+  'paypal': new FormatMappingBuilder<PaypalRow>()
+    .addMapping("date", "Datum", parseDate)
+    .addMapping("reason", "Beschreibung")
+    .addMapping("amount", "Brutto", parseAmount)
+    .addMapping("who", "Name")
+    .addMapping("bookingText", "Zugehöriger Transaktionscode")
+    .build(),
+
+  'revolut': new FormatMappingBuilder<RevolutRow>()
+    .addMapping("date", "Started Date", parseDate)
+    .addMapping("reason", "Description")
+    .addMapping("amount", "Amount")
 };
 
 function parseDate(rawValue: string): google.protobuf.Timestamp {
@@ -369,3 +393,50 @@ interface GenericEngRow {
   "Who Identifier": string;
   "Booking Text": string;
 }
+
+interface VimPayRow {
+  "Date": string;
+  "Account holder": string;
+  "IBAN of the account holder": string;
+  "Reference": string;
+  "Remitter / Recipient": string;
+  "IBAN of the remitter / recipient": string;
+  "Amount": string;
+  "Currency": string;
+}
+
+interface PaypalRow {
+  "Datum": string;
+  "Uhrzeit": string;
+  "Zeitzone": string;
+  "Beschreibung": string;
+  "Währung": string;
+  "Brutto": string;
+  "Entgelt": string;
+  "Netto": string;
+  "Guthaben": string;
+  "Transaktionscode": string;
+  "Absender E-Mail-Adresse": string;
+  "Name": string;
+  "Name der Bank": string;
+  "Bankkonto": string;
+  "Versand- und Bearbeitungsgebühr": string;
+  "Umsatzsteuer": string;
+  "Rechnungsnummer": string;
+  "Zugehöriger Transaktionscode": string;
+}
+
+interface RevolutRow {
+  "Type":string;
+  "Product": string;
+  "Started Date": string;
+  "Completed Date": string;
+  "Description": string;
+  "Amount": string;
+  "Fee": string;
+  "Currency": string;
+  "State": string;
+  "Balance": string;
+}
+
+
