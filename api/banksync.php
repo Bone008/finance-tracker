@@ -2,7 +2,7 @@
 const PYTHON_EXECUTABLE = 'python3';
 const PYTHON_SCRIPT_DIR = __DIR__ . '/banksync';
 const PYTHON_SCRIPT_SPARKASSE = PYTHON_SCRIPT_DIR . '/sparkasse.py';
-const PYTHON_SCRIPT_DKB = PYTHON_SCRIPT_DIR . '/dkb.py';
+const PYTHON_SCRIPT_DKB = PYTHON_SCRIPT_DIR . '/dkb_via_api.py';
 
 const EMPTY_RESULT_PLACEHOLDER = '<EMPTY_RESULT_SET>';
 
@@ -80,7 +80,7 @@ function run_sparkasse($bankUrl, $loginName, $loginPassword, $fromStr, $toStr, $
 }
 
 // Assumes valid input, runs on multiple accounts.
-function run_dkb($unusedBankUrl, $loginName, $loginPassword, $fromStr, $toStr, $accountIndices, $verbose) {
+function run_dkb($unusedBankUrl, $loginName, $loginPassword, $fromStrIso, $accountIndices, $verbose) {
   if (count($accountIndices) > 1) {
     return [
       'error' => 'Importing multiple accounts is not supported yet for DKB! ' . 
@@ -91,23 +91,18 @@ function run_dkb($unusedBankUrl, $loginName, $loginPassword, $fromStr, $toStr, $
   $scriptArgs = [
     PYTHON_EXECUTABLE,
     escapeshellarg(PYTHON_SCRIPT_DKB),
-    $verbose ? '--debug' : '',
-    '--userid', escapeshellarg($loginName),
-    'download-transactions',
-    '--csv',
+    $verbose ? '--verbose' : '',
+    '--username', escapeshellarg($loginName),
+    '--from-date', escapeshellarg($fromStrIso),
   ];
 
   $tempFiles = [];
   foreach ($accountIndices as $accountIndex) {
     $tmp = make_tempfile();
     $tempFiles[] = $tmp;
+    // Append 1 pair of index + output file per account. Untested for >1.
     $scriptArgs = array_merge($scriptArgs, [
-      // TODO: The index is not the correct value for "cardid". Should probably
-      // change the Phython script to work on indices instead of ids to support
-      // multiple accounts.
-      '--cardid', escapeshellarg($accountIndex),
-      '--from-date', escapeshellarg($fromStr),
-      '--to-date', escapeshellarg($toStr),
+      '--account-index', escapeshellarg($accountIndex),
       '--output', escapeshellarg($tmp),
     ]);
   }
@@ -196,6 +191,7 @@ Flight::route('POST /banksync', function() {
   
   $toStr = $toDate->format('d.m.Y');
   $fromStr = $fromDate->format('d.m.Y');
+  $fromStrIso = $fromDate->format('Y-m-d');
 
   // Note that the client assumes that $results ALWAYS has the same length as
   // $accountIndices and that entries correspond to the input accordingly!
@@ -215,7 +211,7 @@ Flight::route('POST /banksync', function() {
       break;
     
     case 'dkb':
-      $results = run_dkb($bankUrl, $loginName, $loginPassword, $fromStr, $toStr, $accountIndices, $verbose);
+      $results = run_dkb($bankUrl, $loginName, $loginPassword, $fromStrIso, $accountIndices, $verbose);
       if (isset($results['error'])) {
         Flight::json($results);
         return;

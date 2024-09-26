@@ -9,6 +9,7 @@ const ALL_FILE_FORMATS_INTERNAL = [
   'ksk_creditcard',
   'mlp',
   'dkb',
+  'dkb_custom',
   'ubs',
   'deutsche_bank',
   'ing',
@@ -87,6 +88,15 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("whoIdentifier", "Kontonummer")
     .addMapping("amount", "Betrag (EUR)", parseAmount)
     .addMapping("bookingText", "Buchungstext")
+    .build(),
+
+  'dkb_custom': new FormatMappingBuilder<DkbCustomRow>()
+    .addMapping("date", "valueDate", parseDate)
+    .addMapping("reason", "description")
+    .addMapping("who", "other.name")
+    .addMapping("whoIdentifier", "other.iban")
+    .addMapping("amount", "amount.value", row => parseAmount(row, ",", "."))
+    .addMapping("bookingText", "transactionType")
     .build(),
 
   'ubs': new FormatMappingBuilder<UbsRow>()
@@ -301,6 +311,19 @@ interface DkbRow {
   "Gläubiger-ID": string;
   "Mandatsreferenz": string;
   "Kundenreferenz": string;
+}
+
+interface DkbCustomRow {
+  "id": string;
+  "status": string;
+  "bookingDate": string;
+  "valueDate": string;
+  "amount.currencyCode": string;
+  "amount.value": string;
+  "description": string;
+  "other.name": string;
+  "other.iban": string;
+  "transactionType": string;
 }
 
 interface UbsRow {
