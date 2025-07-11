@@ -133,7 +133,7 @@ def wait_for_mfa_success(challenge_id: str) -> None:
         elif status == "processing":
             logger.info("MFA still pending ...")
             if attempts > MAX_DURATION / POLL_INTERVAL:
-              raise TimeoutError("MFA challenge took too many attempts!")
+                raise TimeoutError("MFA challenge took too many attempts!")
             time.sleep(POLL_INTERVAL)
         else:
             raise ValueError(f"Unexpected challenge status: {status}")
@@ -163,8 +163,11 @@ def login(username: str):
 
 
 def logout():
-    do_post("/revoke", data={"token": "no-token"})
-    logger.info("Logged out.")
+    try:
+        do_post("/revoke", data={"token": "no-token"})
+        logger.info("Logged out.")
+    except Exception:
+        logger.exception("Failed to log out, but ignoring error!")
 
 
 def load_transactions(account_index: int) -> list[dict]:
