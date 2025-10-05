@@ -44,6 +44,7 @@ jobs:
         username: ${{ secrets.DEPLOY_SSH_USER }}
         server: ${{ secrets.DEPLOY_SSH_HOST }}
         port: 22
+        ssh_private_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+        sftp_only: true
         local_path: './dist/*'
         remote_path: ${{ secrets.DEPLOY_TARGET_DIR }}
-        sftp_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
