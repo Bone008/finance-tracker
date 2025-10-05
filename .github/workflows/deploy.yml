@@ -7,7 +7,7 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: 'deploy-production'
+  group: "deploy-production"
   cancel-in-progress: true
 
 jobs:
@@ -16,34 +16,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
 
-    - name: Install dependencies
-      run: npm ci --legacy-peer-deps
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
 
-    - name: Compile protocol buffers
-      run: npm run protoc
+      - name: Compile protocol buffers
+        run: npm run protoc
 
-    - name: Build Angular app
-      run: npm run build -- --prod
-      env:
-        # Needed for the more recent node version to work with old Angular version,
-        # otherwise it raises "digital envelope routines::unsupported".
-        NODE_OPTIONS: --openssl-legacy-provider
+      - name: Build Angular app
+        run: npm run build -- --prod
+        env:
+          # Needed for the more recent node version to work with old Angular version,
+          # otherwise it raises "digital envelope routines::unsupported".
+          NODE_OPTIONS: --openssl-legacy-provider
 
-    - name: Upload build artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist
-        path: dist/
-        # Make sure .htaccess does not get lost!
-        include-hidden-files: true
+      - name: Merge with static files from backend
+        run: |
+          shopt -s dotglob nullglob
+          mkdir deploy/
+          cp -r api/* deploy/
+          cp -r dist/finance-tracker/* deploy/public/
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy
+          path: deploy/
+          # Make sure .htaccess does not get lost!
+          include-hidden-files: true
 
   deploy:
     name: Deploy to server
@@ -51,20 +58,20 @@ jobs:
     needs: build
 
     steps:
-    - name: Download build artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: dist
-        path: dist
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy
+          path: deploy
 
-    - name: Deploy to server
-      uses: wlixcc/SFTP-Deploy-Action@a5ccb9c6211a94cc59404f0fdb2a9936a6dfee64
-      with:
-        username: ${{ secrets.DEPLOY_SSH_USER }}
-        server: ${{ secrets.DEPLOY_SSH_HOST }}
-        port: 22
-        ssh_private_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
-        sftp_only: true
-        # Important: Do not use * at the end since that excludes hidden files.
-        local_path: 'dist/finance-tracker/.'
-        remote_path: ${{ secrets.DEPLOY_TARGET_DIR }}
+      - name: Deploy to server
+        uses: wlixcc/SFTP-Deploy-Action@a5ccb9c6211a94cc59404f0fdb2a9936a6dfee64
+        with:
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          server: ${{ secrets.DEPLOY_SSH_HOST }}
+          port: 22
+          ssh_private_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          sftp_only: true
+          # Important: Do not use * at the end since that excludes hidden files.
+          local_path: "deploy/."
+          remote_path: ${{ secrets.DEPLOY_TARGET_DIR }}

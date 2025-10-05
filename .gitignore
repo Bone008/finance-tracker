@@ -1,13 +1,17 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
+storage/*
+!storage/.gitkeep
+
 # local files containing credentials or other sensitive data
 *.local
 *.local.*
 
 # compiled output
-/dist
-/tmp
-/out-tsc
+deploy/
+dist/
+tmp/
+out-tsc/
 
 # compiled proto buffers
 **/proto/*.d.ts
