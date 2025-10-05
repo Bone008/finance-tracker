@@ -6,6 +6,10 @@ on:
       - master
   workflow_dispatch: {}
 
+concurrency:
+  group: 'deploy-production'
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build and upload artifact
@@ -59,5 +63,5 @@ jobs:
         port: 22
         ssh_private_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
         sftp_only: true
-        local_path: './dist/*'
+        local_path: './dist/finance-tracker/*'
         remote_path: ${{ secrets.DEPLOY_TARGET_DIR }}
