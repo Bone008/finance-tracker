@@ -65,5 +65,6 @@ jobs:
         port: 22
         ssh_private_key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
         sftp_only: true
-        local_path: './dist/finance-tracker/*'
+        # Important: Do not use * at the end since that excludes hidden files.
+        local_path: 'dist/finance-tracker/.'
         remote_path: ${{ secrets.DEPLOY_TARGET_DIR }}
