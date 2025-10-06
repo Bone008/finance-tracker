@@ -1,5 +1,7 @@
 <?php
-define('STORAGE_DIR', __DIR__ . '/../storage/');
+if (!defined('STORAGE_DIR')) {
+  define('STORAGE_DIR', __DIR__ . '/storage/');
+}
 define('HASH_ALGORITHM', 'sha256');
 
 function getFileFromId($id) {
