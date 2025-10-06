@@ -21,18 +21,23 @@ Beware that there does not exist any proper user documentation yet, but if you a
 
 Run `npm start` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
 
-### API backend server
-
-Upload the files under `api/` to a PHP-capable Web server. `api/public/` should be the root directory that is served to clients.
-
-Databases sent by clients will be stored at `api/storage/`.
-
 ### Build
 
 Run `npm run build` to build the project. The build artifacts will be stored in the `dist/` directory. Use `npm run build -- --prod` for a production build.
 
-To run without any path adjustments, deploy the build package to the same server as the API backend.
+## Deployment
 
-### Further help
+Deployment to `money.bonauer.me` is performed automatically by CI.
+
+To set up your own deployment, consider the following tips:
+
+- Deploy the entire `api/` folder to a PHP-capable Web server.
+- Place the frontend build artifacts from `dist/finance-tracker/` into `api/public/`.
+- Ensure that `api/public/` is the document root of the Web server.
+- When using Apache, make sure `.htaccess` files get deployed and respected.
+  Otherwise, replicate the routing rules declared in those files.
+- Database files sent by clients will be stored in a folder specified by the environment variable `FT_STORAGE_DIR`.
+
+## Further help
 
 To get more help on the Angular CLI, check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
