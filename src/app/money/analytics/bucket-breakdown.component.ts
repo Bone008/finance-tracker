@@ -38,6 +38,10 @@ export class BucketBreakdownComponent implements AfterViewInit, OnChanges {
   get showLabels() { return this._showLabels; }
   set showLabels(value: boolean) { this._showLabels = value; this.analyzeBreakdown(); }
 
+  private _chartType: 'line' | 'bar' = 'bar';
+  get chartType() { return this._chartType; }
+  set chartType(value: 'line' | 'bar') { this._chartType = value; this.analyzeBreakdown(); }
+
   // For chart view.
   chartDataCombined: ChartData = {};
   chartDataExpenses: ChartData = {};
@@ -93,26 +97,31 @@ export class BucketBreakdownComponent implements AfterViewInit, OnChanges {
             datasets.push({
               data,
               label: type + ' ' + label,
-              backgroundColor: this.analysisResult.labelGroupColorsByName[label],
+              ...(this.chartType === 'line'
+                ? { borderColor: this.analysisResult.labelGroupColorsByName[label], fill: false }
+                : { backgroundColor: this.analysisResult.labelGroupColorsByName[label], fill: true }),
               stack: type,
             });
           }
         }
       }
-    }
-    else {
+    } else {
       if (this.analysisResult.buckets.some(b => b.totalExpenses !== 0))
         datasetsExpenses.push({
           data: this.analysisResult.buckets.map(b => -b.totalExpenses),
           label: 'Expenses',
-          backgroundColor: 'red',
+          ...(this.chartType === 'line'
+            ? { borderColor: 'red', fill: false }
+            : { backgroundColor: 'red', fill: true }),
           stack: 'Expenses',
         });
       if (this.analysisResult.buckets.some(b => b.totalIncome !== 0))
         datasetsIncome.push({
           data: this.analysisResult.buckets.map(b => b.totalIncome),
           label: 'Income',
-          backgroundColor: 'blue',
+          ...(this.chartType === 'line'
+            ? { borderColor: 'blue', fill: false }
+            : { backgroundColor: 'blue', fill: true }),
           stack: 'Income',
         });
     }
@@ -174,6 +183,15 @@ export class BucketBreakdownComponent implements AfterViewInit, OnChanges {
           data.datasets![items[0].datasetIndex!].stack + ' total: ' + this.currencySerivce.format(sum, this.dataService.getMainCurrency()),
           '',
         ];
+      },
+      labelColor: (item, chart) => {
+        const dataset = chart.data.datasets![item.datasetIndex!];
+        return {
+          // Remap either borderColor or backgroundColor to the backgroundColor
+          // of the tooltip item.
+          backgroundColor: (dataset.borderColor || dataset.backgroundColor) as string,
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+        };
       },
     };
   }

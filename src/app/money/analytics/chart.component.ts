@@ -91,7 +91,7 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
         maintainAspectRatio: false,
         legend: { position: 'top', display: this.showLegend },
         tooltips: {
-          mode: this.type === 'bar' ? 'x' : 'index',
+          mode: this.getInteractionMode(),
           callbacks: Object.assign({}, defaultTooltipCallbacks, this.tooltipCallbacks),
           filter: (item, data) => {
             // Hide rows with values of 0.
@@ -116,6 +116,18 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
         } : {},
       },
     });
+  }
+
+  private getInteractionMode(): Chart.InteractionMode {
+    switch (this.type) {
+      case 'bar':
+      case 'horizontalBar':
+        return 'x';
+      case 'line':
+        return 'x-axis';
+      default:
+        return 'index';
+    }
   }
 
   ngOnChanges(changes: SimpleChanges) {

@@ -10,8 +10,17 @@
     <mat-checkbox
         (change)="showLabels = $event.checked"
         [checked]="showLabels">
-      Show label colors
+      By label
     </mat-checkbox>
+
+    <mat-button-toggle-group [(value)]="chartType" aria-label="Chart Type">
+      <mat-button-toggle value="line">
+        <mat-icon>show_chart</mat-icon> Line
+      </mat-button-toggle>
+      <mat-button-toggle value="bar">
+        <mat-icon>bar_chart</mat-icon> Bar
+      </mat-button-toggle>
+    </mat-button-toggle-group>
   </div>
 
   <div *ngIf="showCombined || (chartDataExpenses.datasets!.length === 0) !== (chartDataIncome.datasets!.length === 0); else separate">
@@ -21,7 +30,7 @@
       Fixed in a more recent version of chart.js: https://github.com/chartjs/Chart.js/issues/6895
     -->
     <app-chart
-        type="bar"
+        [type]="chartType"
         [showLegend]="!showLabels"
         [data]="chartDataCombined"
         [tooltipCallbacks]="chartTooltipCallback"
@@ -33,7 +42,7 @@
       <div fxFlex="50" fxLayout="column" [hidden]="chartDataExpenses.datasets!.length === 0 && chartDataIncome.datasets!.length > 0">
         <h3 fxFlexAlign="center" fxHide fxShow.lt-md>Expenses</h3>
         <app-chart
-            type="bar"
+            [type]="chartType"
             [showLegend]="false"
             [data]="chartDataExpenses"
             [tooltipCallbacks]="chartTooltipCallback"
@@ -43,7 +52,7 @@
       <div fxFlex="50" fxLayout="column" [hidden]="chartDataIncome.datasets!.length === 0 && chartDataExpenses.datasets!.length > 0">
         <h3 fxFlexAlign="center" fxHide fxShow.lt-md>Income</h3>
         <app-chart
-            type="bar"
+            [type]="chartType"
             [showLegend]="false"
             [data]="chartDataIncome"
             [tooltipCallbacks]="chartTooltipCallback"
