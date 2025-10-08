@@ -20,6 +20,7 @@ const ALL_FILE_FORMATS_INTERNAL = [
   'paypal_de',
   'paypal_en',
   'revolut',
+  'handelsbanken',
 ] as const;
 
 export const ALL_FILE_FORMATS: readonly string[] = ALL_FILE_FORMATS_INTERNAL;
@@ -217,6 +218,12 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .addMapping("reason", "Description")
     .addMapping("amount", "Amount")
     .addMapping("bookingText", "Type")
+    .build(),
+
+  'handelsbanken': new FormatMappingBuilder<HandelsbankenRow>()
+    .addMapping("date", "Transaktionsdatum", parseDate)
+    .addMapping("reason", "Text")
+    .addMapping("amount", "Belopp", row => parseAmount(row, ",", "."))
     .build()
 };
 
@@ -497,4 +504,11 @@ interface RevolutRow {
   "Balance": string;
 }
 
+interface HandelsbankenRow {
+  "Reskontradatum": string;
+  "Transaktionsdatum": string;
+  "Text": string;
+  "Belopp": string;
+  "Saldo": string;
+}
 
