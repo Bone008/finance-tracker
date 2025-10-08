@@ -42,6 +42,11 @@ export class BucketBreakdownComponent implements AfterViewInit, OnChanges {
   get chartType() { return this._chartType; }
   set chartType(value: 'line' | 'bar') { this._chartType = value; this.analyzeBreakdown(); }
 
+  /** Integer, if >1, smoothes over multiple buckets with a moving average. */
+  private _smoothingFactor: number = 1;
+  get smoothingFactor() { return this._smoothingFactor; }
+  set smoothingFactor(value: number) { this._smoothingFactor = value; this.analyzeBreakdown(); }
+
   // For chart view.
   chartDataCombined: ChartData = {};
   chartDataExpenses: ChartData = {};
@@ -81,6 +86,17 @@ export class BucketBreakdownComponent implements AfterViewInit, OnChanges {
     const datasetsExpenses: ChartDataSets[] = [];
     const datasetsIncome: ChartDataSets[] = [];
 
+    const smoothData = (data: number[]): number[] => {
+      if (this.smoothingFactor <= 1) return data;
+      const smoothed: number[] = [];
+      for (let i = 0; i < data.length; i++) {
+        const start = Math.max(0, i - this.smoothingFactor + 1);
+        const subset = data.slice(start, i + 1);
+        smoothed.push(subset.reduce((a, b) => a + b, 0) / subset.length);
+      }
+      return smoothed;
+    };
+
     if (this.showLabels) {
       const props = [
         { type: 'Expenses', summedProp: 'summedTotalExpensesByLabel', bucketProp: 'totalExpensesByLabel', multiplier: -1, datasets: datasetsExpenses },
@@ -93,9 +109,10 @@ export class BucketBreakdownComponent implements AfterViewInit, OnChanges {
         ], ['asc', 'desc']);
         for (const label of sortedLabels) {
           const data = this.analysisResult.buckets.map(b => multiplier * (b[bucketProp].get(label) || 0));
-          if (data.some(v => v !== 0)) {
+          const smoothedData = smoothData(data);
+          if (smoothedData.some(v => v !== 0)) {
             datasets.push({
-              data,
+              data: smoothedData,
               label: type + ' ' + label,
               ...(this.chartType === 'line'
                 ? { borderColor: this.analysisResult.labelGroupColorsByName[label], fill: false }
@@ -108,7 +125,7 @@ export class BucketBreakdownComponent implements AfterViewInit, OnChanges {
     } else {
       if (this.analysisResult.buckets.some(b => b.totalExpenses !== 0))
         datasetsExpenses.push({
-          data: this.analysisResult.buckets.map(b => -b.totalExpenses),
+          data: smoothData(this.analysisResult.buckets.map(b => -b.totalExpenses)),
           label: 'Expenses',
           ...(this.chartType === 'line'
             ? { borderColor: 'red', fill: false }
@@ -117,7 +134,7 @@ export class BucketBreakdownComponent implements AfterViewInit, OnChanges {
         });
       if (this.analysisResult.buckets.some(b => b.totalIncome !== 0))
         datasetsIncome.push({
-          data: this.analysisResult.buckets.map(b => b.totalIncome),
+          data: smoothData(this.analysisResult.buckets.map(b => b.totalIncome)),
           label: 'Income',
           ...(this.chartType === 'line'
             ? { borderColor: 'blue', fill: false }

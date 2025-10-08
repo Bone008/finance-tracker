@@ -21,6 +21,12 @@
         <mat-icon>bar_chart</mat-icon> Bar
       </mat-button-toggle>
     </mat-button-toggle-group>
+  
+
+    <mat-form-field appearance="fill" fxFlex="100px" style="height: 55px;">
+      <mat-label>Smoothing</mat-label>
+      <input matInput type="number" min="1" [(ngModel)]="smoothingFactor" />
+    </mat-form-field>
   </div>
 
   <div *ngIf="showCombined || (chartDataExpenses.datasets!.length === 0) !== (chartDataIncome.datasets!.length === 0); else separate">

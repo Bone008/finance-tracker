@@ -84,6 +84,7 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
     };
 
     const canvas = this.chartCanvas.nativeElement as HTMLCanvasElement;
+    const [interactionMode, interactionIntersect] = this.getInteractionMode();
     this.chart = new Chart(canvas, {
       type: this.type,
       data: this.internalChartData,
@@ -91,7 +92,8 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
         maintainAspectRatio: false,
         legend: { position: 'top', display: this.showLegend },
         tooltips: {
-          mode: this.getInteractionMode(),
+          mode: interactionMode,
+          intersect: interactionIntersect,
           callbacks: Object.assign({}, defaultTooltipCallbacks, this.tooltipCallbacks),
           filter: (item, data) => {
             // Hide rows with values of 0.
@@ -118,15 +120,15 @@ export class ChartComponent implements OnInit, OnDestroy, AfterViewInit, OnChang
     });
   }
 
-  private getInteractionMode(): Chart.InteractionMode {
+  private getInteractionMode(): [Chart.InteractionMode, boolean] {
     switch (this.type) {
       case 'bar':
       case 'horizontalBar':
-        return 'x';
+        return ['x', true];
       case 'line':
-        return 'x-axis';
+        return ['nearest', false];
       default:
-        return 'index';
+        return ['index', true];
     }
   }
 
