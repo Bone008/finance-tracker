@@ -215,7 +215,7 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     // Convert date from full ISO 8601 to just the date part.
     .addMapping("date", "Started Date", rawValue => parseDate(rawValue.split(' ')[0]))
     .addMapping("reason", "Description")
-    .addMapping("amount", "Amount")
+    .addMapping("amount", "Amount", row => parseAmount(row, ",", "."))
     .addMapping("bookingText", "Type")
     .build()
 };
