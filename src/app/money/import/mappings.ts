@@ -82,13 +82,15 @@ export const MAPPINGS_BY_FORMAT: { [K in ImportFileFormat]: FormatMapping } = {
     .build(),
 
   'dkb': new FormatMappingBuilder<DkbRow>()
-    .skipUntilPattern(/^"Buchungstag";"Wertstellung";/m)
+    .skipUntilPattern(/^"Buchungsdatum";"Wertstellung";/m)
     .addMapping("date", "Wertstellung", parseDate)
     .addMapping("reason", "Verwendungszweck")
-    .addMapping("who", "Auftraggeber / Begünstigter")
-    .addMapping("whoIdentifier", "Kontonummer")
-    .addMapping("amount", "Betrag (EUR)", parseAmount)
-    .addMapping("bookingText", "Buchungstext")
+    .addRawMapping("who", ["Zahlungspflichtige*r", "Zahlungsempfänger*in", "Umsatztyp"], row => {
+      return row["Umsatztyp"] === "Eingang" ? row["Zahlungspflichtige*r"] : row["Zahlungsempfänger*in"];
+    })
+    .addMapping("whoIdentifier", "IBAN")
+    .addMapping("amount", "Betrag (€)", parseAmount)
+    .addMapping("bookingText", "Umsatztyp")
     .build(),
 
   'dkb_custom': new FormatMappingBuilder<DkbCustomRow>()
@@ -307,14 +309,15 @@ interface MlpRow {
 }
 
 interface DkbRow {
-  "Buchungstag": string;
+  "Buchungsdatum": string;
   "Wertstellung": string;
-  "Buchungstext": string;
-  "Auftraggeber / Begünstigter": string;
+  "Status": string;
+  "Zahlungspflichtige*r": string;
+  "Zahlungsempfänger*in": string;
   "Verwendungszweck": string;
-  "Kontonummer": string;
-  "BLZ": string;
-  "Betrag (EUR)": string;
+  "Umsatztyp": string;
+  "IBAN": string;
+  "Betrag (€)": string;
   "Gläubiger-ID": string;
   "Mandatsreferenz": string;
   "Kundenreferenz": string;
