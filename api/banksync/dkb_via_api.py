@@ -10,12 +10,31 @@ from dataclasses import dataclass
 from getpass import getpass
 
 import pandas as pd
-import requests
 
-BASE_URL = "https://banking.dkb.de/api"
+from dkb_captcha import DkbBrowser
 
 logger = logging.getLogger(__name__)
-session = requests.Session()
+
+# All API calls go through a real browser (DkbBrowser) via in-page fetch, so we
+# inherit DKB's MyraSecurity WAF clearance, TLS fingerprint, cookies and XSRF
+# token. The active browser session is stored here for do_get/do_post to use.
+browser: DkbBrowser | None = None
+
+
+def _parse(resp) -> object | str:
+    # Some endpoints (e.g. /revoke) reply 2xx with an empty body; don't try to
+    # JSON-decode that.
+    if resp.text and "json" in resp.content_type:
+        return resp.json()
+    return resp.text
+
+
+def do_get(url: str) -> object | str:
+    return _parse(browser.request("GET", url))
+
+
+def do_post(url: str, data: dict | None = None, json: dict | None = None) -> object | str:
+    return _parse(browser.request("POST", url, data=data, json_body=json))
 
 
 def get_password() -> str:
@@ -42,33 +61,6 @@ def flatten_dict(d: dict, parent_key: str = "", sep: str = ".") -> dict:
     return dict(items)
 
 
-def extract_response_data(resp: requests.Response) -> object | str:
-    logger.debug("Response: %d - %s", resp.status_code, resp.text[:100])
-    if not 200 <= resp.status_code < 300:
-        raise Exception(
-            f"Unsuccessful response code for {resp.request.url}: "
-            f"{resp.status_code} - {resp.text[:100]}"
-        )
-    if "json" in resp.headers.get("content-type", ""):
-        return resp.json()
-    else:
-        return resp.text
-
-
-def do_get(url: str, **kwargs) -> object | str:
-    resp = session.get(BASE_URL + url, **kwargs)
-    return extract_response_data(resp)
-
-
-def do_post(
-    url: str, data: dict | None = None, json: dict | None = None, **kwargs
-) -> object | str:
-    # important, the server chokes with default value of application/json lol
-    headers = {"Content-Type": "application/vnd.api+json"} if json is not None else None
-    resp = session.post(BASE_URL + url, data=data, json=json, headers=headers, **kwargs)
-    return extract_response_data(resp)
-
-
 @dataclass
 class PrepareLoginResult:
     access_token: str
@@ -76,15 +68,18 @@ class PrepareLoginResult:
     challenge_id: str
 
 
-def prepare_login(username: str, password: str) -> PrepareLoginResult:
+def prepare_login(
+    username: str, password: str, captcha_token: str
+) -> PrepareLoginResult:
+    # Initialise the server-side session. The browser stores the __Host-xsrf
+    # cookie; the in-page fetch transport sends it back as x-xsrf-token.
     do_get("/session")
-    xsrf = session.cookies.get("__Host-xsrf", None)
-    logger.debug(f"xsrf: {xsrf}")
-    session.headers.update({"x-xsrf-token": xsrf})
 
     token_data = do_post(
         "/token",
         data={
+            # Since 2025-11-01 DKB requires a Friendly Captcha token here.
+            "captcha_token": captcha_token,
             "grant_type": "banking_user_sca",
             "username": username,
             "password": password,
@@ -95,12 +90,23 @@ def prepare_login(username: str, password: str) -> PrepareLoginResult:
     logger.info("Login successful! Preparing MFA challenge ...")
 
     mfa_data = do_get(f"/mfa/mfa/{mfa_id}/methods?filter%5BmethodType%5D=seal_one")
+    # An account can have several enrolled devices. Pick the most recently
+    # enrolled one (the newest phone) rather than blindly the first.
+    method = max(
+        mfa_data["data"],
+        key=lambda m: m["attributes"].get("enrolledAt", ""),
+    )
+    logger.info(
+        "Using MFA device '%s' (enrolled %s)",
+        method["attributes"].get("deviceName", "?"),
+        method["attributes"].get("enrolledAt", "?"),
+    )
     challenges_data = do_post(
         "/mfa/mfa/challenges",
         json={
             "data": {
                 "attributes": {
-                    "methodId": mfa_data["data"][0]["id"],
+                    "methodId": method["id"],
                     "methodType": "seal_one",
                     "mfaId": mfa_id,
                 },
@@ -155,9 +161,9 @@ def complete_login(mfa_id: str, access_token: str):
     # do_post("/refresh", data={"grant_type": "refresh_token", "refresh_token": ""})
 
 
-def login(username: str):
-    password = get_password()
-    login_data = prepare_login(username, password)
+def login(username: str, password: str):
+    # The browser has already loaded the login page and solved the captcha.
+    login_data = prepare_login(username, password, browser.captcha_token)
     wait_for_mfa_success(login_data.challenge_id)
     complete_login(login_data.mfa_id, login_data.access_token)
 
@@ -263,21 +269,45 @@ def main():
         action="store_true",
         help="Enable verbose logging.",
     )
+    parser.add_argument(
+        "--captcha-xvfb",
+        action="store_true",
+        help="Run the browser inside a virtual framebuffer (xvfb). Recommended "
+        "on headless Linux servers; requires the 'xvfb' package.",
+    )
+    parser.add_argument(
+        "--captcha-headless",
+        action="store_true",
+        help="Run the browser in headless mode. Easier to set up but more "
+        "likely to be detected as a bot than --captcha-xvfb.",
+    )
 
     args = parser.parse_args()
     if len(args.account_index) != len(args.output):
         parser.error("Number of account indices and output files must match.")
 
-    logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
-        format="[%(levelname)s] %(message)s",
-    )
+    # Keep the root logger (and thus the chatty browser-automation stack: CDP
+    # websocket frames etc.) at WARNING, and only raise verbosity for our own
+    # modules. This avoids having to enumerate every noisy third-party logger.
+    # Note: run as a script, this module's logger is named "__main__".
+    logging.basicConfig(level=logging.WARNING, format="[%(levelname)s] %(message)s")
+    app_level = logging.DEBUG if args.verbose else logging.INFO
+    logger.setLevel(app_level)
+    logging.getLogger("dkb_captcha").setLevel(app_level)
 
-    login(args.username)
-    for account_index, output_file in zip(args.account_index, args.output):
-        transactions = load_transactions(int(account_index))
-        export_transactions(transactions, output_file, args.from_date)
-    logout()
+    global browser
+    password = get_password()
+    # The browser stays open for the whole session: every API call is issued as
+    # an in-page fetch so it inherits the browser's WAF clearance and TLS
+    # fingerprint. Entering the context also solves the login captcha.
+    with DkbBrowser(
+        headless=args.captcha_headless, xvfb=args.captcha_xvfb
+    ) as browser:
+        login(args.username, password)
+        for account_index, output_file in zip(args.account_index, args.output):
+            transactions = load_transactions(int(account_index))
+            export_transactions(transactions, output_file, args.from_date)
+        logout()
 
 
 if __name__ == "__main__":

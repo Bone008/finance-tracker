@@ -92,6 +92,9 @@ function run_dkb($unusedBankUrl, $loginName, $loginPassword, $fromStrIso, $accou
     PYTHON_EXECUTABLE,
     escapeshellarg(PYTHON_SCRIPT_DKB),
     $verbose ? '--verbose' : '',
+    // DKB's login requires solving a Friendly Captcha in a real browser.
+    // On a headless server, run it inside a virtual framebuffer (xvfb).
+    '--captcha-xvfb',
     '--username', escapeshellarg($loginName),
     '--from-date', escapeshellarg($fromStrIso),
   ];

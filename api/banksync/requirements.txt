@@ -8,3 +8,8 @@ mechanize
 
 # for DBK via API:
 pandas
+# Drives a real Chromium browser for the whole DKB session: solves the Friendly
+# Captcha DKB added to its login (since 2025-11-01) and issues all API calls as
+# in-page fetches to get past the MyraSecurity WAF. Requires a Chromium/Chrome
+# binary; on a headless Linux server also install the 'xvfb' system package.
+seleniumbase

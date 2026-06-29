@@ -49,3 +49,9 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Python
+**/__pycache__
+.venv/
+
+**/downloaded_files
