@@ -63,13 +63,24 @@ Restart the web server afterwards.
 
 ## 5. DKB only: browser + system packages
 
-`dkb_via_api.py` drives a real Chromium browser (via `seleniumbase`) to solve
-the Friendly Captcha DKB added to its login and to get its API calls past the
-WAF. On a server you therefore also need:
+`dkb_via_api.py` drives a real Chrome/Chromium browser (via `seleniumbase`) to
+solve the Friendly Captcha DKB added to its login and to get its API calls past
+the WAF. On a server you therefore also need a browser binary plus `xvfb`.
+
+> **Important: do not use the snap-packaged Chromium.** On Ubuntu (18.10+),
+> `apt install chromium-browser` installs a *snap*, which cannot run as a
+> service account like `www-data` (no user session / snap confinement). The
+> browser then never launches and the script fails after ~120s with
+> `session not created: cannot connect to chrome at 127.0.0.1:9222`.
+> Use a real `.deb` browser instead.
+
+The simplest reliable option is Google Chrome's official `.deb`:
 
 ```bash
-# Debian/Ubuntu example
-sudo apt install chromium xvfb        # a Chromium/Chrome binary + virtual framebuffer
+sudo snap remove chromium    # if the unusable snap is installed
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo apt install ./google-chrome-stable_current_amd64.deb   # -> /usr/bin/google-chrome
+sudo apt install xvfb                                       # virtual framebuffer
 ```
 
 `banksync.php` runs the script with `--captcha-xvfb`, which launches the browser
@@ -81,10 +92,7 @@ it in the running user's home directory. Make sure `www-data` has a writable
 home and cache:
 
 ```bash
-sudo mkdir -p /var/www/.local /var/www/.cache
-sudo chown www-data:www-data /var/www/.local /var/www/.cache
-# pre-fetch the driver so the first real sync doesn't have to (run as www-data):
-sudo -H -u www-data /path/to/your/venv/bin/sbase get chromedriver
+/path/to/your/venv/bin/sbase get chromedriver
 ```
 
 ## Verify

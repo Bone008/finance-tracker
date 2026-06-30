@@ -97,6 +97,8 @@ class DkbBrowser:
         self.sb = None
         self._workdir: str | None = None
         self._orig_cwd: str | None = None
+        self._orig_home: str | None = None
+        self._home_was_set: bool = False
 
     # -- lifecycle ---------------------------------------------------------
 
@@ -120,6 +122,15 @@ class DkbBrowser:
         self._workdir = tempfile.mkdtemp(prefix="dkb_banksync_")
         os.chdir(self._workdir)
 
+        # Chrome writes its profile, cache and NSS cert DB under $HOME on launch.
+        # The web server user (www-data) typically cannot create new dirs in its
+        # real home (e.g. /var/www is root-owned), so Chrome crashes before the
+        # remote-debugging port opens -> "chrome not reachable". Point HOME at our
+        # writable temp dir so all of Chrome's ~/.* writes succeed.
+        self._orig_home = os.environ.get("HOME")
+        self._home_was_set = "HOME" in os.environ
+        os.environ["HOME"] = self._workdir
+
         try:
             self._sb_cm = SB(uc=True, locale="de", headless=self.headless, xvfb=self.xvfb)
             self.sb = self._sb_cm.__enter__()
@@ -138,6 +149,10 @@ class DkbBrowser:
         finally:
             if self._orig_cwd:
                 os.chdir(self._orig_cwd)
+            if self._home_was_set:
+                os.environ["HOME"] = self._orig_home
+            else:
+                os.environ.pop("HOME", None)
             if self._workdir:
                 shutil.rmtree(self._workdir, ignore_errors=True)
 
