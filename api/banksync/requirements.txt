@@ -1,10 +1,7 @@
-# Required Python libraries to be installed using pip.
+# for sparkasse:
 requests
 lxml
 cssselect
-
-# for DKB:
-mechanize
 
 # for DBK via API:
 pandas
