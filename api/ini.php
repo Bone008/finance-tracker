@@ -6,3 +6,10 @@ $envStorage = getenv('FT_STORAGE_DIR');
 if ($envStorage && is_dir($envStorage)) {
   define('STORAGE_DIR', rtrim($envStorage, '/') . '/');
 }
+
+$pythonVenvDir = getenv('FT_PYTHON_VENV');
+if ($pythonVenvDir && is_dir($pythonVenvDir)) {
+  define('PYTHON_EXECUTABLE', rtrim($pythonVenvDir, '/') . '/bin/python');
+} else {
+  define('PYTHON_EXECUTABLE', 'python3');
+}

@@ -1,5 +1,5 @@
 <?php
-const PYTHON_EXECUTABLE = 'python3';
+// Note: PYTHON_EXECUTABLE is provided via `ini.php`.
 const PYTHON_SCRIPT_DIR = __DIR__ . '/banksync';
 const PYTHON_SCRIPT_SPARKASSE = PYTHON_SCRIPT_DIR . '/sparkasse.py';
 const PYTHON_SCRIPT_DKB = PYTHON_SCRIPT_DIR . '/dkb_via_api.py';

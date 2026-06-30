@@ -36,6 +36,7 @@ To set up your own deployment, consider the following tips:
 - Ensure that `api/public/` is the document root of the Web server.
 - When using Apache, make sure `.htaccess` files get deployed and respected.
   Otherwise, replicate the routing rules declared in those files.
+- For server-side bank sync, Python 3.12+ must be installed and a venv available and injected via `FT_PYTHON_VENV`.
 - Database files sent by clients will be stored in a folder specified by the environment variable `FT_STORAGE_DIR`.
 
 ## Further help
