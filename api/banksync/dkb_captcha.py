@@ -20,6 +20,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import shutil
+import tempfile
 import time
 from urllib.parse import urlencode
 
@@ -92,6 +95,8 @@ class DkbBrowser:
         self.captcha_token: str | None = None
         self._sb_cm = None
         self.sb = None
+        self._workdir: str | None = None
+        self._orig_cwd: str | None = None
 
     # -- lifecycle ---------------------------------------------------------
 
@@ -105,15 +110,36 @@ class DkbBrowser:
                 "binary is available."
             ) from exc
 
-        self._sb_cm = SB(uc=True, locale="de", headless=self.headless, xvfb=self.xvfb)
-        self.sb = self._sb_cm.__enter__()
-        self._open_and_solve_captcha()
+        # SeleniumBase creates scratch folders (downloaded_files/, latest_logs/)
+        # in the current working directory. That is the banksync folder, which
+        # is intentionally not writable by the web server user -- and we don't
+        # need browser downloads anyway. So run from a private temp directory.
+        # Imports are unaffected: Python resolves them via the script's own
+        # directory (sys.path[0]), not the CWD.
+        self._orig_cwd = os.getcwd()
+        self._workdir = tempfile.mkdtemp(prefix="dkb_banksync_")
+        os.chdir(self._workdir)
+
+        try:
+            self._sb_cm = SB(uc=True, locale="de", headless=self.headless, xvfb=self.xvfb)
+            self.sb = self._sb_cm.__enter__()
+            self._open_and_solve_captcha()
+        except BaseException:
+            # __exit__ is not called if __enter__ raises; clean up here.
+            self.__exit__(None, None, None)
+            raise
         return self
 
     def __exit__(self, *exc_info):
-        if self._sb_cm is not None:
-            return self._sb_cm.__exit__(*exc_info)
-        return False
+        try:
+            if self._sb_cm is not None:
+                return self._sb_cm.__exit__(*exc_info)
+            return False
+        finally:
+            if self._orig_cwd:
+                os.chdir(self._orig_cwd)
+            if self._workdir:
+                shutil.rmtree(self._workdir, ignore_errors=True)
 
     # -- captcha -----------------------------------------------------------
 

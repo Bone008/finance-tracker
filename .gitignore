@@ -53,5 +53,3 @@ Thumbs.db
 # Python
 **/__pycache__
 .venv/
-
-**/downloaded_files
