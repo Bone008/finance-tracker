@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 from __future__ import annotations
 
 import argparse
@@ -10,7 +9,6 @@ from dataclasses import dataclass
 from getpass import getpass
 
 import pandas as pd
-
 from dkb_captcha import DkbBrowser
 
 logger = logging.getLogger(__name__)
@@ -33,7 +31,9 @@ def do_get(url: str) -> object | str:
     return _parse(browser.request("GET", url))
 
 
-def do_post(url: str, data: dict | None = None, json: dict | None = None) -> object | str:
+def do_post(
+    url: str, data: dict | None = None, json: dict | None = None
+) -> object | str:
     return _parse(browser.request("POST", url, data=data, json_body=json))
 
 
@@ -281,13 +281,6 @@ def main():
         help="Run the browser in headless mode. Easier to set up but more "
         "likely to be detected as a bot than --captcha-xvfb.",
     )
-    parser.add_argument(
-        "--chrome-binary",
-        default=os.environ.get("FT_CHROME_BINARY"),
-        help="Path to the Chrome/Chromium binary (e.g. /usr/bin/google-chrome). "
-        "Defaults to the FT_CHROME_BINARY env var. Set this to avoid an "
-        "unusable snap-packaged Chromium, which cannot run as www-data.",
-    )
 
     args = parser.parse_args()
     if len(args.account_index) != len(args.output):
@@ -307,11 +300,7 @@ def main():
     # The browser stays open for the whole session: every API call is issued as
     # an in-page fetch so it inherits the browser's WAF clearance and TLS
     # fingerprint. Entering the context also solves the login captcha.
-    with DkbBrowser(
-        headless=args.captcha_headless,
-        xvfb=args.captcha_xvfb,
-        binary_location=args.chrome_binary,
-    ) as browser:
+    with DkbBrowser(headless=args.captcha_headless, xvfb=args.captcha_xvfb) as browser:
         login(args.username, password)
         for account_index, output_file in zip(args.account_index, args.output):
             transactions = load_transactions(int(account_index))
