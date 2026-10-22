@@ -1,0 +1,15 @@
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+.git
+.github
+dist
+deploy
+e2e
+src/proto/*.js
+src/proto/*.d.ts
+backend/.venv
+backend/storage
+backend/tests
+*.local
+*.local.*
