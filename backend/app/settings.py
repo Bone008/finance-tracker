@@ -7,7 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Configuration, read from environment variables prefixed with FT_."""
 
-    model_config = SettingsConfigDict(env_prefix="FT_")
+    # Empty variables count as unset, e.g. FT_FRONTEND_DIR= disables the frontend.
+    model_config = SettingsConfigDict(env_prefix="FT_", env_ignore_empty=True)
 
     # Folder in which the (usually encrypted) databases sent by clients are stored.
     storage_dir: Path = Path(__file__).parent.parent / "storage"
