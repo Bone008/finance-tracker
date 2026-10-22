@@ -14,14 +14,13 @@ RUN npm run protoc && npm run build -- --prod
 
 # --- Runtime: backend serving API and frontend --------------------------------
 FROM debian:bookworm-slim
-COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /usr/local/bin/uv
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # DKB bank sync drives a real browser inside a virtual framebuffer. Build with
-# --build-arg WITH_DKB=false for a much smaller image without DKB support.
+# --build-arg WITH_DKB=false for a smaller image without DKB support.
 ARG WITH_DKB=true
 RUN if [ "$WITH_DKB" = "true" ]; then \
       apt-get update \
@@ -40,11 +39,16 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_PREFERENCE=only-managed
 WORKDIR /app
 
-# Install dependencies first for better layer caching.
+# Install dependencies first for better layer caching. uv itself and its
+# download cache are only mounted during the build to keep them out of the image.
 COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
-RUN uv sync --locked --no-dev --no-install-project
+RUN --mount=from=ghcr.io/astral-sh/uv:0.12,source=/uv,target=/usr/local/bin/uv \
+    --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev --no-install-project
 COPY backend/ ./
-RUN uv sync --locked --no-dev
+RUN --mount=from=ghcr.io/astral-sh/uv:0.12,source=/uv,target=/usr/local/bin/uv \
+    --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev
 
 COPY --from=frontend /src/dist/finance-tracker/ /app/frontend/
 

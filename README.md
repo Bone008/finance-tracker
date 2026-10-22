@@ -44,7 +44,7 @@ How the container behaves:
 - `/api/` is handled by the backend (interactive docs at `/api/docs`). All other paths serve the frontend, falling back to `index.html` for client-side routes.
 - Client databases (and backups of every overwritten version) are stored in `/data`. Mount a volume there, otherwise they are lost with the container.
 - The process runs as the unprivileged user `app` (uid 1000). A bind-mounted `/data` must be writable by that uid.
-- The image includes Chromium and Xvfb for DKB bank sync, which runs the browser invisibly inside the container. Build with `--build-arg WITH_DKB=false` to leave them out, which halves the image size (~1 GB instead of ~2 GB); DKB sync then fails, while Sparkasse sync still works.
+- The image includes Chromium and Xvfb for DKB bank sync, which runs the browser invisibly inside the container. Build with `--build-arg WITH_DKB=false` to leave them out, which shrinks the image from ~1.3 GB to ~530 MB; DKB sync then fails, while Sparkasse sync still works.
 - Configuration works via the environment variables described in [`backend/README.md`](backend/README.md), e.g. `-e FT_DEBUG=true`. The image sets `FT_STORAGE_DIR=/data` and `FT_FRONTEND_DIR=/app/frontend`. To serve a different frontend build, mount it into the container and point `FT_FRONTEND_DIR` at it. To serve only the API, set `FT_FRONTEND_DIR=` (empty).
 
 ### Manual
