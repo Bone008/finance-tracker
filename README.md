@@ -14,7 +14,7 @@ Beware that there does not exist any proper user documentation yet, but if you a
 1. Clone the repository.
 2. Run `npm install --legacy-peer-deps` to update dependencies. The legacy flag is needed because this is built with quite an old version of Angular with some dependency conflicts.
 3. Run `npm run protoc` to compile the protocol buffer models. This step has to be repeated every time you change the proto definitions.
-4. To enable API calls made from the development server, copy `src/proxy.conf.global.json` to `src/proxy.conf.local.json` and adjust the config of your backend server.
+4. To enable API calls made from the development server, copy `src/proxy.conf.global.json` to `src/proxy.conf.local.json` and adjust the config of your backend server. To run the backend locally, see [`backend/README.md`](backend/README.md) and use `http://localhost:8000` as the target.
 5. When on Node.js version >=17, set the following env var for all node operations: `NODE_OPTIONS=--openssl-legacy-provider`
 
 ### Development server
@@ -31,12 +31,10 @@ Deployment to `money.bonauer.me` is performed automatically by CI.
 
 To set up your own deployment, consider the following tips:
 
-- Deploy the entire `api/` folder to a PHP-capable Web server.
-- Place the frontend build artifacts from `dist/finance-tracker/` into `api/public/`.
-- Ensure that `api/public/` is the document root of the Web server.
+- Deploy the `backend/` folder to your server and run it as a service, e.g. with `uv sync && uv run uvicorn app.main:app` (see [`backend/README.md`](backend/README.md)).
+- Serve the frontend build artifacts from `dist/finance-tracker/` with a Web server and reverse-proxy all requests under `/api/` to the backend.
 - When using Apache, make sure `.htaccess` files get deployed and respected.
   Otherwise, replicate the routing rules declared in those files.
-- For server-side bank sync, Python 3.12+ must be installed and a venv available and injected via `FT_PYTHON_VENV`.
 - Database files sent by clients will be stored in a folder specified by the environment variable `FT_STORAGE_DIR`.
 
 ## Further help

@@ -37,11 +37,11 @@ jobs:
           # otherwise it raises "digital envelope routines::unsupported".
           NODE_OPTIONS: --openssl-legacy-provider
 
-      - name: Merge with static files from backend
+      - name: Merge with backend
         run: |
           shopt -s dotglob nullglob
-          mkdir deploy/
-          cp -r api/* deploy/
+          mkdir -p deploy/public/
+          cp -r backend/* deploy/
           cp -r dist/finance-tracker/* deploy/public/
 
       - name: Upload build artifact
