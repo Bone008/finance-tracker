@@ -37,11 +37,11 @@ jobs:
           # otherwise it raises "digital envelope routines::unsupported".
           NODE_OPTIONS: --openssl-legacy-provider
 
-      - name: Merge with backend
+      # Only the frontend is deployed by CI. The backend is deployed separately.
+      - name: Prepare deployment folder
         run: |
           shopt -s dotglob nullglob
           mkdir -p deploy/public/
-          cp -r backend/* deploy/
           cp -r dist/finance-tracker/* deploy/public/
 
       - name: Upload build artifact
@@ -49,7 +49,6 @@ jobs:
         with:
           name: deploy
           path: deploy/
-          # Make sure dotfiles (e.g. backend/.python-version) do not get lost!
           include-hidden-files: true
 
   deploy:
