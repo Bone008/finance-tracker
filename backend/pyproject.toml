@@ -1,0 +1,33 @@
+[project]
+name = "finance-tracker-backend"
+version = "0.1.0"
+description = "Backend API of the finance tracker: encrypted database storage and server-side bank sync."
+requires-python = ">=3.12"
+dependencies = [
+    "cssselect>=1.6.0",
+    "fastapi>=0.159.1",
+    "lxml>=6.1.3",
+    "pandas>=3.0.6",
+    "pydantic-settings>=2.16.1",
+    "python-multipart>=0.0.32",
+    "requests>=2.34.2",
+    "seleniumbase>=4.56.3",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "banksync"]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.16.0",
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+# seleniumbase registers a pytest plugin which is not needed here.
+addopts = "-p no:seleniumbase"
