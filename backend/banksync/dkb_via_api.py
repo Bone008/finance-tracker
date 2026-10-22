@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import logging
 import os
 import sys
+import threading
 import time
 from dataclasses import dataclass
 from getpass import getpass
 
 import pandas as pd
-from dkb_captcha import DkbBrowser
+
+from banksync import BankSyncError
+from banksync.dkb_captcha import DkbBrowser
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +21,9 @@ logger = logging.getLogger(__name__)
 # inherit DKB's MyraSecurity WAF clearance, TLS fingerprint, cookies and XSRF
 # token. The active browser session is stored here for do_get/do_post to use.
 browser: DkbBrowser | None = None
+# Guards `browser`. DkbBrowser also changes process-wide state (CWD, $HOME), so
+# only one session may run at a time.
+_session_lock = threading.Lock()
 
 
 def _parse(resp) -> object | str:
@@ -139,10 +146,10 @@ def wait_for_mfa_success(challenge_id: str) -> None:
         elif status == "processing":
             logger.info("MFA still pending ...")
             if attempts > MAX_DURATION / POLL_INTERVAL:
-                raise TimeoutError("MFA challenge took too many attempts!")
+                raise BankSyncError("MFA challenge was not confirmed in time!")
             time.sleep(POLL_INTERVAL)
         else:
-            raise ValueError(f"Unexpected challenge status: {status}")
+            raise BankSyncError(f"Unexpected MFA challenge status: {status}")
 
 
 def complete_login(mfa_id: str, access_token: str):
@@ -187,7 +194,7 @@ def load_transactions(account_index: int) -> list[dict]:
     return transactions_data["data"]
 
 
-def export_transactions(transactions: list[dict], output_file: str, from_date: str):
+def transactions_to_csv(transactions: list[dict], from_date: datetime.date) -> str:
     df = pd.DataFrame(
         {"id": value["id"], **flatten_dict(value["attributes"])}
         for value in transactions
@@ -228,14 +235,45 @@ def export_transactions(transactions: list[dict], output_file: str, from_date: s
         ]
     ]
 
-    # Filter transactions by date.
+    # Filter transactions by date (valueDate is an ISO date string).
     df_export = df_filtered[
-        (df_filtered["status"] != "pending") & (df_filtered["valueDate"] >= from_date)
+        (df_filtered["status"] != "pending")
+        & (df_filtered["valueDate"] >= from_date.isoformat())
     ]
     logger.info(f"Found {len(df_export)} transactions since {from_date}.")
 
-    df_export.to_csv(output_file, index=False)
-    logger.info(f"Exported transactions to {output_file}")
+    return df_export.to_csv(index=False)
+
+
+def export_transactions(
+    username: str,
+    password: str,
+    from_date: datetime.date,
+    account_indices: list[int],
+    headless: bool = False,
+    xvfb: bool = False,
+) -> list[str]:
+    """Exports the transactions of the given accounts, one CSV string per account.
+
+    Blocks until the user confirms the login on their MFA device.
+    Raises BankSyncError on expected failures.
+    """
+    global browser
+    with _session_lock:
+        # The browser stays open for the whole session: every API call is
+        # issued as an in-page fetch so it inherits the browser's WAF clearance
+        # and TLS fingerprint. Entering the context also solves the captcha.
+        with DkbBrowser(headless=headless, xvfb=xvfb) as browser:
+            try:
+                login(username, password)
+                results = [
+                    transactions_to_csv(load_transactions(i), from_date)
+                    for i in account_indices
+                ]
+                logout()
+                return results
+            finally:
+                browser = None
 
 
 def main():
@@ -248,11 +286,13 @@ def main():
     parser.add_argument(
         "--from-date",
         required=True,
+        type=datetime.date.fromisoformat,
         help="Begin of date range to export in YYYY-MM-DD format.",
     )
     parser.add_argument(
         "--account-index",
         action="append",
+        type=int,
         required=True,
         help="Index of account to export. Can be specified multiple times.",
     )
@@ -293,19 +333,21 @@ def main():
     logging.basicConfig(level=logging.WARNING, format="[%(levelname)s] %(message)s")
     app_level = logging.DEBUG if args.verbose else logging.INFO
     logger.setLevel(app_level)
-    logging.getLogger("dkb_captcha").setLevel(app_level)
+    logging.getLogger("banksync").setLevel(app_level)
 
-    global browser
     password = get_password()
-    # The browser stays open for the whole session: every API call is issued as
-    # an in-page fetch so it inherits the browser's WAF clearance and TLS
-    # fingerprint. Entering the context also solves the login captcha.
-    with DkbBrowser(headless=args.captcha_headless, xvfb=args.captcha_xvfb) as browser:
-        login(args.username, password)
-        for account_index, output_file in zip(args.account_index, args.output):
-            transactions = load_transactions(int(account_index))
-            export_transactions(transactions, output_file, args.from_date)
-        logout()
+    results = export_transactions(
+        args.username,
+        password,
+        args.from_date,
+        args.account_index,
+        headless=args.captcha_headless,
+        xvfb=args.captcha_xvfb,
+    )
+    for csv_data, output_file in zip(results, args.output):
+        with open(output_file, "w") as f:
+            f.write(csv_data)
+        logger.info(f"Exported transactions to {output_file}")
 
 
 if __name__ == "__main__":

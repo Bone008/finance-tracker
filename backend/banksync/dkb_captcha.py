@@ -26,6 +26,8 @@ import tempfile
 import time
 from urllib.parse import urlencode
 
+from banksync import BankSyncError
+
 logger = logging.getLogger(__name__)
 
 FRC_INPUT_SELECTOR = 'input[name="frc-captcha-response"]'
@@ -62,7 +64,7 @@ fetch(p.url, opts).then(function (r) {
 """
 
 
-class ApiError(Exception):
+class ApiError(BankSyncError):
     """Raised when a DKB API call returns a non-2xx status."""
 
 
@@ -113,17 +115,16 @@ class DkbBrowser:
             ) from exc
 
         # SeleniumBase creates scratch folders (downloaded_files/, latest_logs/)
-        # in the current working directory. That is the banksync folder, which
-        # is intentionally not writable by the web server user -- and we don't
-        # need browser downloads anyway. So run from a private temp directory.
-        # Imports are unaffected: Python resolves them via the script's own
-        # directory (sys.path[0]), not the CWD.
+        # in the current working directory, which is not necessarily writable
+        # by the server user -- and we don't need browser downloads anyway. So
+        # run from a private temp directory. Note that this affects the whole
+        # process, so all other code must not rely on relative paths.
         self._orig_cwd = os.getcwd()
         self._workdir = tempfile.mkdtemp(prefix="dkb_banksync_")
         os.chdir(self._workdir)
 
         # Chrome writes its profile, cache and NSS cert DB under $HOME on launch.
-        # The web server user (www-data) typically cannot create new dirs in its
+        # The server user (e.g. www-data) typically cannot create new dirs in its
         # real home (e.g. /var/www is root-owned), so Chrome crashes before the
         # remote-debugging port opens -> "chrome not reachable". Point HOME at our
         # writable temp dir so all of Chrome's ~/.* writes succeed.
@@ -178,7 +179,7 @@ class DkbBrowser:
 
         self.captcha_token = self._poll_frc_token()
         if not self.captcha_token:
-            raise RuntimeError(
+            raise BankSyncError(
                 "Failed to obtain a Friendly Captcha token from the DKB login "
                 "page. The captcha widget may have changed, or the browser was "
                 "detected as a bot."
