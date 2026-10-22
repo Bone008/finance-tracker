@@ -33,8 +33,7 @@ To set up your own deployment, consider the following tips:
 
 - Deploy the `backend/` folder to your server and run it as a service, e.g. with `uv sync && uv run uvicorn app.main:app` (see [`backend/README.md`](backend/README.md)).
 - Serve the frontend build artifacts from `dist/finance-tracker/` with a Web server and reverse-proxy all requests under `/api/` to the backend.
-- When using Apache, make sure `.htaccess` files get deployed and respected.
-  Otherwise, replicate the routing rules declared in those files.
+- The frontend uses client-side routing, so the Web server must serve `index.html` for all unknown paths outside of `/api/`.
 - Database files sent by clients will be stored in a folder specified by the environment variable `FT_STORAGE_DIR`.
 
 ## Further help

@@ -49,7 +49,7 @@ jobs:
         with:
           name: deploy
           path: deploy/
-          # Make sure .htaccess does not get lost!
+          # Make sure dotfiles (e.g. backend/.python-version) do not get lost!
           include-hidden-files: true
 
   deploy:
