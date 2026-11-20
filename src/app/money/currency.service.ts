@@ -54,8 +54,9 @@ const SUPPORTED_CURRENCIES: CurrencyInfoMap = {
   'LAK': { symbol: '₭', exchangeRateToEUR: 0.00004663, name: 'Lao Kip', decimalDigits: 0 },
   'SGD': { symbol: '$', exchangeRateToEUR: 0.693585, name: 'Singapore Dollar' },
   'THB': { symbol: '฿', exchangeRateToEUR: 0.025774, name: 'Thai Baht' },
-  'TWD': { symbol: 'NT$', exchangeRateToEUR: 0.02944, name: 'Taiwan New Dollar' },
   'VND': { symbol: '₫', exchangeRateToEUR: 0.000039065, name: 'Vietnamese Dong', decimalDigits: 0 },
+  // below: exchange rate from 2026-11-19
+  'TWD': { symbol: 'NT$', exchangeRateToEUR: 0.0276, name: 'New Taiwan Dollar (NTD)' },
 };
 
 @Injectable({
